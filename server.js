@@ -1,29 +1,32 @@
 import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
 import cors from "cors";
-import { uploadRoute } from "./routes/upload.js";
-import { analyzeRoute } from "./routes/analyze.js";
-import { ocrRoute } from "./routes/ocr.js";
-import { pdfRoute } from "./routes/generatePdf.js";
-import { authRoute } from "./routes/auth.js";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import uploadRouter from "./routes/upload.js";
+import analyzeRouter from "./routes/analyze.js";
+import ocrRouter from "./routes/ocr.js";
+import pdfRouter from "./routes/generatePdf.js";
+import authRouter from "./routes/auth.js";
 
 dotenv.config();
 const app = express();
+
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json());
 
-// Rutas
-app.use("/upload", uploadRoute);
-app.use("/analyze", analyzeRoute);
-app.use("/ocr", ocrRoute);
-app.use("/generate-pdf", pdfRoute);
-app.use("/auth", authRoute);
+app.use("/upload", uploadRouter);
+app.use("/analyze", analyzeRouter);
+app.use("/ocr", ocrRouter);
+app.use("/generate-pdf", pdfRouter);
+app.use("/auth", authRouter);
 
-// MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB error:", err));
+const PORT = process.env.PORT || 5000;
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log("MongoDB connected");
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}).catch(err => console.error(err));
