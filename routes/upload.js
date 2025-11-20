@@ -1,15 +1,12 @@
 import express from "express";
-import multer from "multer";
-import { uploadFiles } from "../services/uploadService.js";
+import { uploadService } from "../services/uploadService.js";
+import { requirePayment } from "../payment.middleware.js";
 
-export const uploadRoute = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const router = express.Router();
 
-uploadRoute.post("/", upload.array("photos", 10), async (req, res) => {
-  try {
-    const urls = await uploadFiles(req.files);
-    res.json({ urls });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.post("/", requirePayment("upload"), async (req, res) => {
+  const result = await uploadService(req.body);
+  res.json(result);
 });
+
+export default router;
