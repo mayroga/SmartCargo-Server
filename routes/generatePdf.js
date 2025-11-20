@@ -1,15 +1,11 @@
 import express from "express";
-import { requirePayment } from "../payment.middleware.js";
-import { generatePdfReport } from "../services/pdfService.js";
+import { authService } from "../services/authService.js";
 
-export const pdfRoute = express.Router();
+const router = express.Router();
 
-pdfRoute.post("/", requirePayment("pdf"), async (req, res) => {
-  try {
-    const pdfBuffer = await generatePdfReport(req.body);
-    res.setHeader("Content-Type", "application/pdf");
-    res.send(pdfBuffer);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.post("/login", async (req, res) => {
+  const token = await authService.login(req.body);
+  res.json({ token });
 });
+
+export default router;
