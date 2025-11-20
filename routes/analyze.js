@@ -1,14 +1,12 @@
 import express from "express";
+import { analyzeService } from "../services/analyzeService.js";
 import { requirePayment } from "../payment.middleware.js";
-import { analyzeCargo } from "../services/analyzeService.js";
 
-export const analyzeRoute = express.Router();
+const router = express.Router();
 
-analyzeRoute.post("/", requirePayment("analysis"), async (req, res) => {
-  try {
-    const result = await analyzeCargo(req.body);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.post("/", requirePayment("analysis"), async (req, res) => {
+  const result = await analyzeService(req.body);
+  res.json(result);
 });
+
+export default router;
