@@ -1,46 +1,29 @@
 import express from "express";
-import bodyParser from "body-parser";
-import { requirePayment } from "./payment.middleware.js";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
+import { uploadRoute } from "./routes/upload.js";
+import { analyzeRoute } from "./routes/analyze.js";
+import { ocrRoute } from "./routes/ocr.js";
+import { pdfRoute } from "./routes/generatePdf.js";
+import { authRoute } from "./routes/auth.js";
 
+dotenv.config();
 const app = express();
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json({ limit: "50mb" }));
 
-app.post("/upload", async (req, res) => {
-  // Lógica para subir fotos
-  res.json({ success: true, message: "Fotos subidas correctamente." });
-});
+// Rutas
+app.use("/upload", uploadRoute);
+app.use("/analyze", analyzeRoute);
+app.use("/ocr", ocrRoute);
+app.use("/generate-pdf", pdfRoute);
+app.use("/auth", authRoute);
 
-app.post("/analyze-basic", requirePayment("basic"), async (req, res) => {
-  // Análisis simple
-  res.json({ level: "basic", result: "Análisis básico completado." });
-});
-
-app.post("/analyze-premium", requirePayment("premium"), async (req, res) => {
-  // Análisis completo con OCR y PDF
-  res.json({ level: "premium", result: "Análisis premium completado." });
-});
-
-app.post("/analyze-enterprise", requirePayment("enterprise"), async (req, res) => {
-  // Todo + asesoría avanzada
-  res.json({ level: "enterprise", result: "Análisis enterprise completado." });
-});
-
-app.post("/ocr", async (req, res) => {
-  // Lógica OCR con Google Vision
-  res.json({ success: true, message: "OCR completado." });
-});
-
-app.post("/generate-pdf", async (req, res) => {
-  // Generación PDF profesional
-  res.json({ success: true, message: "PDF generado." });
-});
-
-app.post("/auth/login", async (req, res) => {
-  // Autenticación de usuarios
-  res.json({ success: true, token: "dummy-token" });
-});
+// MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB error:", err));
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`Servidor SmartCargo corriendo en puerto ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
