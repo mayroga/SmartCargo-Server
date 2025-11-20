@@ -1,8 +1,8 @@
-// payment.config.js
-export const PAYMENT_ENABLED = false; // Gratis por ahora
+export const PAYMENT_ENABLED = false;
 
 export const PRICES = {
-  basic: 0,       // Gratis
-  premium: 0,     // Gratis
-  enterprise: 0   // Gratis
+  basicAnalysis: 2.00,
+  fullReport: 3.50,
+  ocrValidation: 1.50,
+  dgModule: 1.75
 };
