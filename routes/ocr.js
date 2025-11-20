@@ -1,14 +1,12 @@
 import express from "express";
+import { ocrService } from "../services/ocrService.js";
 import { requirePayment } from "../payment.middleware.js";
-import { analyzeOCR } from "../services/ocrService.js";
 
-export const ocrRoute = express.Router();
+const router = express.Router();
 
-ocrRoute.post("/", requirePayment("ocr"), async (req, res) => {
-  try {
-    const result = await analyzeOCR(req.body.photos);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.post("/", requirePayment("ocr"), async (req, res) => {
+  const result = await ocrService(req.body);
+  res.json(result);
 });
+
+export default router;
