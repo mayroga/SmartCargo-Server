@@ -1,13 +1,13 @@
-// payment.middleware.js
-import { PAYMENT_ENABLED, PRICES } from "./payment.config.js";
+import { PAYMENT_ENABLED } from "./payment.config.js";
 
-export function requirePayment(level) {
+export function requirePayment(serviceName) {
   return function (req, res, next) {
-    if (!PAYMENT_ENABLED) return next(); // Gratis por ahora
+    if (!PAYMENT_ENABLED) return next();
 
-    const price = PRICES[level];
-    if (!req.body.paymentIntentId || !price) {
-      return res.status(402).json({ error: "Payment required for this level." });
+    if (!req.body.paymentIntentId) {
+      return res.status(402).json({
+        error: "Payment required before using this service."
+      });
     }
 
     next();
