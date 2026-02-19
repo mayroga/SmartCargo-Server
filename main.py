@@ -1,125 +1,138 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import json
-import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from fpdf import FPDF
+import datetime
 
 app = FastAPI()
 
-# CORS para frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# Estructura de cada respuesta enviada desde frontend
-class Answer(BaseModel):
-    phase: str
-    question: str
-    answer: str
+class CargoForm(BaseModel):
+    fase1_known_shipper: str
+    fase1_itn: str
+    fase1_destino: str
+    fase2_altura: float
+    fase2_peso: float
+    fase2_nimf15: str
+    fase3_dgr: str
+    fase3_fitosanitario: str
+    fase4_awb: str
+    fase4_zip: str
+    fase5_hora_arribo: str
+    fase6_flejes: str
+    fase6_etiqueta: str
+    fase6_danio: str
+    fase6_plastico: str
+    fase6_etiqueta_vieja: str
+    fase7_limpieza: str
+    fase7_etiqueta_fris: str
+    fase7_num_piezas: int
+    fase8_tanques: str
+    fase8_overhang: str
 
-# Reglas críticas para determinar si la carga puede volar
-CRITICAL_RULES = [
-    {"question_contains": "altura", "max_value": 96, "message": "Carga excede altura máxima permitida."},
-    {"question_contains": "peso", "max_value": 150, "message": "Carga excede peso máximo sin shoring."},
-    {"question_contains": "ITN", "must_have": True, "message": "ITN obligatorio para valor > $2,500 USD."},
-    {"question_contains": "NIMF-15", "must_have": True, "message": "Falta sello NIMF-15. Debe cambiar pallet o certificarlo."},
-    {"question_contains": "baterías de litio", "must_have": True, "message": "Debe declarar DGR y Shipper's Declaration."},
-    {"question_contains": "Overhang", "max_value": 0, "message": "Carga sobresale del pallet. Re-estibar."},
-]
+def evaluar_carga(data: CargoForm):
+    resultado = []
+    status = "Puede volar"
+    
+    # Fase 1
+    if data.fase1_known_shipper.lower() != "si":
+        resultado.append("Fase 1: Known Shipper NO. Riesgo inspección 24-48h.")
+        status = "No puede volar"
+    if data.fase1_itn.strip() == "" and data.fase1_itn.lower() != "n/a":
+        resultado.append("Fase 1: ITN faltante para mercancía > $2,500 USD.")
+        status = "No puede volar"
+    if data.fase1_destino.lower() == "consolidado":
+        resultado.append("Fase 1: Consolidado detectado. Revisar Manifest Houses.")
 
-@app.post("/evaluate")
-async def evaluate(answers: list[Answer]):
-    report = []
-    can_fly = True
+    # Fase 2
+    if data.fase2_altura > 96:
+        resultado.append(f"Fase 2: Altura {data.fase2_altura}\" > 96\", no cabe en avión.")
+        status = "No puede volar"
+    elif data.fase2_altura > 63:
+        resultado.append(f"Fase 2: Altura {data.fase2_altura}\" > 63\", solo Freighter.")
+    if data.fase2_peso > 150 and data.fase6_flejes.lower() != "si":
+        resultado.append(f"Fase 2: Peso {data.fase2_peso} kg requiere shoring/flejes.")
+        status = "No puede volar"
+    if data.fase2_nimf15.lower() != "si":
+        resultado.append("Fase 2: Pallet sin sello NIMF-15. Retorno inmediato.")
+        status = "No puede volar"
 
-    for ans in answers:
-        alert = None
-        suggestion = None
-        # Validaciones específicas numéricas
-        try:
-            if "altura" in ans.question.lower():
-                altura = float(ans.answer)
-                if altura > 63 and altura <= 96:
-                    suggestion = "Debe volar en Freighter."
-                elif altura > 96:
-                    alert = "Carga NO entra en ningún avión de Avianca."
-                    can_fly = False
-            if "peso" in ans.question.lower():
-                peso = float(ans.answer)
-                if peso > 150:
-                    suggestion = "Usar base de madera (shoring) obligatoria."
-        except:
-            pass
-        
-        # Validaciones de sí/no u obligatorias
-        for rule in CRITICAL_RULES:
-            if rule["question_contains"].lower() in ans.question.lower():
-                if "must_have" in rule:
-                    if ans.answer.lower() in ["no", ""]:
-                        alert = rule["message"]
-                        can_fly = False
-                        suggestion = "Rectificar antes de enviar al counter."
+    # Fase 3
+    if data.fase3_dgr.lower() == "si":
+        resultado.append("Fase 3: Mercancía peligrosa, requiere DGR/2 originales Shipper.")
+    if data.fase3_fitosanitario.lower() != "si":
+        resultado.append("Fase 3: Certificado fitosanitario/FDA faltante. No despachar.")
+        status = "No puede volar"
 
-        report.append({
-            "phase": ans.phase,
-            "question": ans.question,
-            "answer": ans.answer,
-            "alert": alert,
-            "suggestion": suggestion
-        })
+    # Fase 4
+    if data.fase4_awb.strip() == "" or data.fase4_zip.strip() == "":
+        resultado.append("Fase 4: AWB o Zip Code incompleto.")
+        status = "No puede volar"
 
-    final_status = "Carga puede volar" if can_fly else "Carga NO puede volar"
+    # Fase 5
+    try:
+        hora = int(data.fase5_hora_arribo.split(":")[0])
+        if hora > 16:
+            resultado.append("Fase 5: Arribo después del Cut-off. Cargo podría perder reserva.")
+            status = "No puede volar"
+    except:
+        resultado.append("Fase 5: Hora inválida.")
 
-    return {"report": report, "status": final_status}
+    # Fase 6
+    campos6 = [data.fase6_flejes, data.fase6_etiqueta, data.fase6_danio, data.fase6_plastico, data.fase6_etiqueta_vieja]
+    for i, c in enumerate(campos6):
+        if c.lower() != "si":
+            resultado.append(f"Fase 6: Campo {i+1} incompleto. Corregir antes de envío.")
+            status = "No puede volar"
 
-@app.post("/generate_pdf")
-async def generate_pdf(request: Request):
-    data = await request.json()
-    report = data.get("report", [])
-    status = data.get("status", "")
+    # Fase 7
+    campos7 = [data.fase7_limpieza, data.fase7_etiqueta_fris]
+    for i, c in enumerate(campos7):
+        if c.lower() != "si":
+            resultado.append(f"Fase 7: Campo {i+1} visual/restricción incorrecta.")
+            status = "No puede volar"
+    if data.fase7_num_piezas <= 0:
+        resultado.append("Fase 7: Número de piezas incorrecto.")
+        status = "No puede volar"
 
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+    # Fase 8
+    if data.fase8_tanques.lower() != "no":
+        resultado.append("Fase 8: Tanques deben estar vacíos y certificados.")
+        status = "No puede volar"
+    if data.fase8_overhang.lower() != "no":
+        resultado.append("Fase 8: Overhang detectado. Re-estibar carga.")
+        status = "No puede volar"
 
-    y = height - 40
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, y, "Reporte de Inspección SMARTCARGO-AIPA")
-    y -= 30
-    c.setFont("Helvetica", 12)
-    c.drawString(50, y, f"Estado Final: {status}")
-    y -= 30
+    # IA en tiempo real: sugerencias
+    sugerencias = []
+    if status == "No puede volar":
+        sugerencias.append("Revise todos los campos en rojo y siga instrucciones específicas de cada fase para corregir errores.")
+    else:
+        sugerencias.append("Carga lista. Verifique medidas y documentos antes de entrega final.")
 
-    for item in report:
-        if y < 50:
-            c.showPage()
-            y = height - 40
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(50, y, f"Fase: {item['phase']}")
-        y -= 15
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Pregunta: {item['question']}")
-        y -= 15
-        c.drawString(50, y, f"Respuesta: {item['answer']}")
-        y -= 15
-        if item.get("alert"):
-            c.setFillColorRGB(1,0,0)
-            c.drawString(50, y, f"ALERTA: {item['alert']}")
-            c.setFillColorRGB(0,0,0)
-            y -= 15
-        if item.get("suggestion"):
-            c.setFillColorRGB(0,0,1)
-            c.drawString(50, y, f"Sugerencia: {item['suggestion']}")
-            c.setFillColorRGB(0,0,0)
-            y -= 15
-        y -= 10
+    return {"status": status, "detalle": resultado, "sugerencias": sugerencias}
 
-    c.save()
-    buffer.seek(0)
-    return FileResponse(buffer, media_type='application/pdf', filename="reporte_smartcargo.pdf")
+@app.post("/evaluar")
+async def evaluar(form: CargoForm):
+    res = evaluar_carga(form)
+    return JSONResponse(content=res)
+
+@app.post("/generar_pdf")
+async def generar_pdf(form: CargoForm):
+    res = evaluar_carga(form)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, f"Reporte de Prechequeo Avianca Cargo - {datetime.datetime.now()}", ln=True)
+    pdf.cell(0,10,f"Veredicto: {res['status']}", ln=True)
+    pdf.ln(5)
+    for linea in res["detalle"]:
+        pdf.multi_cell(0, 8, f"- {linea}")
+    pdf.ln(5)
+    for s in res["sugerencias"]:
+        pdf.multi_cell(0,8,f"Sugerencia: {s}")
+    filename = f"reporte_carga_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    pdf.output(f"frontend/{filename}")
+    return JSONResponse(content={"filename": filename, "veredicto": res['status']})
