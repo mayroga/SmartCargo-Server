@@ -3,66 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMARTCARGO-AIPA Pre-Check</title>
+<title>SMARTCARGO-AIPA | Pre-Chequeo Avianca Cargo Miami</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background-color: #0f0f0f;
-    color: #ffffff;
-    margin: 0;
-    padding: 0;
-}
-.container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: #1c1c1c;
-    border-radius: 12px;
-    box-shadow: 0 0 10px #000;
-}
-h1 { text-align: center; color: #f0a500; }
-label, select, input, button { display: block; width: 100%; margin: 0.5rem 0; }
-input, select { padding: 0.5rem; border-radius: 6px; border: none; }
-button {
-    padding: 0.7rem;
-    background: #f0a500;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-button:hover { background: #ffa733; }
-#alerta { margin-top: 1rem; padding: 1rem; background: #ff3333; color: white; border-radius: 6px; font-weight: bold;}
+body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0;}
+.container { max-width: 800px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px;}
+h2 { color: #0f4c81; }
+.question { margin: 15px 0; padding: 10px; background: #e8f0fe; border-radius: 5px; }
+.instruction { font-size: 0.9em; color: #333; margin-bottom: 10px; }
+input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;}
+button { background: #0f4c81; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;}
+button:hover { background: #06335a; }
+.alert { margin: 10px 0; padding: 10px; border-radius: 5px; color: white; }
+.alert-danger { background: #d9534f; }
+.alert-info { background: #5bc0de; }
+.fase { font-weight: bold; color: #0f4c81; margin-top: 20px;}
 </style>
 </head>
 <body>
 <div class="container">
-    <h1>SMARTCARGO-AIPA Pre-Check</h1>
-
-    <label for="fase">Seleccione fase:</label>
-    <select id="fase">
-        <option value="1">Fase 1 - Identificación</option>
-        <option value="2">Fase 2 - Anatomía de la carga</option>
-        <option value="3">Fase 3 - Contenidos críticos</option>
-        <option value="4">Fase 4 - Check-list documental</option>
-        <option value="5">Fase 5 - Logística de arribo</option>
-        <option value="6">Fase 6 - Embalaje y seguridad</option>
-        <option value="7">Fase 7 - Restricciones TSA</option>
-        <option value="8">Fase 8 - Equipos y contenedores</option>
-    </select>
-
-    <label for="pregunta">Pregunta:</label>
-    <div id="pregunta" data-id="1"></div>
-
-    <label for="respuesta">Respuesta:</label>
-    <input type="text" id="respuesta" placeholder="Escriba su respuesta aquí">
-
-    <button id="enviar">Enviar Respuesta</button>
-
-    <div id="alerta"></div>
+<h2>SMARTCARGO-AIPA | Pre-Chequeo Técnico</h2>
+<div id="quiz"></div>
 </div>
 
-<script src="scripts.js"></script>
+<script>
+let questions = [];
+let current = 0;
+
+async function loadQuestions() {
+    const res = await axios.get("http://localhost:8000/questions");
+    questions = res.data;
+    showQuestion();
+}
+
+function showQuestion() {
+    if (current >= questions.length) {
+        document.getElementById("quiz").innerHTML = "<h3>¡Pre-chequeo completado!</h3>";
+        return;
+    }
+    const q = questions[current];
+    let html = `<div class="fase">${q.fase}</div>
+                <div class="question">${q.question}</div>
+                <div class="instruction">${q.instruction}</div>
+                <input type="text" id="answer" placeholder="Ingrese su respuesta aquí">
+                <button onclick="submitAnswer()">Enviar</button>
+                <div id="alert"></div>`;
+    document.getElementById("quiz").innerHTML = html;
+}
+
+async function submitAnswer() {
+    const answer = document.getElementById("answer").value;
+    if (!answer) return alert("Debe responder la pregunta.");
+
+    const q = questions[current];
+    const res = await axios.post("http://localhost:8000/submit_answer", {id: q.id, answer});
+    const alertDiv = document.getElementById("alert");
+    if(res.data.alert) {
+        if(res.data.alert.includes("ALERTA")) {
+            alertDiv.className = "alert alert-danger";
+        } else {
+            alertDiv.className = "alert alert-info";
+        }
+        alertDiv.innerText = res.data.alert;
+    } else {
+        alertDiv.innerText = "";
+    }
+
+    current++;
+    setTimeout(showQuestion, 1500); // Avanza automáticamente después de 1.5s
+}
+
+loadQuestions();
+</script>
 </body>
 </html>
