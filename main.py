@@ -1,177 +1,205 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fpdf import FPDF
 import datetime
+import os
 
-app = FastAPI()
+app = FastAPI(title="SMARTCARGO-AIPA | Avianca Cargo Advisory")
+
+# =========================
+# Static Files
+# =========================
+if not os.path.exists("frontend"):
+    os.makedirs("frontend")
+
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+
+# =========================
+# Data Model (100% aligned with frontend)
+# =========================
 class CargoForm(BaseModel):
-    # Fase 1
-    fase1_known_shipper: str
-    fase1_itn: str
-    fase1_destino: str
+    clientId: str
+    highValue: str
+    itnNumber: str = ""
+    shipmentType: str
 
-    # Fase 2
-    fase2_altura: float
-    fase2_peso: float
-    fase2_nimf15: str
-    fase2_tipo_pallet: str
-    fase2_largo: float
-    fase2_ancho: float
-    fase2_punto_peso: float
+    pieceHeight: float
+    pieceWeight: float
+    nimf15: str
+    palletType: str
 
-    # Fase 3
-    fase3_dgr: str
-    fase3_fitosanitario: str
+    dangerousGoods: str
+    origin: str
 
-    # Fase 4
-    fase4_awb: str
-    fase4_zip: str
+    awbCopies: str
+    zipCode: str
 
-    # Fase 5
-    fase5_hora_arribo: str
+    arrivalTime: str
 
-    # Fase 6
-    fase6_flejes: str
-    fase6_etiqueta: str
-    fase6_danio: str
-    fase6_plastico: str
-    fase6_etiqueta_vieja: str
+    straps: str
+    awbOnBoxes: str
+    damagedBoxes: str
+    shrinkWrap: str
+    oldLabels: str
 
-    # Fase 7
-    fase7_limpieza: str
-    fase7_etiqueta_fris: str
-    fase7_num_piezas: int
+    cleanCargo: str
+    fragileLabels: str
+    piecesMatch: str
 
-    # Fase 8
-    fase8_tanques: str
-    fase8_overhang: str
+    tanks: str
+    overhang: float
 
-def calcular_ULD(data: CargoForm):
-    info = []
-    status = "Puede volar"
 
-    # Definición técnica de pallets
-    uld_types = {
-        "PMC": {"largo":125, "ancho":96, "max_height":96, "rating":6800},
-        "PAG": {"largo":125, "ancho":88, "max_height":96, "rating":4626},
-        "PAJ": {"largo":125, "ancho":88, "max_height":63, "rating":4626},
-        "PQA": {"largo":125, "ancho":96, "max_height":96, "rating":11340},
+# =========================
+# Serve Frontend
+# =========================
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    with open("frontend/index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+
+# =========================
+# Core Evaluation Engine
+# =========================
+def evaluar_carga(data: CargoForm):
+    reporte = []
+    aprobado = True
+
+    # -------------------
+    # FASE 1
+    # -------------------
+    if not data.clientId.strip():
+        reporte.append("❌ ID Cliente / SCAC es obligatorio.")
+        aprobado = False
+
+    if data.highValue == "yes" and not data.itnNumber.strip():
+        reporte.append("❌ ITN obligatorio para mercancía > $2,500 USD.")
+        aprobado = False
+
+    if data.shipmentType == "consolidated":
+        reporte.append("⚠ Envío consolidado: verificar Houses y manifest.")
+
+    # -------------------
+    # FASE 2
+    # -------------------
+    if data.pieceHeight > 96:
+        reporte.append("❌ Altura excede 96'' - No puede volar en Avianca.")
+        aprobado = False
+    elif data.pieceHeight > 63:
+        reporte.append("⚠ Altura >63'' - Solo permitido en carguero.")
+
+    if data.pieceWeight > 150:
+        reporte.append("⚠ Peso >150kg - Requiere Shoring.")
+
+    if data.nimf15 == "no":
+        reporte.append("❌ Sin sello NIMF-15 - Rechazo inmediato.")
+        aprobado = False
+
+    # -------------------
+    # FASE 3
+    # -------------------
+    if data.dangerousGoods == "yes":
+        reporte.append("⚠ Mercancía peligrosa - Requiere DGR y declaración IATA.")
+
+    if data.origin == "yes":
+        reporte.append("⚠ Producto animal/vegetal - Puede requerir FDA/USDA.")
+
+    # -------------------
+    # FASE 4
+    # -------------------
+    if data.awbCopies == "no":
+        reporte.append("❌ AWB incompleto - 3 originales + 6 copias requeridas.")
+        aprobado = False
+
+    if not data.zipCode.strip():
+        reporte.append("❌ Zip Code obligatorio.")
+        aprobado = False
+
+    # -------------------
+    # FASE 5
+    # -------------------
+    try:
+        hora = int(data.arrivalTime.split(":")[0])
+        if hora > 16:
+            reporte.append("⚠ Arribo después del cut-off - Puede perder vuelo.")
+    except:
+        reporte.append("⚠ Hora inválida.")
+
+    # -------------------
+    # FASE 6
+    # -------------------
+    if data.straps == "no":
+        reporte.append("❌ Falta flejado adecuado.")
+        aprobado = False
+
+    if data.damagedBoxes == "yes":
+        reporte.append("❌ Cajas dañadas detectadas.")
+        aprobado = False
+
+    if data.shrinkWrap == "no":
+        reporte.append("❌ Shrink wrap incorrecto.")
+        aprobado = False
+
+    if data.oldLabels == "yes":
+        reporte.append("⚠ Remover etiquetas viejas.")
+
+    # -------------------
+    # FASE 7
+    # -------------------
+    if data.cleanCargo == "no":
+        reporte.append("❌ Carga sucia o contaminada.")
+        aprobado = False
+
+    if data.piecesMatch == "no":
+        reporte.append("❌ Número de piezas no coincide con AWB.")
+        aprobado = False
+
+    # -------------------
+    # FASE 8
+    # -------------------
+    if data.tanks == "yes":
+        reporte.append("❌ Tanques deben estar vacíos y certificados.")
+        aprobado = False
+
+    if data.overhang > 0:
+        reporte.append("❌ Overhang detectado - Re-estibar.")
+        aprobado = False
+
+    return {
+        "status": "APROBADO" if aprobado else "RECHAZADO",
+        "detalle": reporte
     }
 
-    pallet = uld_types.get(data.fase2_tipo_pallet.upper(), None)
-    if pallet:
-        # Altura
-        if data.fase2_altura > pallet["max_height"]:
-            info.append(f"Altura {data.fase2_altura}\" excede límite de {pallet['max_height']}\" para {data.fase2_tipo_pallet}.")
-            status="No puede volar"
-        # Peso concentrado
-        psi = 0
-        if data.fase2_punto_peso > 150:
-            area = data.fase2_largo * data.fase2_ancho
-            psi = data.fase2_punto_peso*2.20462 / area
-            info.append(f"Peso concentrado {data.fase2_punto_peso}kg -> PSI: {psi:.2f}.")
-            if psi>2:  # arbitrario para ejemplo
-                info.append("PSI demasiado alto, requiere Shoring o redistribución.")
-                status="No puede volar"
-        # Overhang
-        if data.fase8_overhang.lower()=="si":
-            info.append("Carga sobresale del pallet (Overhang). Re-estibar.")
-            status="No puede volar"
-    else:
-        info.append(f"Pallet {data.fase2_tipo_pallet} no reconocido.")
-        status="No puede volar"
 
-    return {"detalle": info, "status":status}
-
-def evaluar_carga(data: CargoForm):
-    resultado = []
-    status = "Puede volar"
-
-    # Fase 1
-    if data.fase1_known_shipper.lower() != "si":
-        resultado.append("Fase 1: Known Shipper NO. Riesgo inspección 24-48h.")
-        status="No puede volar"
-    if data.fase1_itn.strip()=="":
-        resultado.append("Fase 1: ITN faltante para mercancía > $2,500 USD.")
-        status="No puede volar"
-    if data.fase1_destino.lower()=="consolidado":
-        resultado.append("Fase 1: Consolidado detectado. Revisar Manifest Houses.")
-
-    # Fase 2
-    uld_result = calcular_ULD(data)
-    resultado += uld_result["detalle"]
-    if uld_result["status"]=="No puede volar":
-        status="No puede volar"
-    if data.fase2_nimf15.lower()!="si":
-        resultado.append("Fase 2: Pallet sin sello NIMF-15. Retorno inmediato.")
-        status="No puede volar"
-
-    # Fase 3
-    if data.fase3_dgr.lower()=="si":
-        resultado.append("Fase 3: Mercancía peligrosa, requiere Shipper’s Declaration y DGR.")
-    if data.fase3_fitosanitario.lower()!="si":
-        resultado.append("Fase 3: Certificado fitosanitario/FDA faltante. No despachar.")
-        status="No puede volar"
-
-    # Fase 4
-    if data.fase4_awb.strip()=="" or data.fase4_zip.strip()=="":
-        resultado.append("Fase 4: AWB o Zip Code incompleto.")
-        status="No puede volar"
-
-    # Fase 5
-    try:
-        hora=int(data.fase5_hora_arribo.split(":")[0])
-        if hora>16: 
-            resultado.append("Fase 5: Arribo después del Cut-off. Cargo podría perder reserva.")
-            status="No puede volar"
-    except:
-        resultado.append("Fase 5: Hora inválida.")
-
-    # Fase 6
-    campos6=[data.fase6_flejes, data.fase6_etiqueta, data.fase6_danio, data.fase6_plastico, data.fase6_etiqueta_vieja]
-    if any(c.lower()!="si" for c in campos6):
-        resultado.append("Fase 6: Integridad física y embalaje incompleto. Revisar instrucciones.")
-        status="No puede volar"
-
-    # Fase 7
-    campos7=[data.fase7_limpieza, data.fase7_etiqueta_fris]
-    if any(c.lower()!="si" for c in campos7):
-        resultado.append("Fase 7: Restricciones visuales y limpieza incorrectas.")
-        status="No puede volar"
-    if data.fase7_num_piezas<=0:
-        resultado.append("Fase 7: Número de piezas incorrecto.")
-        status="No puede volar"
-
-    # Fase 8
-    if data.fase8_tanques.lower()!="no":
-        resultado.append("Fase 8: Tanques deben estar vacíos y certificados.")
-        status="No puede volar"
-    if data.fase8_overhang.lower()=="si":
-        resultado.append("Fase 8: Overhang detectado. Re-estibar carga.")
-        status="No puede volar"
-
-    return {"status":status,"detalle":resultado}
-
+# =========================
+# API Routes
+# =========================
 @app.post("/evaluar")
 async def evaluar(form: CargoForm):
-    res = evaluar_carga(form)
-    return JSONResponse(content=res)
+    return JSONResponse(content=evaluar_carga(form))
+
 
 @app.post("/generar_pdf")
 async def generar_pdf(form: CargoForm):
-    res = evaluar_carga(form)
+    resultado = evaluar_carga(form)
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(0,10,f"Reporte SMARTCARGO-AIPA - {datetime.datetime.now()}", ln=True)
-    pdf.cell(0,10,f"Veredicto: {res['status']}", ln=True)
+
+    pdf.cell(0, 10, "SMARTCARGO-AIPA - Avianca Cargo Advisory", ln=True)
+    pdf.cell(0, 10, f"Fecha: {datetime.datetime.now()}", ln=True)
+    pdf.cell(0, 10, f"Veredicto: {resultado['status']}", ln=True)
     pdf.ln(5)
-    for linea in res["detalle"]:
-        pdf.multi_cell(0,8,f"- {linea}")
-    filename = f"frontend/reporte_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    for linea in resultado["detalle"]:
+        pdf.multi_cell(0, 8, f"- {linea}")
+
+    filename = "frontend/reporte_last.pdf"
     pdf.output(filename)
-    return JSONResponse(content={"filename": filename, "veredicto": res['status']})
+
+    return JSONResponse(content={"url": "/static/reporte_last.pdf"})
