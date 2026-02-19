@@ -1,115 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO-AIPA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTCARGO | PRE-COUNTER INFALIBLE</title>
+
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
 <style>
-body{background:#111;color:white;font-family:Arial;padding:30px}
-input,button{margin:5px;padding:8px}
-button{cursor:pointer}
-.alert{color:red;font-weight:bold}
-.success{color:lime}
+:root{
+    --avianca:#e20613;
+    --dark:#1a1a1a;
+    --success:#28a745;
+    --danger:#dc3545;
+    --warning:#ffc107;
+}
+body{
+    font-family: 'Segoe UI', sans-serif;
+    background:#f4f4f4;
+    margin:0;
+}
+.header{
+    background:var(--avianca);
+    color:white;
+    padding:20px;
+    text-align:center;
+}
+.container{
+    max-width:900px;
+    margin:20px auto;
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.1);
+}
+h2{
+    color:var(--avianca);
+}
+label{
+    font-weight:bold;
+    margin-top:15px;
+    display:block;
+}
+input,select{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+button{
+    width:100%;
+    padding:15px;
+    margin-top:25px;
+    border:none;
+    font-weight:bold;
+    cursor:pointer;
+    border-radius:6px;
+    font-size:16px;
+}
+.btn-main{background:var(--avianca);color:white;}
+.btn-reset{background:#444;color:white;}
+.section{
+    margin-bottom:30px;
+    padding-bottom:20px;
+    border-bottom:1px solid #eee;
+}
+#resultado{
+    display:none;
+    margin-top:30px;
+}
+.status{
+    padding:20px;
+    font-size:22px;
+    font-weight:bold;
+    text-align:center;
+    border-radius:6px;
+    color:white;
+}
+.card-error{
+    background:#fafafa;
+    border-left:5px solid var(--danger);
+    padding:15px;
+    margin-bottom:20px;
+}
+.card-error h4{
+    margin:0 0 10px 0;
+}
+.explicacion{
+    background:#fff8f8;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
+    white-space:pre-wrap;
+}
 </style>
 </head>
+
 <body>
 
-<h2>SMARTCARGO – Advanced Pre-Counter</h2>
-<button onclick="toggleLang()">🌎 ES / EN</button>
-
-<div id="loginSection">
-<h3>Login</h3>
-<input id="user" placeholder="Username">
-<input id="pass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+<div class="header">
+<h1>SMARTCARGO</h1>
+<p>Pre-Counter Inteligente | Evaluación Operativa Completa</p>
 </div>
 
-<div id="appSection" style="display:none;">
-<h3>Cargo Input</h3>
+<div class="container">
 
-<input id="origin" placeholder="Origin">
-<input id="destination" placeholder="Destination">
-<input id="weight" type="number" placeholder="Weight (kg)">
-<input id="length" type="number" placeholder="Length (cm)">
-<input id="width" type="number" placeholder="Width (cm)">
-<input id="height" type="number" placeholder="Height (cm)">
-<input id="pieces" type="number" placeholder="Pieces">
+<form id="counterForm">
 
-<label><input type="checkbox" id="temp"> Temperature Required</label><br>
-<label><input type="checkbox" id="dg"> Dangerous Goods</label><br>
-<label><input type="checkbox" id="packaging"> Packaging OK</label><br>
-<label><input type="checkbox" id="docs"> Documents Complete</label><br>
+<div class="section">
+<h2>1️⃣ Identificación</h2>
 
-<input id="dryice" type="number" placeholder="Dry Ice (kg)">
+<label>ID Cliente / SCAC</label>
+<input type="text" id="clientId" required>
 
-<br>
-<button onclick="analyze()">RUN ADVANCED FILTER</button>
+<label>Tipo de Envío</label>
+<select id="shipmentType">
+<option value="directo">Directo</option>
+<option value="consolidado">Consolidado</option>
+</select>
+</div>
 
-<h3>Result</h3>
-<div id="result"></div>
+<div class="section">
+<h2>2️⃣ Aduana / CBP</h2>
+
+<label>¿Valor mayor a $2,500 USD?</label>
+<select id="highValue">
+<option value="no">No</option>
+<option value="yes">Sí</option>
+</select>
+
+<label>ITN (si aplica)</label>
+<input type="text" id="itnNumber">
+
+<label>¿Zip Code validado?</label>
+<select id="zipCheck">
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
+</div>
+
+<div class="section">
+<h2>3️⃣ Clasificación de Carga</h2>
+
+<label>Tipo de Carga</label>
+<select id="cargoType">
+<option value="GEN">Carga General</option>
+<option value="DGR">Mercancía Peligrosa (DGR)</option>
+<option value="PER">Perecedero (PER)</option>
+</select>
+
+<label>¿Declaración DGR Original?</label>
+<select id="dgrDocs">
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
+
+<label>¿Certificado Fito/FDA?</label>
+<select id="fitoDocs">
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
+</div>
+
+<div class="section">
+<h2>4️⃣ Anatomía Operativa</h2>
+
+<label>Altura (pulgadas)</label>
+<input type="number" id="pieceHeight" required>
+
+<label>¿Requiere Shoring? (>150kg)</label>
+<select id="needsShoring">
+<option value="no">No</option>
+<option value="si">Sí</option>
+</select>
+
+<label>¿Pallet con sello NIMF-15?</label>
+<select id="nimf15">
+<option value="yes">Sí</option>
+<option value="no">No</option>
+</select>
+
+<label>¿Cajas dañadas?</label>
+<select id="damaged">
+<option value="no">No</option>
+<option value="yes">Sí</option>
+</select>
+
+<label>¿Overhang?</label>
+<select id="overhang">
+<option value="no">No</option>
+<option value="yes">Sí</option>
+</select>
+</div>
+
+<button type="button" class="btn-main" onclick="evaluar()">VERIFICAR OPERACIÓN</button>
+<button type="button" class="btn-reset" onclick="location.reload()">REINICIAR</button>
+
+</form>
+
+<div id="resultado">
+<div id="statusBox" class="status"></div>
+<div id="detalleErrores"></div>
+<div id="pdfArea" style="margin-top:20px;text-align:center;"></div>
+</div>
+
 </div>
 
 <script>
-let token = null
-let lang = "EN"
 
-function toggleLang(){
-    lang = lang === "EN" ? "ES" : "EN"
-    alert("Language changed to " + lang)
-}
-
-async function login(){
-    try{
-        const res = await axios.post("/login",{
-            username:document.getElementById("user").value,
-            password:document.getElementById("pass").value
-        })
-        token = res.data.access_token
-        document.getElementById("loginSection").style.display="none"
-        document.getElementById("appSection").style.display="block"
-    }catch{
-        alert("Login failed")
+function validarFormulario(data){
+    if(!data.clientId){
+        alert("Debe ingresar ID Cliente.");
+        return false;
     }
+    if(data.highValue === "yes" && !data.itnNumber){
+        alert("ITN obligatorio para valores mayores a $2,500.");
+        return false;
+    }
+    if(!data.pieceHeight){
+        alert("Debe ingresar altura.");
+        return false;
+    }
+    return true;
 }
 
-async function analyze(){
+async function evaluar(){
+
+    const data = {
+        clientId: document.getElementById('clientId').value,
+        shipmentType: document.getElementById('shipmentType').value,
+        highValue: document.getElementById('highValue').value,
+        itnNumber: document.getElementById('itnNumber').value,
+        zipCheck: document.getElementById('zipCheck').value,
+        cargoType: document.getElementById('cargoType').value,
+        dgrDocs: document.getElementById('dgrDocs').value,
+        fitoDocs: document.getElementById('fitoDocs').value,
+        pieceHeight: parseFloat(document.getElementById('pieceHeight').value),
+        needsShoring: document.getElementById('needsShoring').value,
+        nimf15: document.getElementById('nimf15').value,
+        damaged: document.getElementById('damaged').value,
+        overhang: document.getElementById('overhang').value
+    };
+
+    if(!validarFormulario(data)) return;
+
     try{
-        const res = await axios.post("/analyze",{
-            origin:origin.value,
-            destination:destination.value,
-            weight_kg:parseFloat(weight.value),
-            length_cm:parseFloat(length.value),
-            width_cm:parseFloat(width.value),
-            height_cm:parseFloat(height.value),
-            pieces:parseInt(pieces.value),
-            temperature_required:temp.checked,
-            dangerous_goods:dg.checked,
-            packaging_ok:packaging.checked,
-            documents_complete:docs.checked,
-            dry_ice_kg:parseFloat(dryice.value||0)
-        },{
-            headers:{Authorization:`Bearer ${token}`}
-        })
+        const res = await axios.post('/evaluar', data);
 
-        let r = res.data
-        let color = r.status==="CLEARED"?"success":"alert"
+        document.getElementById('counterForm').style.display = "none";
+        document.getElementById('resultado').style.display = "block";
 
-        result.innerHTML = `
-        <div class="${color}">
-        Status: ${r.status}<br>
-        Volumetric Weight: ${r.volumetric_weight} kg<br>
-        Chargeable Weight: ${r.chargeable_weight} kg<br>
-        PSI: ${r.psi}<br>
-        ${r.critical_alert ? "⚠ "+r.critical_alert+"<br>" : ""}
-        </div>
-        <hr>
-        <b>AI Observation:</b><br>
-        ${r.ai_observation}
-        `
+        const statusBox = document.getElementById('statusBox');
+        statusBox.innerText = res.data.status;
+        statusBox.style.background = res.data.status === "VUELA" ? "#28a745" : "#dc3545";
+
+        let html = "";
+
+        res.data.explicaciones.forEach(item=>{
+            html += `
+            <div class="card-error">
+                <h4>${item.error}</h4>
+                <div class="explicacion">${item.explicacion}</div>
+            </div>
+            `;
+        });
+
+        document.getElementById('detalleErrores').innerHTML = html;
+
+        const pdf = await axios.post('/generar_pdf', data);
+        document.getElementById('pdfArea').innerHTML =
+        `<a href="${pdf.data.url}" target="_blank">
+            <button class="btn-main">DESCARGAR REPORTE PDF</button>
+         </a>`;
+
     }catch(e){
-        alert("Error analyzing cargo")
+        alert("Error crítico del sistema. Verifique conexión o backend.");
     }
 }
+
 </script>
 
 </body>
