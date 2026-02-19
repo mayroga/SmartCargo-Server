@@ -1,27 +1,18 @@
+import os
+import json
+import datetime
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fpdf import FPDF
-import os
-import datetime
-import json
 import httpx
-from utils.rules import evaluar_reglas_duras
-from utils.ai_engine import explicar_con_ia
 
 # -------------------------
-# Inicialización
+# Configuración de FastAPI
 # -------------------------
 app = FastAPI(title="SMARTCARGO INFALIBLE")
-
-# Carpeta frontend
-if not os.path.exists("frontend"):
-    os.makedirs("frontend")
-
-# Montar carpeta estática
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 # Permitir CORS
 app.add_middleware(
@@ -31,31 +22,50 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Llaves IA
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+# Directorio Frontend
+if not os.path.exists("frontend"):
+    os.makedirs("frontend")
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# -------------------------
+# API Keys
+# -------------------------
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
 # -------------------------
 # Modelo de datos
 # -------------------------
 class CargoForm(BaseModel):
-    clientId: str
-    shipmentType: str
-    highValue: str
-    itnNumber: str | None = ""
-    zipCheck: str
+    awbMaster: str
+    awbHouse: str | None = ""
+    shipperName: str
+    shipperAddress: str
+    shipperPhone: str
+    consigneeName: str
+    consigneeAddress: str
+    consigneePhone: str
+    referenceNumber: str
+    originAirport: str
+    destinationAirport: str
+    departureDate: str
     cargoType: str
     dgrDocs: str | None = ""
     fitoDocs: str | None = ""
+    highValue: str
+    itnNumber: str | None = ""
+    zipCode: str
+    numPieces: int
+    totalWeight: float
+    dimensions: str
     pieceHeight: float
     needsShoring: str
     nimf15: str
     damaged: str
     overhang: str
-    hasManifest: str | None = "si"
 
 # -------------------------
-# Página Principal
+# Página principal
 # -------------------------
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -63,120 +73,164 @@ async def home():
         return f.read()
 
 # -------------------------
-# Función IA
+# Función IA: OpenAI principal, Gemini respaldo
 # -------------------------
 async def evaluar_ia(data: dict):
     prompt = f"""
-    Evaluar pre-check de carga Avianca Cargo según estos datos:
-    {data}
+Evaluar pre-check de carga Avianca Cargo con estos datos:
+{json.dumps(data, indent=2)}
 
-    Devuelve un JSON con:
-    {{
-        "status": "LISTO PARA VOLAR / NO LISTO",
-        "detalle": ["explicación de cada problema o alerta"]
-    }}
-    """
-    # Intentamos Gemini
+Devuelve JSON con:
+- status: LISTO PARA VOLAR / NO LISTO
+- detalle: lista de explicaciones y correcciones necesarias
+"""
+
+    # Primero OpenAI
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
-                "https://api.gemini.com/v1/generate",
-                headers={"Authorization": f"Bearer {GEMINI_KEY}"},
-                json={"prompt": prompt, "max_tokens":500}
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {OPENAI_KEY}"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0
+                }
             )
-            result = resp.json()
-            return result.get("output")
-    except Exception:
-        # Si falla Gemini, usamos OpenAI
+            r = resp.json()
+            output = r["choices"][0]["message"]["content"]
+            return eval(output)
+    except Exception as e_openai:
+        # Si falla OpenAI, usamos Gemini
         try:
-            async with httpx.AsyncClient(timeout=20) as client:
+            async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                    json={
-                        "model": "gpt-4o-mini",
-                        "messages": [{"role":"user","content":prompt}],
-                        "temperature":0
-                    }
+                    "https://api.gemini.com/v1/generate",
+                    headers={"Authorization": f"Bearer {GEMINI_KEY}"},
+                    json={"prompt": prompt, "max_tokens":500}
                 )
-                result = resp.json()
-                # Convertimos respuesta en dict
-                return eval(result["choices"][0]["message"]["content"])
-        except Exception as e2:
-            return {"status":"ERROR IA","detalle":[str(e2)]}
+                r = resp.json()
+                return eval(r.get("output","{'status':'ERROR IA','detalle':['Gemini no respondió']}"))
+        except Exception as e_gemini:
+            return {"status":"ERROR IA","detalle":[str(e_openai), str(e_gemini)]}
 
 # -------------------------
-# Evaluación Principal
+# Función reglas duras (simulación real)
+# -------------------------
+def evaluar_reglas_duras(data: CargoForm):
+    detalles = []
+    status = "LISTO PARA VOLAR"
+
+    # Peso máximo
+    if data.totalWeight > 10000:
+        status = "NO LISTO"
+        detalles.append("❌ Peso total excede límite de avión.")
+
+    # Altura pieza
+    if data.pieceHeight > 96:
+        status = "NO LISTO"
+        detalles.append("❌ Altura pieza excede límite, no entra en avión.")
+
+    elif data.pieceHeight > 63:
+        detalles.append("⚠️ Solo entra en avión carguero (Main Deck).")
+
+    # Shoring
+    if data.needsShoring == "si":
+        detalles.append("🛠 Shoring requerido para piezas >150kg.")
+
+    # DGR
+    if data.cargoType == "DGR" and data.dgrDocs != "si":
+        status = "NO LISTO"
+        detalles.append("❌ Faltan Shipper's Declaration originales.")
+
+    # PER / FDA
+    if data.cargoType == "PER" and data.fitoDocs != "si":
+        status = "NO LISTO"
+        detalles.append("❌ Certificado FDA/Fitosanitario faltante.")
+
+    # ITN
+    if data.highValue == "yes" and not data.itnNumber:
+        status = "NO LISTO"
+        detalles.append("❌ ITN/AES requerido para valor >$2,500 USD.")
+
+    # Daños
+    if data.damaged == "yes":
+        status = "NO LISTO"
+        detalles.append("❌ Cajas dañadas o mojadas.")
+
+    return {"status": status, "detalles": detalles}
+
+# -------------------------
+# Endpoint principal de evaluación
 # -------------------------
 @app.post("/evaluar")
-async def evaluar(data: CargoForm):
-    # Reglas duras
-    resultado = evaluar_reglas_duras(data)
+async def evaluar(request: Request):
+    data_json = await request.json()
+    data_model = CargoForm(**data_json)
 
-    # IA explica cada hallazgo
+    # Evaluación reglas duras
+    resultado_reglas = evaluar_reglas_duras(data_model)
+
+    # Explicaciones IA
     explicaciones = []
-    for item in resultado["detalles"]:
-        texto_ia = await explicar_con_ia(item)
-        explicaciones.append({
-            "error": item,
-            "explicacion": texto_ia
-        })
+    for d in resultado_reglas["detalles"]:
+        texto = await evaluar_ia({"detalle": d})
+        explicaciones.append({"error": d, "explicacion": texto.get("detalle",[d])})
 
-    # Evaluación IA general para status y detalle
-    ia_result = await evaluar_ia(data.dict())
-    if ia_result and "status" in ia_result:
-        resultado["status"] = ia_result["status"]
-        resultado["detalles"] = ia_result.get("detalle", resultado["detalles"])
-
-    # Guardar log
+    # Log completo
     log = {
         "fecha": str(datetime.datetime.now()),
-        "cliente": data.clientId,
-        "resultado": resultado,
+        "awbMaster": data_model.awbMaster,
+        "resultado": resultado_reglas,
         "explicaciones": explicaciones
     }
     with open("registro_evaluaciones.json", "a", encoding="utf-8") as f:
         f.write(json.dumps(log, ensure_ascii=False) + "\n")
 
     return JSONResponse({
-        "status": resultado["status"],
-        "detalles": resultado["detalles"],
+        "status": resultado_reglas["status"],
+        "detalle": resultado_reglas["detalles"],
         "explicaciones": explicaciones
     })
 
 # -------------------------
-# PDF Profesional
+# Generación de PDF completo
 # -------------------------
 @app.post("/generar_pdf")
 async def generar_pdf(data: CargoForm):
-    resultado = evaluar_reglas_duras(data)
-
     pdf = FPDF()
     pdf.add_page()
 
+    # Título
     pdf.set_font("Arial", 'B', 16)
-    pdf.set_text_color(226, 6, 19)
-    pdf.cell(0, 10, "SMARTCARGO - PRE COUNTER REPORT", ln=True, align="C")
+    pdf.set_text_color(226,6,19)
+    pdf.cell(0,10,"SMARTCARGO - PRE COUNTER REPORT", ln=True, align="C")
 
     pdf.set_font("Arial", '', 10)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, f"Generado: {datetime.datetime.now()}", ln=True)
-    pdf.ln(5)
+    pdf.set_text_color(0,0,0)
+    pdf.cell(0,10,f"Generado: {datetime.datetime.now()}", ln=True)
 
-    # Estado con color
-    color = (40,167,69) if "LISTO" in resultado["status"] else (220,53,69)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 14)
+    color = (40,167,69) if evaluar_reglas_duras(data)["status"]=="LISTO PARA VOLAR" else (220,53,69)
     pdf.set_fill_color(*color)
     pdf.set_text_color(255,255,255)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 12, resultado["status"], ln=True, align="C", fill=True)
-    pdf.ln(5)
+    pdf.cell(0,12,evaluar_reglas_duras(data)["status"], ln=True, align="C", fill=True)
 
-    pdf.set_text_color(0,0,0)
+    pdf.ln(5)
     pdf.set_font("Arial", '', 11)
-    for d in resultado["detalles"]:
-        pdf.multi_cell(0, 8, f"- {d}")
+    fields = vars(data)
+    for key, value in fields.items():
+        pdf.multi_cell(0,8,f"{key}: {value}")
+
+    # Detalles de reglas duras
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_text_color(0,0,0)
+    pdf.cell(0,10,"Detalles y alertas:", ln=True)
+    for d in evaluar_reglas_duras(data)["detalles"]:
+        pdf.multi_cell(0,8,f"- {d}")
 
     filename = "frontend/reporte_smartcargo.pdf"
     pdf.output(filename)
-
     return {"url": "/static/reporte_smartcargo.pdf"}
