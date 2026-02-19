@@ -1,12 +1,9 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fpdf import FPDF
-import os
-import json
-import datetime
-import httpx
+import os, json, datetime, httpx
 
 app = FastAPI(title="SMARTCARGO INFALIBLE")
 
@@ -65,98 +62,86 @@ class CargoForm(BaseModel):
 # Evaluación Reglas Duras
 # -------------------------
 def evaluar_reglas_duras(data: CargoForm):
-    """
-    Función que aplica todas las reglas duras de Avianca Cargo.
-    Devuelve status y lista de detalles con alertas y soluciones.
-    """
     detalles = []
     status = "LISTO PARA VOLAR"
 
-    # Fase 1: Identificación y seguridad
+    # Fase 1
     if not data.clientId:
-        detalles.append("❌ ID de cliente vacío: Validación Known Shipper no posible. Requiere inspección física.")
+        detalles.append({"campo":"clientId","mensaje":"❌ ID de cliente vacío: Validación Known Shipper no posible.","nivel":"CRITICO"})
         status = "NO LISTO"
     if data.highValue == "yes" and not data.itnNumber:
-        detalles.append("❌ Valor > $2,500 USD sin ITN. Multa federal $10,000 si no se corrige.")
+        detalles.append({"campo":"itnNumber","mensaje":"❌ Valor > $2,500 USD sin ITN. Multa federal $10,000.","nivel":"CRITICO"})
         status = "NO LISTO"
     if not data.awbMaster:
-        detalles.append("❌ AWB Master no proporcionado. No se puede generar guía correctamente.")
+        detalles.append({"campo":"awbMaster","mensaje":"❌ AWB Master no proporcionado. No se puede generar guía correctamente.","nivel":"CRITICO"})
         status = "NO LISTO"
 
-    # Fase 2: Anatomía de la carga
+    # Fase 2
     if data.pieceHeight and data.pieceHeight > 63:
-        detalles.append("⚠️ Altura > 63 pulgadas: Solo avión carguero. Si > 96 pulgadas, no puede volar.")
-        status = "NO LISTO"
+        detalles.append({"campo":"pieceHeight","mensaje":"⚠️ Altura > 63 pulgadas: Solo avión carguero.","nivel":"ADVERTENCIA"})
+        if data.pieceHeight > 96: status="NO LISTO"
     if data.totalWeight and data.totalWeight > 150 and data.needsShoring != "si":
-        detalles.append("❌ Pieza >150kg sin shoring. Riesgo de daño estructural.")
-        status = "NO LISTO"
+        detalles.append({"campo":"needsShoring","mensaje":"❌ Pieza >150kg sin shoring. Riesgo de daño.","nivel":"CRITICO"})
+        status="NO LISTO"
     if data.nimf15 != "si":
-        detalles.append("❌ Pallet sin NIMF-15. Retorno inmediato por USDA/CBP.")
-        status = "NO LISTO"
+        detalles.append({"campo":"nimf15","mensaje":"❌ Pallet sin NIMF-15. Retorno inmediato por USDA/CBP.","nivel":"CRITICO"})
+        status="NO LISTO"
     if data.damaged == "yes":
-        detalles.append("⚠️ Daños preexistentes detectados. Counter puede rechazar la carga.")
-        status = "NO LISTO"
+        detalles.append({"campo":"damaged","mensaje":"⚠️ Daños preexistentes detectados. Counter puede rechazar la carga.","nivel":"ADVERTENCIA"})
+        status="NO LISTO"
 
-    # Fase 3: Contenidos críticos
+    # Fase 3
     if data.cargoType in ["DGR","PER","BIO"]:
         if data.dgrDocs != "si":
-            detalles.append(f"❌ {data.cargoType} sin documentación completa. Requiere 2 originales de Shipper's Declaration.")
-            status = "NO LISTO"
+            detalles.append({"campo":"dgrDocs","mensaje":f"❌ {data.cargoType} sin documentación completa. Requiere Shipper's Declaration.","nivel":"CRITICO"})
+            status="NO LISTO"
         if data.fitoDocs != "si" and data.cargoType in ["PER","BIO"]:
-            detalles.append(f"❌ {data.cargoType} sin certificado FDA/Fitosanitario. Bloqueo en aduana.")
-            status = "NO LISTO"
+            detalles.append({"campo":"fitoDocs","mensaje":f"❌ {data.cargoType} sin certificado FDA/Fitosanitario.","nivel":"CRITICO"})
+            status="NO LISTO"
 
-    # Fase 4-8: Check final, embalaje y logística
-    if data.arrivalTime == "":
-        detalles.append("⚠️ Hora de llegada no definida. Cut-off 4h antes de salida.")
-    if data.packaging not in ["straps","STRAPS"]:
-        detalles.append("❌ Embalaje insuficiente. Uso de shrink wrap solo no aceptado para cargas pesadas.")
-        status = "NO LISTO"
-    if data.overhang == "yes":
-        detalles.append("❌ Overhang detectado. Debe re-estibar para encajar en el avión.")
-        status = "NO LISTO"
+    # Fase 4-8
+    if not data.arrivalTime:
+        detalles.append({"campo":"arrivalTime","mensaje":"⚠️ Hora de llegada no definida. Cut-off 4h antes de salida.","nivel":"ADVERTENCIA"})
+    if data.packaging.lower() not in ["straps"]:
+        detalles.append({"campo":"packaging","mensaje":"❌ Embalaje insuficiente. Shrink wrap solo no aceptado.","nivel":"CRITICO"})
+        status="NO LISTO"
+    if data.overhang=="yes":
+        detalles.append({"campo":"overhang","mensaje":"❌ Overhang detectado. Debe re-estibar para avión.","nivel":"CRITICO"})
+        status="NO LISTO"
     if not data.zipCode:
-        detalles.append("❌ Código postal vacío. Bloqueo automático del sistema.")
-        status = "NO LISTO"
+        detalles.append({"campo":"zipCode","mensaje":"❌ Código postal vacío. Bloqueo automático del sistema.","nivel":"CRITICO"})
+        status="NO LISTO"
 
-    # Explicaciones y soluciones automáticas (simples)
-    for i in range(len(detalles)):
-        detalles[i] += " | Solución: Revise documentación, corrija embalaje y medidas según AL CIELO."
+    # Agregar solución simple
+    for d in detalles:
+        d["mensaje"] += " | Solución: Revise documentación, corrija embalaje y medidas según AL CIELO."
 
-    return {"status": status, "detalles": detalles}
+    return {"status":status,"detalles":detalles}
 
 # -------------------------
-# IA para explicaciones avanzadas
+# IA explicaciones
 # -------------------------
 async def explicar_con_ia(texto):
-    prompt = f"""
-    Eres un asistente AL CIELO para Avianca Cargo.
-    Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias legales y solución:
-    {texto}
-    """
+    prompt = f"Eres un asistente AL CIELO para Avianca Cargo. Explica detalladamente: {texto}"
     # OpenAI principal
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages": [{"role":"user","content":prompt}],
-                    "temperature":0
-                },
+                json={"model":"gpt-4o-mini","messages":[{"role":"user","content":prompt}],"temperature":0},
                 timeout=30
             )
             result = resp.json()
             return result["choices"][0]["message"]["content"]
-    except Exception as e:
-        # Gemini como respaldo
+    except:
+        # Gemini respaldo
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     "https://api.gemini.com/v1/generate",
                     headers={"Authorization": f"Bearer {GEMINI_KEY}"},
-                    json={"prompt": prompt, "max_tokens":500},
+                    json={"prompt":prompt,"max_tokens":500},
                     timeout=30
                 )
                 result = resp.json()
@@ -172,36 +157,26 @@ async def evaluar(data: CargoForm):
     resultado = evaluar_reglas_duras(data)
     explicaciones = []
 
-    for item in resultado["detalles"]:
-        texto_ia = await explicar_con_ia(item)
-        explicaciones.append({"error": item, "explicacion": texto_ia})
+    for d in resultado["detalles"]:
+        texto_ia = await explicar_con_ia(d["mensaje"])
+        explicaciones.append({"error":d["campo"],"nivel":d["nivel"],"explicacion":texto_ia})
 
-    log = {
-        "fecha": str(datetime.datetime.now()),
-        "cliente": data.clientId,
-        "resultado": resultado,
-        "explicaciones": explicaciones
-    }
+    # Log
+    log = {"fecha":str(datetime.datetime.now()),"cliente":data.clientId,"resultado":resultado,"explicaciones":explicaciones}
+    with open("registro_evaluaciones.json","a",encoding="utf-8") as f:
+        f.write(json.dumps(log,ensure_ascii=False)+"\n")
 
-    with open("registro_evaluaciones.json", "a", encoding="utf-8") as f:
-        f.write(json.dumps(log, ensure_ascii=False) + "\n")
-
-    return JSONResponse({
-        "status": resultado["status"],
-        "detalles": resultado["detalles"],
-        "explicaciones": explicaciones
-    })
+    return JSONResponse({"status":resultado["status"],"detalles":[d["mensaje"] for d in resultado["detalles"]],"explicaciones":explicaciones})
 
 # -------------------------
-# Endpoint Generar PDF
+# Endpoint PDF
 # -------------------------
 @app.post("/generar_pdf")
 async def generar_pdf(data: CargoForm):
     resultado = evaluar_reglas_duras(data)
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_auto_page_break(True, margin=15)
 
-    # ----------------- PDF dividido por secciones -----------------
     secciones = [
         ("Fase 1: Identificación y Seguridad", [
             f"ID Cliente: {data.clientId}",
@@ -238,18 +213,18 @@ async def generar_pdf(data: CargoForm):
             f"Consignee: {data.consigneeName}, {data.consigneeAddress}, {data.consigneePhone}",
             f"Código Postal: {data.zipCode}"
         ]),
-        ("Resultado Evaluación", resultado["detalles"])
+        ("Resultado Evaluación", [d["mensaje"] for d in resultado["detalles"]])
     ]
 
     for titulo, items in secciones:
         pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
+        pdf.set_font("Arial","B",16)
         pdf.set_text_color(255,255,255)
         pdf.set_fill_color(226,6,19)
-        pdf.cell(0,12, titulo, ln=True, fill=True)
+        pdf.cell(0,12,titulo,ln=True,fill=True)
         pdf.ln(5)
         pdf.set_text_color(0,0,0)
-        pdf.set_font("Arial", "", 12)
+        pdf.set_font("Arial","",12)
         for item in items:
             pdf.multi_cell(0,8,f"- {item}")
             pdf.ln(1)
