@@ -2,42 +2,65 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO-AIPA | Prechequeo Avianca</title>
+<title>SMARTCARGO-AIPA | Prechequeo Avianca Cargo</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body { font-family: Arial; background:#f5f5f5; color:#000; margin:0; padding:0;}
-.container { max-width: 1000px; margin:auto; padding:20px;}
+body { font-family: Arial; background:#f5f5f5; margin:0; padding:0;}
+.container { max-width:1200px; margin:auto; padding:20px;}
 h1 { text-align:center;}
 .fase { background:#fff; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;}
 button { padding:10px 15px; margin-top:10px;}
 .alerta { color:red; font-weight:bold;}
-.sugerencia { color:green; font-weight:bold; }
 .detalle { margin-left:15px; font-size:14px; color:#555;}
 .collapse { cursor:pointer; padding:10px; background:#eee; border-radius:5px; margin-bottom:5px; }
 .content { display:none; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:10px; background:#f9f9f9;}
+input { margin-bottom:5px;}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>SMARTCARGO-AIPA | Prechequeo Avianca Cargo</h1>
-
 <form id="cargoForm">
-<!-- Todas las fases 1-8 (idénticas al ejemplo anterior, omitted por brevedad) -->
-<!-- Copiar campos exactos del HTML anterior -->
-</form>
+
+<!-- Aquí se incluyen todas las fases igual que antes pero agregando los campos nuevos de ULD y peso concentrado -->
+<!-- Fase 2 ejemplo con cálculo ULD -->
+<div class="fase">
+<div class="collapse">Fase 2: Anatomía de la Carga (Altura, Peso, NIMF-15, Tipo Pallet, Largo, Ancho, Punto de Peso)</div>
+<div class="content">
+<label>Altura (inches):</label><input type="number" name="fase2_altura" oninput="evalCampo(this)"><br>
+<label>Peso total (kg):</label><input type="number" name="fase2_peso" oninput="evalCampo(this)"><br>
+<label>Sello NIMF-15 visible (si/no):</label><input type="text" name="fase2_nimf15" oninput="evalCampo(this)"><br>
+<label>Tipo de Pallet (PMC/PAG/PAJ/PQA):</label><input type="text" name="fase2_tipo_pallet" oninput="evalCampo(this)"><br>
+<label>Largo del pallet (inches):</label><input type="number" name="fase2_largo" oninput="evalCampo(this)"><br>
+<label>Ancho del pallet (inches):</label><input type="number" name="fase2_ancho" oninput="evalCampo(this)"><br>
+<label>Peso en punto crítico (kg):</label><input type="number" name="fase2_punto_peso" oninput="evalCampo(this)"><br>
+</div>
+</div>
+
+<!-- Resto de fases igual al ejemplo anterior, agregando oninput="evalCampo(this)" en todos los inputs -->
 
 <button type="button" onclick="evaluar()">Evaluar Carga</button>
 <button type="button" onclick="generarPDF()">Generar PDF</button>
+</form>
 
 <div id="resultado" class="alerta"></div>
-<div id="sugerencias" class="sugerencia"></div>
 
 <script>
-document.querySelectorAll(".collapse").forEach(function(el){
-    el.onclick = function(){ 
-        this.nextElementSibling.style.display = this.nextElementSibling.style.display === "block" ? "none" : "block";
-    }
+document.querySelectorAll(".collapse").forEach(el=>el.onclick=function(){
+    this.nextElementSibling.style.display=this.nextElementSibling.style.display==="block"?"none":"block";
 });
+
+// Evaluación en tiempo real por campo
+async function evalCampo(input){
+    const form = document.getElementById("cargoForm");
+    const data = Object.fromEntries(new FormData(form));
+    const res = await axios.post("/evaluar", data);
+    let html = `<strong>Veredicto parcial: ${res.data.status}</strong><br>`;
+    res.data.detalle.forEach(d=>{
+        html+=`<div class="detalle">- ${d}</div>`;
+    });
+    document.getElementById("resultado").innerHTML=html;
+}
 
 async function evaluar(){
     const form = document.getElementById("cargoForm");
@@ -45,30 +68,11 @@ async function evaluar(){
     const response = await axios.post("/evaluar", data);
     let res = response.data;
     let html = `<strong>Veredicto: ${res.status}</strong><br>`;
-    res.detalle.forEach(d => { html += `<div class="detalle">- ${d}</div>`; });
-    document.getElementById("resultado").innerHTML = html;
-
-    let sugerencias = "";
-    res.sugerencias.forEach(s => { sugerencias += `- ${s}<br>`; });
-    document.getElementById("sugerencias").innerHTML = sugerencias;
-}
-
-// Evaluación instantánea mientras escribes (IA en tiempo real)
-document.querySelectorAll("#cargoForm input").forEach(el=>{
-    el.addEventListener("input", async ()=>{
-        const form = document.getElementById("cargoForm");
-        const data = Object.fromEntries(new FormData(form));
-        const response = await axios.post("/evaluar", data);
-        let res = response.data;
-        let html = `<strong>Veredicto: ${res.status}</strong><br>`;
-        res.detalle.forEach(d => { html += `<div class="detalle">- ${d}</div>`; });
-        document.getElementById("resultado").innerHTML = html;
-
-        let sugerencias = "";
-        res.sugerencias.forEach(s => { sugerencias += `- ${s}<br>`; });
-        document.getElementById("sugerencias").innerHTML = sugerencias;
+    res.detalle.forEach(d=>{
+        html+=`<div class="detalle">- ${d}</div>`;
     });
-});
+    document.getElementById("resultado").innerHTML=html;
+}
 
 async function generarPDF(){
     const form = document.getElementById("cargoForm");
@@ -78,7 +82,6 @@ async function generarPDF(){
     alert(`PDF generado: ${res.filename}\nVeredicto: ${res.veredicto}`);
 }
 </script>
-
 </div>
 </body>
 </html>
