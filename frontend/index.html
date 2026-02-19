@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMARTCARGO – SISTEMA INFALIBLE</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
 <style>
 body{ font-family: Arial,sans-serif; margin:0; background:#f4f6f9; }
 header{ background:#e20613; color:white; padding:20px; text-align:center; font-size:1.8em; font-weight:bold; }
@@ -23,6 +22,8 @@ button:hover{ background:#b10410; }
 .explicacionIA{ background:#eef2ff; padding:10px; margin-top:5px; border-left:4px solid #4f46e5; font-size:0.95em; }
 .smallinfo{ font-size:0.9em; background:#f1f1f1; padding:8px; border-radius:5px; margin-bottom:10px; }
 .status{ font-size:1.4em; font-weight:bold; margin:10px 0; }
+img.uploaded{ max-width:200px; margin:5px; cursor:zoom-in; transition:0.3s; }
+img.uploaded:hover{ transform:scale(2); }
 </style>
 </head>
 <body>
@@ -126,8 +127,15 @@ async function evaluar(){
     resultadoDiv.innerHTML="Evaluando...";
 
     try{
-        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data);
-        let html = `<div class="status">${response.data.status}</div>`;
+        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data,{
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+
+        let html=`<div class="status">${response.data.status}</div>`;
+
+        response.data.archivos.forEach(url=>{
+            html+=`<img src="https://smartcargo-server.onrender.com${url}" class="uploaded">`;
+        });
 
         response.data.explicaciones.forEach(item=>{
             let clase="info";
@@ -135,14 +143,15 @@ async function evaluar(){
             else if(item.error.includes("⚠️")) clase="warning";
             else if(item.error.includes("✅")) clase="success";
 
-            html += `<div class="alert ${clase}">${item.error}</div>`;
-            html += `<div class="explicacionIA">${item.explicacion}</div>`;
+            html+=`<div class="alert ${clase}">${item.error}</div>`;
+            html+=`<div class="explicacionIA">${item.explicacion}</div>`;
         });
 
-        resultadoDiv.innerHTML = html;
+        resultadoDiv.innerHTML=html;
 
-    }catch(error){
-        resultadoDiv.innerHTML = `<div class="alert critical">Error conectando con servidor</div>`;
+    }catch(e){
+        resultadoDiv.innerHTML=`<div class="alert critical">Error conectando con servidor</div>`;
+        console.error(e);
     }
 }
 
@@ -153,13 +162,15 @@ async function generarPDF(){
     resultadoDiv.innerHTML="Generando PDF...";
 
     try{
-        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data);
-        resultadoDiv.innerHTML = `<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">Abrir Reporte PDF</a>`;
-    }catch(error){
-        resultadoDiv.innerHTML = `<div class="alert critical">Error generando PDF</div>`;
+        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data,{
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        resultadoDiv.innerHTML=`<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">Abrir Reporte PDF</a>`;
+    }catch(e){
+        resultadoDiv.innerHTML=`<div class="alert critical">Error generando PDF</div>`;
+        console.error(e);
     }
 }
 </script>
-
 </body>
 </html>
