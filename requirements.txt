@@ -10,3 +10,4 @@ pandas
 numpy
 aiofiles
 python-dotenv
+fpdf
