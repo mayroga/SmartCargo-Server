@@ -1,28 +1,28 @@
 # Framework y servidor
-fastapi==0.111.1
-uvicorn==0.25.0
+fastapi
+uvicorn
 
 # Manejo de formularios y archivos
-python-multipart==0.0.6
-aiofiles==25.1.0
+python-multipart
+aiofiles
 
 # Plantillas y renderizado HTML
-jinja2==3.1.2
-weasyprint==68.1
+jinja2
+weasyprint
 
 # Validación y modelos
-pydantic==2.6.0
+pydantic
 
 # HTTP requests
-requests==2.32.0
-httpx==0.28.1
+requests
+httpx
 
 # PDF y reportes
-fpdf==1.7.2
+fpdf
 
 # Manejo de datos y cálculos técnicos
-pandas==2.0.3
-numpy==1.25.2
+pandas
+numpy
 
 # Variables de entorno
-python-dotenv==1.2.1
+python-dotenv
