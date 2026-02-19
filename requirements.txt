@@ -1,28 +1,6 @@
-# Framework y servidor
 fastapi
 uvicorn
-
-# Manejo de formularios y archivos
 python-multipart
-aiofiles
-
-# Plantillas y renderizado HTML
-jinja2
-weasyprint
-
-# Validación y modelos
 pydantic
-
-# HTTP requests
-requests
-httpx
-
-# PDF y reportes
 fpdf
-
-# Manejo de datos y cálculos técnicos
-pandas
-numpy
-
-# Variables de entorno
-python-dotenv
+axios
