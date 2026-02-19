@@ -2,283 +2,120 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMARTCARGO-AIPA | Avianca Cargo</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body { font-family: Arial, sans-serif; background: #f0f2f5; color: #111; margin:0; padding:0;}
-.container { max-width: 1000px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
-h1, h2 { text-align: center; }
-.section { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; padding: 10px; }
-.section-header { font-weight: bold; cursor: pointer; background: #e2e2e2; padding: 8px; border-radius: 4px; }
-.section-content { display: none; padding: 10px; }
-input, select { margin: 5px 0; padding: 6px; width: 100%; box-sizing: border-box; }
-button { margin-top: 10px; padding: 10px 15px; background: #0d6efd; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background: #0b5ed7; }
-.alert { margin:5px 0; padding:8px; border-radius:4px; font-weight:bold;}
-.alert-error { background: #f8d7da; color:#842029; }
-.alert-warning { background: #fff3cd; color:#664d03; }
-.alert-success { background: #d1e7dd; color:#0f5132; }
-#summary { margin-top:20px; padding:15px; border:2px solid #0d6efd; border-radius:6px; background:#e7f1ff;}
+body { font-family: Arial; background:#f4f6f9; padding:20px; }
+.container { max-width:900px; margin:auto; background:white; padding:25px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+.section { margin-bottom:20px; border:1px solid #ddd; border-radius:6px; }
+.header { background:#003366; color:white; padding:10px; cursor:pointer; font-weight:bold;}
+.content { display:none; padding:15px;}
+input, select { width:100%; padding:8px; margin-top:6px; margin-bottom:10px;}
+button { padding:12px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;}
+.primary { background:#e10600; color:white; width:100%;}
+.secondary { background:#555; color:white; width:100%;}
+#summary { margin-top:20px; padding:15px; border-radius:6px; display:none;}
 </style>
 </head>
 <body>
 
 <div class="container">
 <h1>SMARTCARGO-AIPA</h1>
-<h2>Avianca Cargo Pre-Counter Advisor</h2>
 
-<!-- Fase 1: Identificación y Seguridad -->
+<form id="cargoForm">
+
 <div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 1: Identificación y Seguridad (TSA/CBP)</div>
-<div class="section-content">
-<label>ID de Cliente o SCAC:</label>
-<input type="text" id="clientId" placeholder="Ingrese ID de cliente">
-<div id="alert-clientId" class="alert" style="display:none;"></div>
-
-<label>Valor de mercancía > $2,500 USD?</label>
+<div class="header" onclick="toggle(this)">Fase 1</div>
+<div class="content">
+<input type="text" id="clientId" placeholder="Client ID / SCAC">
 <select id="highValue">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
+<option value="no">Value ≤ 2500</option>
+<option value="yes">Value > 2500</option>
 </select>
-<div id="alert-highValue" class="alert" style="display:none;"></div>
-
-<label>Número de ITN (si aplica):</label>
-<input type="text" id="itnNumber" placeholder="Ingrese ITN">
-<div id="alert-itn" class="alert" style="display:none;"></div>
-
-<label>Tipo de envío:</label>
+<input type="text" id="itnNumber" placeholder="ITN">
 <select id="shipmentType">
-  <option value="">Seleccione</option>
-  <option value="direct">Directo</option>
-  <option value="consolidated">Consolidado</option>
+<option value="direct">Direct</option>
+<option value="consolidated">Consolidated</option>
 </select>
-<div id="alert-shipmentType" class="alert" style="display:none;"></div>
 </div>
 </div>
 
-<!-- Fase 2: Anatomía de la Carga -->
 <div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 2: Anatomía de la Carga (Avianca)</div>
-<div class="section-content">
-<label>Altura de la pieza (incluyendo base de madera):</label>
-<input type="number" id="pieceHeight" placeholder="inches">
-<div id="alert-pieceHeight" class="alert" style="display:none;"></div>
-
-<label>Peso máximo de alguna pieza (kg):</label>
-<input type="number" id="pieceWeight" placeholder="kg">
-<div id="alert-pieceWeight" class="alert" style="display:none;"></div>
-
-<label>Estiba NIMF-15 visible en 2 lados?</label>
+<div class="header" onclick="toggle(this)">Fase 2</div>
+<div class="content">
+<input type="number" id="pieceHeight" placeholder="Height (inches)">
+<input type="number" id="pieceWeight" placeholder="Max Weight (kg)">
 <select id="nimf15">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
+<option value="yes">NIMF-15 OK</option>
+<option value="no">No NIMF-15</option>
 </select>
-<div id="alert-nimf15" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 3: Contenidos Críticos -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 3: Contenidos Críticos (IATA/DOT)</div>
-<div class="section-content">
-<label>Contiene baterías, líquidos, aerosoles, perfumes o imanes?</label>
-<select id="dangerousGoods">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-dangerousGoods" class="alert" style="display:none;"></div>
-
-<label>Origen animal, vegetal o consumo humano?</label>
-<select id="origin">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-origin" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 4: Check-list Documental -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 4: Check-list Documental</div>
-<div class="section-content">
-<label>3 originales + 6 copias de AWB listos?</label>
-<select id="awbCopies">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-awbCopies" class="alert" style="display:none;"></div>
-
-<label>Zip Code coincide con la factura?</label>
-<input type="text" id="zipCode" placeholder="Ej: 33142">
-<div id="alert-zipCode" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 5: Logística de Arribo -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 5: Logística de Arribo</div>
-<div class="section-content">
-<label>Hora estimada de llegada del chofer:</label>
-<input type="time" id="arrivalTime">
-<div id="alert-arrivalTime" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 6: Integridad Física y Embalaje -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 6: Integridad Física y Embalaje</div>
-<div class="section-content">
-<label>Mercancía asegurada con flejes?</label>
-<select id="straps">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-straps" class="alert" style="display:none;"></div>
-
-<label>AWB escrito en cada bulto?</label>
-<select id="awbOnBoxes">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-awbOnBoxes" class="alert" style="display:none;"></div>
-
-<label>Alguna caja dañada?</label>
-<select id="damagedBoxes">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-damagedBoxes" class="alert" style="display:none;"></div>
-
-<label>Plástico de pallet bien tensado?</label>
-<select id="shrinkWrap">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-shrinkWrap" class="alert" style="display:none;"></div>
-
-<label>Etiquetas viejas eliminadas?</label>
-<select id="oldLabels">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-oldLabels" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 7: Seguridad Visual (TSA) -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 7: Seguridad Visual (TSA)</div>
-<div class="section-content">
-<label>Carga limpia de aceites/olores?</label>
-<select id="cleanCargo">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-cleanCargo" class="alert" style="display:none;"></div>
-
-<label>Etiquetas de frágil, este lado arriba?</label>
-<select id="fragileLabels">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-fragileLabels" class="alert" style="display:none;"></div>
-
-<label>Número de piezas coincide con AWB?</label>
-<select id="piecesMatch">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-piecesMatch" class="alert" style="display:none;"></div>
-</div>
-</div>
-
-<!-- Fase 8: Equipos y Contenedores -->
-<div class="section">
-<div class="section-header" onclick="toggleSection(this)">Fase 8: Requisitos de Equipos y Contenedores</div>
-<div class="section-content">
-<label>Envío de tanques o cilindros?</label>
-<select id="tanks">
-  <option value="">Seleccione</option>
-  <option value="yes">Sí</option>
-  <option value="no">No</option>
-</select>
-<div id="alert-tanks" class="alert" style="display:none;"></div>
-
-<label>Overhang de pallet:</label>
-<input type="number" id="overhang" placeholder="inches">
-<div id="alert-overhang" class="alert" style="display:none;"></div>
-
-<label>Tipo de pallet:</label>
 <select id="palletType">
-  <option value="">Seleccione</option>
-  <option value="PMC">PMC</option>
-  <option value="PAG">PAG</option>
-  <option value="PAJ">PAJ</option>
-  <option value="PQA">PQA</option>
+<option value="PMC">PMC</option>
+<option value="PAG">PAG</option>
+<option value="PAJ">PAJ</option>
 </select>
-<div id="alert-palletType" class="alert" style="display:none;"></div>
 </div>
 </div>
 
-<button onclick="evaluateCargo()">Evaluar Carga</button>
+<!-- Hidden operational defaults -->
+<input type="hidden" id="dangerousGoods" value="no">
+<input type="hidden" id="origin" value="no">
+<input type="hidden" id="awbCopies" value="yes">
+<input type="hidden" id="zipCode" value="33142">
+<input type="hidden" id="arrivalTime" value="12:00">
+<input type="hidden" id="straps" value="yes">
+<input type="hidden" id="awbOnBoxes" value="yes">
+<input type="hidden" id="damagedBoxes" value="no">
+<input type="hidden" id="shrinkWrap" value="yes">
+<input type="hidden" id="oldLabels" value="no">
+<input type="hidden" id="cleanCargo" value="yes">
+<input type="hidden" id="fragileLabels" value="yes">
+<input type="hidden" id="piecesMatch" value="yes">
+<input type="hidden" id="tanks" value="no">
+<input type="hidden" id="overhang" value="0">
+
+<button type="button" class="primary" onclick="evaluar()">EVALUAR</button>
+<button type="button" class="secondary" onclick="resetForm()">BORRAR</button>
+
+</form>
 
 <div id="summary"></div>
 
+</div>
+
 <script>
-// Toggle secciones
-function toggleSection(header){
-  const content = header.nextElementSibling;
-  content.style.display = content.style.display === 'block' ? 'none' : 'block';
+function toggle(el){
+  el.nextElementSibling.style.display =
+  el.nextElementSibling.style.display === "block" ? "none" : "block";
 }
 
-// Función de evaluación y alertas
-function evaluateCargo(){
-  const summaryDiv = document.getElementById('summary');
-  summaryDiv.innerHTML = '';
-  let canFly = true;
-  const alerts = [];
+async function evaluar(){
+  const data = {};
+  document.querySelectorAll("input, select").forEach(el=>{
+    data[el.id] = el.type === "number" ? parseFloat(el.value) || 0 : el.value;
+  });
 
-  // Fase 1 ejemplo
-  const clientId = document.getElementById('clientId').value;
-  if(!clientId){ alerts.push('⚠️ ID de Cliente o SCAC requerido.'); canFly = false;}
+  const res = await axios.post("/evaluar", data);
 
-  const highValue = document.getElementById('highValue').value;
-  const itnNumber = document.getElementById('itnNumber').value;
-  if(highValue==='yes' && !itnNumber){ alerts.push('❌ ITN obligatorio para mercancía > $2,500'); canFly=false;}
+  const summary = document.getElementById("summary");
+  summary.style.display = "block";
+  summary.style.background = res.data.status === "APROBADO" ? "#d4edda" : "#f8d7da";
 
-  // Fase 2 ejemplo
-  const height = Number(document.getElementById('pieceHeight').value);
-  if(height>96){ alerts.push('❌ Altura > 96 pulgadas: no puede volar en ningún avión Avianca'); canFly=false;}
-  else if(height>63){ alerts.push('⚠️ Altura > 63 pulgadas: solo Carguero');}
+  let html = `<h3>Veredicto: ${res.data.status}</h3><ul>`;
+  res.data.detalle.forEach(d => html += `<li>${d}</li>`);
+  html += "</ul>";
 
-  const weight = Number(document.getElementById('pieceWeight').value);
-  if(weight>150){ alerts.push('⚠️ Peso >150 kg: requiere shoring');}
+  const pdf = await axios.post("/generar_pdf", data);
+  html += `<a href="${pdf.data.url}" target="_blank">📄 Descargar PDF</a>`;
 
-  // Fase 8 example
-  const overhang = Number(document.getElementById('overhang').value);
-  if(overhang>0){ alerts.push('⚠️ Overhang detectado: re-estibar para evitar rechazo');}
+  summary.innerHTML = html;
+}
 
-  // Resumen final
-  let verdict = canFly ? '<span class="alert-success">✅ La carga puede volar.</span>' 
-                       : '<span class="alert-error">❌ La carga NO puede volar.</span>';
-  summaryDiv.innerHTML = verdict + '<br><ul>' + alerts.map(a => '<li>'+a+'</li>').join('') + '</ul>';
+function resetForm(){
+  document.getElementById("cargoForm").reset();
+  document.getElementById("summary").style.display="none";
 }
 </script>
 
-</div>
 </body>
 </html>
