@@ -3,216 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AL CIELO | SmartCargo Infalible</title>
+<title>SMARTCARGO - AL CIELO</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-:root { --avianca:#e20613; --gold:#b2945e; --dark:#1a1a1a; --danger:#dc3545; --success:#28a745; }
-body { font-family:'Segoe UI', Roboto, sans-serif; background:#f4f4f4; margin:0; color: var(--dark);}
-.header { background: var(--avianca); color:white; padding:20px; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);}
-.container { max-width: 900px; margin:20px auto; background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);}
-.fase { padding:25px; border-bottom:1px solid #eee; }
-.fase h2 { color: var(--avianca); font-size:18px; margin-top:0; display:flex; align-items:center;}
-.fase h2 span { background: var(--avianca); color:white; border-radius:50%; width:25px; height:25px; display:inline-flex; justify-content:center; align-items:center; margin-right:10px; font-size:14px;}
-.instruccion-pro { background:#fff3f3; border-left:4px solid var(--avianca); padding:15px; margin:10px 0; font-size:14px; color:#333;}
-.instruccion-pro b { color:var(--avianca);}
-label { display:block; margin:15px 0 5px; font-weight:600; font-size:15px; }
-select, input { width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; font-size:15px; box-sizing:border-box;}
-.cortina { display:none; background:#fafafa; padding:20px; border-radius:8px; margin-top:15px; border:1px dashed #bbb;}
-.btn-main { background:var(--avianca); color:white; width:100%; padding:18px; border:none; font-weight:bold; font-size:18px; cursor:pointer; transition:0.3s; margin-top:15px;}
-.btn-main:hover { background:#b3050f; }
-#resultado { display:none; padding:30px; text-align:center;}
-.status-box { padding:20px; border-radius:8px; font-weight:bold; font-size:22px; margin-bottom:20px;}
-ul { text-align:left; margin:0; padding-left:20px;}
+    body {
+        font-family: Arial, sans-serif;
+        background: #f9f9f9;
+        margin: 0;
+        padding: 0;
+        color: #222;
+    }
+    header {
+        background-color: #e20613;
+        color: white;
+        text-align: center;
+        padding: 20px;
+        font-size: 1.8em;
+        font-weight: bold;
+    }
+    section {
+        margin: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+        cursor: pointer;
+        font-size: 1.5em;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .content {
+        display: none;
+        margin-top: 10px;
+        font-size: 1.1em;
+    }
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin: 6px 0 15px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 1em;
+    }
+    button {
+        background-color: #e20613;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        margin: 5px 0;
+    }
+    button:hover {
+        background-color: #b10410;
+    }
+    .arrow {
+        font-size: 1.3em;
+    }
+    #resultado, #pdfLink {
+        margin: 20px;
+        padding: 15px;
+        background: #dff0d8;
+        border-radius: 10px;
+        font-size: 1.2em;
+    }
 </style>
 </head>
 <body>
 
-<div class="header">
-    <h1 style="margin:0;">AL CIELO</h1>
-    <small>SmartCargo Advisory | Counter de Avianca Cargo Miami</small>
-</div>
+<header>SMARTCARGO - AL CIELO</header>
 
-<div class="container">
-<form id="counterForm">
+<form id="cargoForm">
 
-<!-- Fase 1: Datos AWB -->
-<div class="fase">
-<h2><span>1</span> Datos de Guía Aérea (AWB)</h2>
-<label>Número AWB Master:</label>
-<input type="text" id="awbMaster" placeholder="Ej: 001-12345678" required>
+    <!-- Fase 1: Identificación y Seguridad -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 1: Identificación y Seguridad <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="text" name="clientId" placeholder="ID Cliente / SCAC">
+            <select name="shipmentType">
+                <option value="" disabled selected>Tipo de envío</option>
+                <option value="directo">Directo</option>
+                <option value="consolidado">Consolidado</option>
+            </select>
+            <select name="highValue">
+                <option value="" disabled selected>¿Valor > $2,500 USD?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <input type="text" name="itnNumber" placeholder="Número ITN (si aplica)">
+            <input type="text" name="awbMaster" placeholder="AWB Master">
+            <input type="text" name="awbHouse" placeholder="AWB House (si aplica)">
+            <input type="text" name="referenceNumber" placeholder="Reference Number">
+            <input type="text" name="originAirport" placeholder="Aeropuerto de origen">
+            <input type="text" name="destinationAirport" placeholder="Aeropuerto de destino">
+            <input type="date" name="departureDate" placeholder="Fecha de salida">
+        </div>
+    </section>
 
-<label>Número AWB House (si aplica):</label>
-<input type="text" id="awbHouse" placeholder="Opcional">
+    <!-- Fase 2: Anatomía de la Carga -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 2: Anatomía de la Carga <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="number" step="0.1" name="pieceHeight" placeholder="Altura de la pieza (inches)">
+            <input type="number" name="numPieces" placeholder="Número de piezas">
+            <input type="number" step="0.1" name="totalWeight" placeholder="Peso total (kg)">
+            <input type="text" name="dimensions" placeholder="Dimensiones (LxAnxAl)">
+            <select name="needsShoring">
+                <option value="" disabled selected>¿Necesita Shoring?</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <select name="nimf15">
+                <option value="" disabled selected>Pallet NIMF-15</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <select name="overhang">
+                <option value="" disabled selected>¿Overhang?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <select name="damaged">
+                <option value="" disabled selected>¿Daños preexistentes?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+        </div>
+    </section>
 
-<label>Shipper (Remitente):</label>
-<input type="text" id="shipperName" placeholder="Nombre completo" required>
-<input type="text" id="shipperAddress" placeholder="Dirección completa" required>
-<input type="text" id="shipperPhone" placeholder="Teléfono" required>
+    <!-- Fase 3: Contenidos Críticos -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 3: Contenidos Críticos <span class="arrow">▼</span></h2>
+        <div class="content">
+            <select name="cargoType">
+                <option value="" disabled selected>Tipo de carga</option>
+                <option value="NORMAL">Normal</option>
+                <option value="DGR">Mercancía Peligrosa</option>
+                <option value="PER">Perishable</option>
+                <option value="BIO">Biológica</option>
+            </select>
+            <select name="dgrDocs">
+                <option value="" disabled selected>Documentos DGR completos</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <select name="fitoDocs">
+                <option value="" disabled selected>Certificados FDA/Fitosanitarios</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+        </div>
+    </section>
 
-<label>Consignee (Destinatario):</label>
-<input type="text" id="consigneeName" placeholder="Nombre completo" required>
-<input type="text" id="consigneeAddress" placeholder="Dirección completa" required>
-<input type="text" id="consigneePhone" placeholder="Teléfono" required>
+    <!-- Fase 4-8: Check final, embalaje y logística -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 4-8: Check-list y Logística <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="text" name="arrivalTime" placeholder="Hora estimada de llegada al counter">
+            <input type="text" name="packaging" placeholder="Tipo de embalaje (straps/shrink wrap)">
+            <input type="text" name="labels" placeholder="Etiquetas (Frágil, Arrow, etc.)">
+            <input type="text" name="fragile" placeholder="Fragilidad de la carga">
+            <input type="text" name="shipperName" placeholder="Nombre del Shipper">
+            <input type="text" name="shipperAddress" placeholder="Dirección del Shipper">
+            <input type="text" name="shipperPhone" placeholder="Teléfono del Shipper">
+            <input type="text" name="consigneeName" placeholder="Nombre del Consignee">
+            <input type="text" name="consigneeAddress" placeholder="Dirección del Consignee">
+            <input type="text" name="consigneePhone" placeholder="Teléfono del Consignee">
+            <input type="text" name="zipCode" placeholder="Código Postal">
+        </div>
+    </section>
 
-<label>Reference / PO / Invoice Number:</label>
-<input type="text" id="referenceNumber" placeholder="Referencia del envío" required>
-
-<label>Origen (Aeropuerto):</label>
-<input type="text" id="originAirport" placeholder="Ej: MIA" required>
-
-<label>Destino (Aeropuerto):</label>
-<input type="text" id="destinationAirport" placeholder="Ej: BOG" required>
-
-<label>Fecha de Salida Programada:</label>
-<input type="date" id="departureDate" required>
-</div>
-
-<!-- Fase 2: Clasificación y Documentos -->
-<div class="fase">
-<h2><span>2</span> Clasificación de Carga y Documentos</h2>
-
-<label>Tipo de carga:</label>
-<select id="cargoType" onchange="toggleCargaDoc()">
-<option value="GEN">General</option>
-<option value="DGR">Peligrosa</option>
-<option value="PER">Perecederos / FDA</option>
-</select>
-
-<div id="dgrCortina" class="cortina">
-<label>Shipper's Declaration (2 originales):</label>
-<select id="dgrDocs"><option value="si">Sí</option><option value="no">No</option></select>
-</div>
-
-<div id="perCortina" class="cortina">
-<label>Certificado FDA/Fitosanitario:</label>
-<select id="fitoDocs"><option value="si">Sí</option><option value="no">No</option></select>
-</div>
-
-<label>Valor > $2,500 USD?</label>
-<select id="highValue" onchange="toggleITN()"><option value="no">No</option><option value="yes">Sí</option></select>
-<div id="itnCortina" class="cortina">
-<label>Número ITN / AES:</label>
-<input type="text" id="itnNumber" placeholder="X2026...">
-</div>
-
-<label>Zip Code de destino validado?</label>
-<input type="text" id="zipCode" placeholder="Ej: 33142">
-</div>
-
-<!-- Fase 3: Anatomía y Peso -->
-<div class="fase">
-<h2><span>3</span> Anatomía de Carga</h2>
-<label>Número de piezas:</label>
-<input type="number" id="numPieces" required>
-
-<label>Peso total (kg):</label>
-<input type="number" id="totalWeight" required>
-
-<label>Dimensiones (L x An x Al en pulgadas):</label>
-<input type="text" id="dimensions" placeholder="Ej: 40x30x20">
-
-<label>Altura pieza más alta (pulgadas):</label>
-<input type="number" id="pieceHeight" onchange="validarAltura()">
-<div id="warnAltura" class="instruccion-pro" style="display:none;"></div>
-
-<label>Peso > 150kg requiere shoring:</label>
-<select id="needsShoring"><option value="no">No</option><option value="si">Sí</option></select>
-</div>
-
-<!-- Fase 4: Inspección física -->
-<div class="fase">
-<h2><span>4</span> Inspección Física</h2>
-<label>Madera NIMF-15?</label>
-<select id="nimf15"><option value="yes">Sí</option><option value="no">No</option></select>
-
-<label>Cajas dañadas o mojadas?</label>
-<select id="damaged"><option value="no">No</option><option value="yes">Sí</option></select>
-
-<label>Overhang (sobresale del pallet)?</label>
-<select id="overhang"><option value="0">No</option><option value="1">Sí</option></select>
-</div>
-
-<!-- Botón -->
-<button type="button" class="btn-main" onclick="evaluarCounter()">VERIFICAR SI VUELA</button>
+    <button type="button" onclick="enviarEvaluacion()">Evaluar Carga</button>
+    <button type="button" onclick="generarPDF()">Generar PDF</button>
 </form>
 
-<div id="resultado">
-<div id="statusBox" class="status-box"></div>
-<div id="detalles" style="text-align:left; margin-bottom:20px;"></div>
-<button type="button" class="btn-main" style="background:#444;" onclick="location.reload()">NUEVA INSPECCIÓN</button>
-<div id="pdfLink" style="margin-top:20px;"></div>
-</div>
-</div>
+<div id="resultado"></div>
+<div id="pdfLink"></div>
 
 <script>
-function toggleCargaDoc(){
-  const type=document.getElementById('cargoType').value;
-  document.getElementById('dgrCortina').style.display=type==='DGR'?'block':'none';
-  document.getElementById('perCortina').style.display=type==='PER'?'block':'none';
-}
-function toggleITN(){
-  document.getElementById('itnCortina').style.display=document.getElementById('highValue').value==='yes'?'block':'none';
-}
-function validarAltura(){
-  const h=document.getElementById('pieceHeight').value;
-  const warn=document.getElementById('warnAltura');
-  warn.style.display='block';
-  if(h>96) warn.innerHTML="<b>❌ RECHAZO:</b> No entra en ningún avión de Avianca.";
-  else if(h>63) warn.innerHTML="<b>⚠️ CARGUERO:</b> Solo avión carguero (Main Deck).";
-  else warn.style.display='none';
+function toggleSection(header) {
+    const content = header.nextElementSibling;
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        header.querySelector(".arrow").textContent = "▼";
+    } else {
+        content.style.display = "block";
+        header.querySelector(".arrow").textContent = "▲";
+    }
 }
 
-async function evaluarCounter(){
-  const data={
-    awbMaster:document.getElementById('awbMaster').value,
-    awbHouse:document.getElementById('awbHouse').value,
-    shipperName:document.getElementById('shipperName').value,
-    shipperAddress:document.getElementById('shipperAddress').value,
-    shipperPhone:document.getElementById('shipperPhone').value,
-    consigneeName:document.getElementById('consigneeName').value,
-    consigneeAddress:document.getElementById('consigneeAddress').value,
-    consigneePhone:document.getElementById('consigneePhone').value,
-    referenceNumber:document.getElementById('referenceNumber').value,
-    originAirport:document.getElementById('originAirport').value,
-    destinationAirport:document.getElementById('destinationAirport').value,
-    departureDate:document.getElementById('departureDate').value,
-    cargoType:document.getElementById('cargoType').value,
-    dgrDocs:document.getElementById('dgrDocs')?document.getElementById('dgrDocs').value:'si',
-    fitoDocs:document.getElementById('fitoDocs')?document.getElementById('fitoDocs').value:'si',
-    highValue:document.getElementById('highValue').value,
-    itnNumber:document.getElementById('itnNumber')?document.getElementById('itnNumber').value:'',
-    zipCode:document.getElementById('zipCode').value,
-    numPieces:document.getElementById('numPieces').value,
-    totalWeight:document.getElementById('totalWeight').value,
-    dimensions:document.getElementById('dimensions').value,
-    pieceHeight:document.getElementById('pieceHeight').value,
-    needsShoring:document.getElementById('needsShoring').value,
-    nimf15:document.getElementById('nimf15').value,
-    damaged:document.getElementById('damaged').value,
-    overhang:document.getElementById('overhang').value
-  };
+async function enviarEvaluacion() {
+    const form = document.getElementById("cargoForm");
+    const data = Object.fromEntries(new FormData(form).entries());
 
-  try{
-    const res=await axios.post('/evaluar', data);
-    document.getElementById('counterForm').style.display='none';
-    document.getElementById('resultado').style.display='block';
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.textContent = "⏳ Evaluando, por favor espere...";
 
-    const box=document.getElementById('statusBox');
-    box.innerText=res.data.status;
-    box.style.background=res.data.status.includes('LISTO')?'var(--success)':'var(--danger)';
-    box.style.color='white';
+    try {
+        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data);
+        let html = `<h3>Resultado: ${response.data.status}</h3><ul>`;
+        response.data.detalles.forEach(d => html += `<li>${d}</li>`);
+        html += "</ul>";
+        resultadoDiv.innerHTML = html;
+    } catch(err) {
+        resultadoDiv.textContent = "❌ Error al evaluar la carga: " + err;
+    }
+}
 
-    let list="<ul>";
-    res.data.detalle.forEach(d=>list+=`<li>${d}</li>`);
-    list+="</ul>";
-    document.getElementById('detalles').innerHTML=list;
+async function generarPDF() {
+    const form = document.getElementById("cargoForm");
+    const data = Object.fromEntries(new FormData(form).entries());
 
-    const pdf=await axios.post('/generar_pdf', data);
-    document.getElementById('pdfLink').innerHTML=`<a href="${pdf.data.url}" target="_blank">📄 DESCARGAR REPORTE (PDF)</a>`;
-  }catch(e){
-    alert("❌ ERROR IA: Verifique la conexión y llaves API.");
-  }
+    const pdfDiv = document.getElementById("pdfLink");
+    pdfDiv.textContent = "⏳ Generando PDF...";
+
+    try {
+        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data);
+        pdfDiv.innerHTML = `<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">📄 Abrir PDF AL CIELO</a>`;
+    } catch(err) {
+        pdfDiv.textContent = "❌ Error al generar PDF: " + err;
+    }
 }
 </script>
+
 </body>
 </html>
