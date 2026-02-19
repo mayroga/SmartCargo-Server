@@ -2,177 +2,200 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO – Inspección Infalible</title>
+<title>SMARTCARGO – Sistema Infalible</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    margin: 0;
-    padding: 0;
-}
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-    background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-h1 { text-align: center; }
-fieldset {
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    border: 2px solid #333;
-}
-legend { font-weight: bold; }
-input, select {
-    width: 100%;
-    padding: 6px;
-    margin: 5px 0 10px 0;
-}
-input[type="number"] { max-width: 150px; }
-button {
-    padding: 10px 15px;
-    margin-right: 10px;
-    cursor: pointer;
-}
-.error { border-color: red; background: #ffe5e5; }
-.hidden { display: none; }
-#preview img { max-width: 150px; margin: 5px; cursor: pointer; }
-#preview img.zoomed { transform: scale(2); z-index: 100; position: relative; }
-.alert { color: red; font-weight: bold; margin-top: 5px; }
+body { font-family: Arial, sans-serif; background: #f2f2f2; margin:0; padding:0; }
+.container { max-width: 1000px; margin:auto; padding:20px; background:white; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+h1, h2 { text-align:center; }
+fieldset { margin-bottom:15px; padding:10px 15px; border:2px solid #333; }
+legend { font-weight:bold; }
+label { font-weight:bold; display:block; margin-top:8px; }
+input, select { width:100%; padding:6px; margin:5px 0 10px 0; }
+input[type="number"] { max-width:150px; }
+button { padding:10px 15px; margin-right:10px; cursor:pointer; }
+.error { border-color:red; background:#ffe5e5; }
+.hidden { display:none; }
+#preview img { max-width:150px; margin:5px; cursor:pointer; }
+#preview img.zoomed { transform: scale(2); z-index:100; position: relative; }
+.alert { color:red; font-weight:bold; margin-top:5px; }
+.instruction { background:#f0f8ff; padding:5px; margin:3px 0; border-left:4px solid #007BFF; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>SMARTCARGO – Inspección Infalible</h1>
+<h1>SMARTCARGO – Sistema Infalible de Inspección</h1>
 
 <form id="cargoForm">
-    <!-- AWB efecto visual -->
-    <fieldset>
-        <legend>Fase 1: Guía Aérea (AWB)</legend>
-        <label>Client ID:</label><input type="text" name="clientId" required>
-        <label>AWB Master:</label><input type="text" name="awbMaster" required>
-        <label>Origin Airport:</label><input type="text" name="originAirport" required>
-        <label>Destination Airport:</label><input type="text" name="destinationAirport" required>
-    </fieldset>
 
-    <!-- Fase de Carga -->
-    <fieldset>
-        <legend>Fase 2: Datos de Carga</legend>
-        <label>Tipo de carga:</label>
-        <select name="cargoType" id="cargoType" required>
-            <option value="">Seleccione...</option>
-            <option value="NORMAL">NORMAL</option>
-            <option value="DGR">DGR</option>
-            <option value="PER">PER</option>
-            <option value="BIO">BIO</option>
-        </select>
+<!-- ================== FASE I: UNIVERSAL ================== -->
+<fieldset>
+<legend>FASE I – Identificación y Tipo de Envío</legend>
+<div class="instruction"><b>Porqué:</b> Validamos legitimidad y formato documental antes de abrir el camión.</div>
 
-        <label>Altura (in):</label>
-        <input type="number" name="pieceHeight" id="pieceHeight" min="0" required>
-        <div id="heightAlert" class="alert hidden"></div>
+<label>1. Su envío es para un solo destinatario o contiene Houses?</label>
+<select name="shipmentType" id="shipmentType" required>
+  <option value="">Seleccione...</option>
+  <option value="single">Un solo destinatario</option>
+  <option value="consolidado">Consolidado (varias Houses)</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Si es consolidado: Grapa el Manifiesto fuera del sobre. La suma de las Houses debe coincidir EXACTAMENTE con la Master.</div>
 
-        <label>Peso total:</label>
-        <input type="number" name="totalWeight" id="totalWeight" min="0" required>
-        <label>Unidad:</label>
-        <select name="weightUnit" id="weightUnit">
-            <option value="kg">kg</option>
-            <option value="lb">lb</option>
-        </select>
+<label>2. Valor de la mercancía por código arancelario</label>
+<input type="number" name="cargoValue" id="cargoValue" min="0" required>
+<div class="instruction"><b>Instrucción:</b> Si >$2,500 USD, ingrese el ITN (AES). Multa federal $10,000 USD si no cumple.</div>
 
-        <label>¿Requiere Shoring?</label>
-        <select name="needsShoring" id="needsShoring">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-        </select>
+<label>3. Es “Known Shipper” y sello del camión coincide?</label>
+<select name="knownShipper" required>
+  <option value="">Seleccione...</option>
+  <option value="yes">Sí</option>
+  <option value="no">No</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Verifique el número de sello en el camión antes de hacer la fila.</div>
+</fieldset>
 
-        <label>ITN (solo para valor alto >$2,500):</label>
-        <input type="text" name="itnNumber" id="itnNumber" placeholder="Debe iniciar con X">
-        <div id="itnAlert" class="alert hidden"></div>
+<!-- ================== FASE II: TÉCNICA ================== -->
+<fieldset>
+<legend>FASE II – Medidas, Peso y Capacidad</legend>
+<div class="instruction"><b>Porqué:</b> Evitamos que la carga sea rechazada por no caber físicamente.</div>
 
-        <label>Subir fotos de carga:</label>
-        <input type="file" id="files" name="files" multiple accept="image/*">
-        <div id="preview"></div>
-    </fieldset>
+<label>4. Altura del bulto más alto (in)</label>
+<input type="number" name="pieceHeight" id="pieceHeight" min="0" required>
+<div id="heightAlert" class="alert hidden"></div>
+<div class="instruction"><b>Instrucción:</b> >63" solo vuelo Carguero. >96" no entra en ningún avión.</div>
 
-    <!-- Cortina: solo DGR / PER / BIO -->
-    <fieldset id="dgrFields" class="hidden">
-        <legend>Fase 3: Documentos Críticos (DGR/PER/BIO)</legend>
-        <label>Shipper Declaration:</label><input type="text" name="dgrDocs">
-        <label>Etiquetas UN:</label><input type="text" name="labels">
-        <label>Fitosanitario / FDA:</label><input type="text" name="fitoDocs">
-    </fieldset>
+<label>5. Peso máximo de una pieza (kg)</label>
+<input type="number" name="pieceWeight" id="pieceWeight" min="0" required>
+<label>Unidad</label>
+<select name="weightUnit" id="weightUnit">
+  <option value="kg">kg</option>
+  <option value="lb">lb</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> >150kg, obligatorio usar base de madera (skids/shoring) para distribuir peso.</div>
 
-    <!-- Pouch -->
-    <fieldset>
-        <legend>Fase 4: Papelería</legend>
-        <label>¿Están los 3 originales DENTRO del sobre y las 6 copias FUERA con clip?</label>
-        <select name="pouchOrganized" id="pouchOrganized" required>
-            <option value="">Seleccione...</option>
-            <option value="si">Sí</option>
-            <option value="no">No</option>
-        </select>
-        <div id="pouchAlert" class="alert hidden">❌ El pouch debe estar organizado para evaluar.</div>
-    </fieldset>
+<label>6. Peso volumétrico (L×W×H /166)</label>
+<input type="number" name="volumetricWeight" id="volumetricWeight" min="0" required>
+<div class="instruction"><b>Instrucción:</b> Asegúrese de usar el mayor entre peso real y volumétrico.</div>
+</fieldset>
 
-    <button type="button" id="evaluateBtn">Evaluar Carga</button>
-    <button type="button" id="pdfBtn">Generar PDF</button>
-    <button type="button" id="resetBtn">BORRAR DATOS / NUEVA INSPECCIÓN</button>
+<!-- ================== FASE III: INTEGRIDAD ================== -->
+<fieldset>
+<legend>FASE III – Embalaje y Madera (NIMF-15)</legend>
+<div class="instruction"><b>Porqué:</b> Cumplimiento de normas fitosanitarias y seguridad de bodega.</div>
+
+<label>7. Pallet con sello NIMF-15?</label>
+<select name="nimf15" required>
+  <option value="">Seleccione...</option>
+  <option value="yes">Sí</option>
+  <option value="no">No</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Sin sello: no despache. Use pallet certificado o plástico.</div>
+
+<label>8. Carga con flejes (straps) o solo shrink wrap?</label>
+<select name="straps" required>
+  <option value="">Seleccione...</option>
+  <option value="flejes">Flejes</option>
+  <option value="plastico">Shrink wrap</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Tanques, motores o piezas pesadas deben ir con flejes.</div>
+
+<label>9. Borró etiquetas viejas de otros vuelos?</label>
+<select name="oldLabels" required>
+  <option value="">Seleccione...</option>
+  <option value="yes">Sí</option>
+  <option value="no">No</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Elimine toda marca previa; evita carga huérfana o misrouting.</div>
+</fieldset>
+
+<!-- ================== FASE IV: CRÍTICA (DGR/TSA) ================== -->
+<fieldset id="dgrFields" class="hidden">
+<legend>FASE IV – Contenidos Peligrosos y Prohibidos (DGR/TSA)</legend>
+<div class="instruction"><b>Porqué:</b> Prevención de multas federales y seguridad aérea.</div>
+
+<label>10. Contiene baterías de litio?</label>
+<select name="hasBatteries" required>
+  <option value="">Seleccione...</option>
+  <option value="yes">Sí</option>
+  <option value="no">No</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Declarar UN3480/3481 y presentar 2 originales Shipper’s Declaration con bordes rojos.</div>
+
+<label>11. Carga impenetrable para Rayos X?</label>
+<select name="xrayBlocked" required>
+  <option value="">Seleccione...</option>
+  <option value="yes">Sí</option>
+  <option value="no">No</option>
+</select>
+<div class="instruction"><b>Instrucción:</b> Embalaje que pueda reabrirse fácilmente si es necesario inspección física.</div>
+
+<label>12. Descripción específica de la guía?</label>
+<input type="text" name="description" required>
+<div class="instruction"><b>Instrucción:</b> No usar "Said to Contain". Use nombre real del producto.</div>
+</fieldset>
+
+<!-- ================== POUCH Y FOTOS ================== -->
+<fieldset>
+<legend>FASE V – Pouch y Fotos</legend>
+
+<label>¿Pouch organizado correctamente?</label>
+<select name="pouchOrganized" id="pouchOrganized" required>
+  <option value="">Seleccione...</option>
+  <option value="si">Sí</option>
+  <option value="no">No</option>
+</select>
+<div id="pouchAlert" class="alert hidden">❌ Pouch mal organizado, no se puede evaluar.</div>
+
+<label>Subir fotos de carga:</label>
+<input type="file" id="files" name="files" multiple accept="image/*">
+<div id="preview"></div>
+</fieldset>
+
+<!-- BOTONES -->
+<button type="button" id="evaluateBtn">Evaluar Carga</button>
+<button type="button" id="pdfBtn">Generar PDF</button>
+<button type="button" id="resetBtn">BORRAR DATOS / NUEVA INSPECCIÓN</button>
 </form>
 
 <div id="result"></div>
 
 <script>
-// ----------------- Cortinas -----------------
-const cargoType = document.getElementById("cargoType");
+// ----------------- Cortinas para DGR/PER/BIO -----------------
+const cargoType = document.getElementById("shipmentType");
 const dgrFields = document.getElementById("dgrFields");
 cargoType.addEventListener("change", ()=> {
-    if(["DGR","PER","BIO"].includes(cargoType.value)){
+    if(cargoType.value==="consolidado"){
         dgrFields.classList.remove("hidden");
     } else {
         dgrFields.classList.add("hidden");
     }
 });
 
-// ----------------- Validación tiempo real -----------------
+// ----------------- Validación en tiempo real -----------------
 const pieceHeight = document.getElementById("pieceHeight");
 const heightAlert = document.getElementById("heightAlert");
 pieceHeight.addEventListener("input", ()=>{
     if(pieceHeight.value > 96){
         pieceHeight.classList.add("error");
-        heightAlert.textContent = "❌ RECHAZO: Supera el límite máximo de fuselaje de Avianca (96 in).";
+        heightAlert.textContent = "❌ Supera límite máximo fuselaje (96 in).";
         heightAlert.classList.remove("hidden");
     } else if(pieceHeight.value > 63){
         pieceHeight.classList.remove("error");
-        heightAlert.textContent = "⚠️ Altura >63 in. Solo apto para carguero.";
+        heightAlert.textContent = "⚠️ Solo apto para vuelo Carguero (>63 in).";
         heightAlert.classList.remove("hidden");
-    } else{
+    } else {
         pieceHeight.classList.remove("error");
         heightAlert.classList.add("hidden");
     }
 });
 
-const itnNumber = document.getElementById("itnNumber");
-const itnAlert = document.getElementById("itnAlert");
-const totalWeight = document.getElementById("totalWeight");
-itnNumber.addEventListener("input", ()=>{
-    if(totalWeight.value > 2500 && !itnNumber.value.startsWith("X")){
-        itnNumber.classList.add("error");
-        itnAlert.textContent = "❌ ITN inválido. Debe iniciar con X para valor >$2,500.";
-        itnAlert.classList.remove("hidden");
-    } else{
-        itnNumber.classList.remove("error");
-        itnAlert.classList.add("hidden");
-    }
-});
+const itnNumber = document.getElementById("cargoValue");
+const totalWeight = document.getElementById("pieceWeight");
 
-// ----------------- Validación Pouch -----------------
-const pouchOrganized = document.getElementById("pouchOrganized");
-const pouchAlert = document.getElementById("pouchAlert");
+// ----------------- Evaluar -----------------
 const evaluateBtn = document.getElementById("evaluateBtn");
 evaluateBtn.addEventListener("click", async ()=>{
-    if(pouchOrganized.value !== "si"){
+    if(document.getElementById("pouchOrganized").value!=="si"){
         pouchAlert.classList.remove("hidden");
         return;
     } else pouchAlert.classList.add("hidden");
@@ -182,10 +205,9 @@ evaluateBtn.addEventListener("click", async ()=>{
 
     try{
         const response = await axios.post("/evaluar", formData);
-        let html = `<h3>Resultado: ${response.data.status}</h3>`;
-        html += "<ul>";
-        response.data.detalles.forEach(d=> html += `<li>${d}</li>`);
-        html += "</ul>";
+        let html = `<h3>Resultado: ${response.data.status}</h3><ul>`;
+        response.data.detalles.forEach(d=> html+=`<li>${d}</li>`);
+        html+="</ul>";
         html += `<pre>${response.data.explicacion}</pre>`;
         document.getElementById("result").innerHTML = html;
     } catch(e){
@@ -193,36 +215,27 @@ evaluateBtn.addEventListener("click", async ()=>{
     }
 });
 
-// ----------------- Generar PDF -----------------
+// ----------------- PDF -----------------
 const pdfBtn = document.getElementById("pdfBtn");
 pdfBtn.addEventListener("click", async ()=>{
-    if(pouchOrganized.value !== "si"){
-        pouchAlert.classList.remove("hidden");
-        return;
-    } else pouchAlert.classList.add("hidden");
-
-    const form = document.getElementById("cargoForm");
-    const formData = new FormData(form);
-
+    const form = new FormData(document.getElementById("cargoForm"));
     try{
-        const response = await axios.post("/generar_pdf", formData, {responseType:"blob"});
+        const response = await axios.post("/generar_pdf", form, {responseType:"blob"});
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
-        link.href = url;
+        link.href=url;
         link.setAttribute("download","reporte_smartcargo.pdf");
         document.body.appendChild(link);
         link.click();
         link.remove();
-    } catch(e){
-        alert("Error generando PDF.");
-    }
+    } catch(e){ alert("Error generando PDF."); }
 });
 
 // ----------------- Preview fotos y zoom -----------------
 const filesInput = document.getElementById("files");
 const preview = document.getElementById("preview");
 filesInput.addEventListener("change", ()=>{
-    preview.innerHTML = "";
+    preview.innerHTML="";
     Array.from(filesInput.files).forEach(file=>{
         const img = document.createElement("img");
         img.src = URL.createObjectURL(file);
@@ -234,10 +247,9 @@ filesInput.addEventListener("change", ()=>{
 // ----------------- Reset seguro -----------------
 document.getElementById("resetBtn").addEventListener("click", ()=>{
     document.getElementById("cargoForm").reset();
-    preview.innerHTML = "";
-    document.getElementById("result").innerHTML = "";
+    preview.innerHTML="";
+    document.getElementById("result").innerHTML="";
     heightAlert.classList.add("hidden");
-    itnAlert.classList.add("hidden");
     pouchAlert.classList.add("hidden");
 });
 </script>
