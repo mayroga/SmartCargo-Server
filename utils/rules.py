@@ -1,62 +1,67 @@
-# utils/rules.py
-from config import MAX_HEIGHT_PAX, MAX_HEIGHT_FRT, MAX_WEIGHT_SHORING, ULD_TYPES, MSJ_ASESORIA
+def asesorar_counter_avianca(data):
+    reporte = []
+    severidad_maxima = "OK"  # OK | OBSERVACION | BLOQUEO
 
-def validar_embarque(data):
-    """
-    Analiza los datos del formulario y retorna una lista de consejos técnicos
-    y un veredicto final de asesoría.
-    """
-    sugerencias = []
-    puede_volar = True
+    def marcar_bloqueo(mensaje):
+        nonlocal severidad_maxima
+        reporte.append(f"[CRITICO] {mensaje}")
+        severidad_maxima = "BLOQUEO"
 
-    # 1. Validación de Seguridad y Gobierno (CBP/TSA)
+    def marcar_observacion(mensaje):
+        nonlocal severidad_maxima
+        if severidad_maxima != "BLOQUEO":
+            severidad_maxima = "OBSERVACION"
+        reporte.append(f"[ADVERTENCIA] {mensaje}")
+
+    # ===============================
+    # FASE 1: TSA / CBP
+    # ===============================
     if data.highValue == "yes" and not data.itnNumber:
-        sugerencias.append(MSJ_ASESORIA["itn_miss"])
-        puede_volar = False
+        marcar_bloqueo("Falta ITN. Multa CBP hasta $10,000. No despachar sin AES.")
 
-    # 2. Validación de Dimensiones y Altura
-    if data.pieceHeight > MAX_HEIGHT_FRT:
-        sugerencias.append(f"{MSJ_ASESORIA['height_crit']} (Máx: {MAX_HEIGHT_FRT}\")")
-        puede_volar = False
-    elif data.pieceHeight > MAX_HEIGHT_PAX:
-        sugerencias.append(f"⚠ Restricción: Altura > {MAX_HEIGHT_PAX}\". Solo apto para avión CARGUERO.")
+    # ===============================
+    # FASE 2: ANATOMIA AVIANCA
+    # ===============================
+    if data.pieceHeight > 96:
+        marcar_bloqueo("Altura > 96\". No entra en ningún avión.")
+    elif data.pieceHeight > 63:
+        marcar_observacion("Altura > 63\". Solo permitido en carguero.")
 
-    # 3. Validación de Integridad de Madera (NIMF-15)
+    if data.pieceWeight > 150:
+        marcar_observacion("Pieza >150kg. Requiere shoring certificado.")
+
     if data.nimf15 == "no":
-        sugerencias.append(MSJ_ASESORIA["nimf_error"])
-        puede_volar = False
+        marcar_bloqueo("Madera sin sello NIMF-15. USDA puede rechazar.")
 
-    # 4. Análisis de Peso y Shoring
-    if data.pieceWeight > MAX_WEIGHT_SHORING:
-        sugerencias.append(MSJ_ASESORIA["weight_warn"])
+    # ===============================
+    # FASE 4: DOCUMENTACION
+    # ===============================
+    if data.awbCopies == "no":
+        marcar_bloqueo("Faltan originales y copias AWB.")
 
-    # 5. Validación de ULD (Pallet)
-    pallet_info = ULD_TYPES.get(data.palletType.upper())
-    if pallet_info:
-        if data.pieceHeight > pallet_info["max_height"]:
-            sugerencias.append(f"❌ La altura excede la capacidad técnica del pallet {data.palletType}.")
-            puede_volar = False
-    
-    # 6. Integridad Física
+    # ===============================
+    # FASE 6: INTEGRIDAD
+    # ===============================
     if data.damagedBoxes == "yes":
-        sugerencias.append("⚠ Cajas Dañadas: Se recomienda re-empacar para evitar rechazo en el counter.")
-        puede_volar = False
-    
+        marcar_bloqueo("Cajas dañadas. Re-embalar antes de counter.")
+
+    if data.straps == "no" and data.pieceWeight > 50:
+        marcar_observacion("Flejado insuficiente para peso declarado.")
+
     if data.overhang > 0:
-        sugerencias.append(MSJ_ASESORIA["overhang_crit"])
-        puede_volar = False
+        marcar_bloqueo("Overhang detectado. No cumple con estándar ULD.")
 
-    # 7. Contenidos Críticos (DGR/Fitosanitario)
-    if data.dangerousGoods == "yes":
-        sugerencias.append(MSJ_ASESORIA["dgr_warn"])
-    
-    if data.origin == "yes":
-        sugerencias.append("⚠ Origen Animal/Vegetal: Verifique Certificado Fitosanitario / FDA.")
+    # ===============================
+    # STATUS FINAL
+    # ===============================
+    if severidad_maxima == "BLOQUEO":
+        status = "RECHAZO INMEDIATO"
+    elif severidad_maxima == "OBSERVACION":
+        status = "APROBADO CON OBSERVACIONES"
+    else:
+        status = "LISTO PARA DESPACHO"
 
-    # Resultado Final
-    veredicto = "Aprobado para Recepción" if puede_volar else "Requiere Corrección"
-    
     return {
-        "status": veredicto,
-        "detalle": sugerencias
+        "status": status,
+        "detalle": reporte if reporte else ["Carga cumple estándar operativo Avianca."]
     }
