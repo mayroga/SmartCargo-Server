@@ -1,67 +1,51 @@
-def asesorar_counter_avianca(data):
-    reporte = []
-    severidad_maxima = "OK"  # OK | OBSERVACION | BLOQUEO
+def evaluar_reglas_duras(data):
 
-    def marcar_bloqueo(mensaje):
-        nonlocal severidad_maxima
-        reporte.append(f"[CRITICO] {mensaje}")
-        severidad_maxima = "BLOQUEO"
+    errores = []
+    bloqueado = False
 
-    def marcar_observacion(mensaje):
-        nonlocal severidad_maxima
-        if severidad_maxima != "BLOQUEO":
-            severidad_maxima = "OBSERVACION"
-        reporte.append(f"[ADVERTENCIA] {mensaje}")
-
-    # ===============================
-    # FASE 1: TSA / CBP
-    # ===============================
+    # TSA / ITN
     if data.highValue == "yes" and not data.itnNumber:
-        marcar_bloqueo("Falta ITN. Multa CBP hasta $10,000. No despachar sin AES.")
+        errores.append("FALTA ITN PARA EXPORTACION MAYOR A $2500")
+        bloqueado = True
 
-    # ===============================
-    # FASE 2: ANATOMIA AVIANCA
-    # ===============================
+    # Zip
+    if data.zipCheck == "no":
+        errores.append("ZIP CODE NO VALIDADO")
+        bloqueado = True
+
+    # DGR
+    if data.cargoType == "DGR" and data.dgrDocs == "no":
+        errores.append("MERCANCIA PELIGROSA SIN DECLARACION ORIGINAL")
+        bloqueado = True
+
+    # PER
+    if data.cargoType == "PER" and data.fitoDocs == "no":
+        errores.append("CARGA PERECEDERA SIN CERTIFICADO FITOSANITARIO")
+        bloqueado = True
+
+    # Altura
     if data.pieceHeight > 96:
-        marcar_bloqueo("Altura > 96\". No entra en ningún avión.")
+        errores.append("ALTURA EXCEDE LIMITES DE FLEET")
+        bloqueado = True
     elif data.pieceHeight > 63:
-        marcar_observacion("Altura > 63\". Solo permitido en carguero.")
+        errores.append("SOLO PUEDE VIAJAR EN CARGUERO")
 
-    if data.pieceWeight > 150:
-        marcar_observacion("Pieza >150kg. Requiere shoring certificado.")
-
+    # NIMF
     if data.nimf15 == "no":
-        marcar_bloqueo("Madera sin sello NIMF-15. USDA puede rechazar.")
+        errores.append("PALLET SIN SELLO NIMF-15")
+        bloqueado = True
 
-    # ===============================
-    # FASE 4: DOCUMENTACION
-    # ===============================
-    if data.awbCopies == "no":
-        marcar_bloqueo("Faltan originales y copias AWB.")
+    # Daños
+    if data.damaged == "yes":
+        errores.append("CAJAS DANADAS DETECTADAS")
+        bloqueado = True
 
-    # ===============================
-    # FASE 6: INTEGRIDAD
-    # ===============================
-    if data.damagedBoxes == "yes":
-        marcar_bloqueo("Cajas dañadas. Re-embalar antes de counter.")
-
-    if data.straps == "no" and data.pieceWeight > 50:
-        marcar_observacion("Flejado insuficiente para peso declarado.")
-
-    if data.overhang > 0:
-        marcar_bloqueo("Overhang detectado. No cumple con estándar ULD.")
-
-    # ===============================
-    # STATUS FINAL
-    # ===============================
-    if severidad_maxima == "BLOQUEO":
-        status = "RECHAZO INMEDIATO"
-    elif severidad_maxima == "OBSERVACION":
-        status = "APROBADO CON OBSERVACIONES"
-    else:
-        status = "LISTO PARA DESPACHO"
+    # Overhang
+    if data.overhang == "yes":
+        errores.append("OVERHANG DETECTADO EN PALLET")
+        bloqueado = True
 
     return {
-        "status": status,
-        "detalle": reporte if reporte else ["Carga cumple estándar operativo Avianca."]
+        "status": "VUELA" if not bloqueado else "NO VUELA",
+        "detalles": errores if errores else ["CUMPLE CON REQUISITOS OPERATIVOS"]
     }
