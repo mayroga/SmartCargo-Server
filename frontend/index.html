@@ -1,142 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMARTCARGO-AIPA | Pre-Check Avianca Cargo</title>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        h1 { text-align: center; color: #0d6efd; }
-        .pregunta { font-size: 1.2em; margin: 20px 0; }
-        .instruccion { color: #6c757d; margin-bottom: 15px; }
-        .alerta { color: red; font-weight: bold; margin-top: 10px; }
-        .btn-group button {
-            background-color: #0d6efd;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 1em;
-        }
-        .btn-group button:hover { background-color: #0b5ed7; }
-        .input-field {
-            padding: 10px;
-            font-size: 1em;
-            width: 100%;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-        }
-        .footer { text-align: center; margin-top: 20px; color: #6c757d; font-size: 0.9em; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTCARGO-AIPA Pre-Check</title>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #0f0f0f;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #1c1c1c;
+    border-radius: 12px;
+    box-shadow: 0 0 10px #000;
+}
+h1 { text-align: center; color: #f0a500; }
+label, select, input, button { display: block; width: 100%; margin: 0.5rem 0; }
+input, select { padding: 0.5rem; border-radius: 6px; border: none; }
+button {
+    padding: 0.7rem;
+    background: #f0a500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+button:hover { background: #ffa733; }
+#alerta { margin-top: 1rem; padding: 1rem; background: #ff3333; color: white; border-radius: 6px; font-weight: bold;}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>SMARTCARGO-AIPA | Pre-Check</h1>
-        <div id="fase-info"></div>
-        <div class="pregunta" id="pregunta-text"></div>
-        <div class="instruccion" id="instruccion-text"></div>
+<div class="container">
+    <h1>SMARTCARGO-AIPA Pre-Check</h1>
 
-        <input type="text" id="respuesta-input" class="input-field" placeholder="Ingrese su respuesta">
+    <label for="fase">Seleccione fase:</label>
+    <select id="fase">
+        <option value="1">Fase 1 - Identificación</option>
+        <option value="2">Fase 2 - Anatomía de la carga</option>
+        <option value="3">Fase 3 - Contenidos críticos</option>
+        <option value="4">Fase 4 - Check-list documental</option>
+        <option value="5">Fase 5 - Logística de arribo</option>
+        <option value="6">Fase 6 - Embalaje y seguridad</option>
+        <option value="7">Fase 7 - Restricciones TSA</option>
+        <option value="8">Fase 8 - Equipos y contenedores</option>
+    </select>
 
-        <div class="btn-group">
-            <button onclick="enviarRespuesta('sí')">Sí</button>
-            <button onclick="enviarRespuesta('no')">No</button>
-            <button onclick="enviarRespuesta('directa')">Directa</button>
-            <button onclick="enviarRespuesta('consolidado')">Consolidado</button>
-            <button onclick="enviarRespuestaManual()">Enviar Manual</button>
-        </div>
+    <label for="pregunta">Pregunta:</label>
+    <div id="pregunta" data-id="1"></div>
 
-        <div class="alerta" id="alerta-text"></div>
-    </div>
+    <label for="respuesta">Respuesta:</label>
+    <input type="text" id="respuesta" placeholder="Escriba su respuesta aquí">
 
-    <div class="footer">
-        &copy; 2026 May Roga LLC | SMARTCARGO-AIPA Pre-Check
-    </div>
+    <button id="enviar">Enviar Respuesta</button>
 
-    <script>
-        let faseActual = 1;
-        let preguntaActual = 1;
-        const TOTAL_PREGUNTAS = 21;
+    <div id="alerta"></div>
+</div>
 
-        async function cargarPregunta() {
-            try {
-                const res = await axios.get(`/get_question/${faseActual}/${preguntaActual}`);
-                document.getElementById('fase-info').innerText = `Fase ${res.data.fase}`;
-                document.getElementById('pregunta-text').innerText = res.data.pregunta;
-                document.getElementById('instruccion-text').innerText = res.data.instruccion;
-                document.getElementById('alerta-text').innerText = "";
-                document.getElementById('respuesta-input').value = "";
-            } catch (err) {
-                document.getElementById('pregunta-text').innerText = "¡Fin del pre-check! Todas las preguntas completadas.";
-                document.getElementById('instruccion-text').innerText = "";
-                document.getElementById('respuesta-input').style.display = "none";
-                document.querySelector('.btn-group').style.display = "none";
-            }
-        }
-
-        async function enviarRespuesta(valor) {
-            const input = document.getElementById('respuesta-input');
-            if (valor !== 'manual') {
-                input.value = valor;
-            }
-            await enviarRespuestaManual();
-        }
-
-        async function enviarRespuestaManual() {
-            const inputVal = document.getElementById('respuesta-input').value.trim();
-            if (inputVal === "") {
-                document.getElementById('alerta-text').innerText = "⚠ Ingrese su respuesta antes de continuar.";
-                return;
-            }
-            try {
-                const res = await axios.post('/submit_answer', {
-                    fase: faseActual,
-                    pregunta_id: preguntaActual,
-                    respuesta: inputVal
-                });
-                document.getElementById('alerta-text').innerText = res.data.alerta || "✔ Respuesta registrada correctamente.";
-
-                // Avanzar a siguiente pregunta
-                preguntaActual++;
-                if (preguntaActual > TOTAL_PREGUNTAS) {
-                    document.getElementById('pregunta-text').innerText = "✅ Pre-check completo. Puede proceder al counter de Avianca.";
-                    document.getElementById('instruccion-text').innerText = "";
-                    document.getElementById('respuesta-input').style.display = "none";
-                    document.querySelector('.btn-group').style.display = "none";
-                    return;
-                }
-
-                // Avanzar fase automáticamente
-                if ([4,6,8,10,11,12,14,16,17,19,20,21].includes(preguntaActual)) {
-                    faseActual++;
-                }
-
-                setTimeout(cargarPregunta, 1000);
-            } catch (err) {
-                console.error(err);
-                document.getElementById('alerta-text').innerText = "❌ Error enviando respuesta.";
-            }
-        }
-
-        // Cargar la primera pregunta
-        cargarPregunta();
-    </script>
+<script src="scripts.js"></script>
 </body>
 </html>
