@@ -1,308 +1,232 @@
 # main.py
-from fastapi import FastAPI, UploadFile, File, Form
+import os
+from fastapi import FastAPI, Form, UploadFile, File, Request
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import List
 from fpdf import FPDF
-import os, datetime, json, shutil, httpx
+import tempfile
+import shutil
+import re
 
-app = FastAPI(title="SMARTCARGO INFALIBLE – VERSIÓN FINAL")
+app = FastAPI(title="SMARTCARGO Infalible")
 
-# -------------------------
-# Crear carpeta frontend y archivos
-# -------------------------
-if not os.path.exists("frontend"):
-    os.makedirs("frontend")
+# Permitir CORS para frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cambiar a tu dominio en producción
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
+# Carpeta para almacenar archivos temporales
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Montar carpeta estática
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Montar carpeta estática para servir PDFs si se desea
+app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
 
-# -------------------------
-# API Keys
-# -------------------------
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
-# -------------------------
-# Modelo de carga
-# -------------------------
-class CargoForm(BaseModel):
-    clientId: str | None = ""
-    shipmentType: str | None = ""
-    highValue: str | None = ""
-    itnNumber: str | None = ""
-    awbMaster: str | None = ""
-    awbHouse: str | None = ""
-    referenceNumber: str | None = ""
-    originAirport: str | None = ""
-    destinationAirport: str | None = ""
-    departureDate: str | None = ""
-    pieceHeight: float | None = 0
-    numPieces: int | None = 0
-    totalWeight: float | None = 0
-    dimensions: str | None = ""
-    needsShoring: str | None = ""
-    nimf15: str | None = ""
-    overhang: str | None = ""
-    damaged: str | None = ""
-    cargoType: str | None = ""
-    dgrDocs: str | None = ""
-    fitoDocs: str | None = ""
-    arrivalTime: str | None = ""
-    packaging: str | None = ""
-    labels: str | None = ""
-    fragile: str | None = ""
-    shipperName: str | None = ""
-    shipperAddress: str | None = ""
-    shipperPhone: str | None = ""
-    consigneeName: str | None = ""
-    consigneeAddress: str | None = ""
-    consigneePhone: str | None = ""
-    zipCode: str | None = ""
-    pouchOrganized: str | None = ""
-
-# -------------------------
-# Evaluación de reglas duras
-# -------------------------
 def evaluar_reglas_duras(data: dict):
     detalles = []
     status = "✅ VUELA"
 
-    # Regla 1: Pouch organizado
-    if data.get("pouchOrganized","") != "si":
-        detalles.append("❌ Pouch físico no organizado. No cumple protocolo de envío.")
+    # ================== FASE I: UNIVERSAL ==================
+    if data.get("shipmentType") == "consolidado" and not data.get("manifestHouses"):
+        detalles.append("❌ ERROR: Falta Manifiesto de Houses en consolidado.")
         status = "❌ NO VUELA"
 
-    # Regla 2: ITN para valor alto
-    itn = data.get("itnNumber","")
-    if data.get("highValue") == "yes":
-        if not itn or not itn.startswith("X"):
-            detalles.append("❌ ITN ausente o formato inválido (Debe iniciar con X).")
-            status = "❌ NO VUELA"
+    itn = data.get("itnNumber", "")
+    cargoValue = float(data.get("cargoValue", 0))
+    if cargoValue > 2500 and (not itn or not itn.startswith('X')):
+        detalles.append("❌ RECHAZO CBP: ITN ausente o formato inválido (Debe iniciar con X).")
+        status = "❌ NO VUELA"
 
-    # Regla 3: Dimensiones
+    if data.get("knownShipper") != "yes":
+        detalles.append("❌ RECHAZO TSA: Known Shipper inválido o sello roto.")
+        status = "❌ NO VUELA"
+
+    # ================== FASE II: TÉCNICA ==================
     try:
-        h = float(data.get("pieceHeight",0))
+        h = float(data.get("pieceHeight", 0))
         if h > 96:
-            detalles.append("❌ Altura excede límite de avión carguero (>96 in).")
+            detalles.append("❌ RECHAZO TÉCNICO: Altura excede fuselaje (>96 in).")
             status = "❌ NO VUELA"
         elif h > 63:
-            detalles.append("⚠️ Altura >63 in. Solo apto para carguero, no pasajeros.")
-            if status != "❌ NO VUELA": status = "⚠️ REQUIERE REVISIÓN EN MOSTRADOR"
+            detalles.append("⚠️ AVISO: Altura >63 in, solo apto para vuelo Carguero.")
+            if status != "❌ NO VUELA":
+                status = "⚠️ REQUIERE CAMBIO DE RESERVA"
     except:
-        detalles.append("⚠️ Altura inválida o no ingresada.")
-        if status != "❌ NO VUELA": status = "⚠️ REQUIERE REVISIÓN EN MOSTRADOR"
+        pass
 
-    # Regla 4: Peso y Shoring
     try:
-        w = float(data.get("totalWeight",0))
-        if w > 150 and data.get("needsShoring") != "si":
-            detalles.append("❌ Peso >150kg sin Shoring. Riesgo estructural.")
+        w_unit = data.get("weightUnit","kg")
+        pieceWeight = float(data.get("pieceWeight",0))
+        if w_unit=="lb":
+            pieceWeight = pieceWeight * 0.453592  # Convert lb a kg
+        if pieceWeight > 150:
+            detalles.append("❌ RECHAZO: Peso >150kg, obligatorio usar skids/shoring.")
             status = "❌ NO VUELA"
     except:
-        detalles.append("⚠️ Peso total inválido o no ingresado.")
-        if status != "❌ NO VUELA": status = "⚠️ REQUIERE REVISIÓN EN MOSTRADOR"
+        pass
 
-    # Regla 5: Carga crítica y documentos
-    if data.get("cargoType") in ["DGR","PER","BIO"]:
-        if data.get("dgrDocs") != "si":
-            detalles.append(f"❌ {data.get('cargoType')} sin documentos DGR completos.")
-            status = "❌ NO VUELA"
-        if data.get("fitoDocs") != "si" and data.get("cargoType") in ["PER","BIO"]:
-            detalles.append(f"❌ {data.get('cargoType')} sin certificados FDA/Fitosanitarios.")
-            status = "❌ NO VUELA"
+    # Volumetric Weight (solo aviso)
+    detalles.append(f"Peso volumétrico calculado: {data.get('volumetricWeight')}")
 
-    # Regla 6: Embalaje
-    if data.get("packaging") not in ["straps","STRAPS"]:
-        detalles.append("❌ Embalaje insuficiente para carga pesada.")
+    # ================== FASE III: INTEGRIDAD ==================
+    if data.get("nimf15") != "yes":
+        detalles.append("❌ Pallet sin sello NIMF-15, no despachar.")
         status = "❌ NO VUELA"
 
-    # Regla 7: Overhang
-    if data.get("overhang") == "yes":
-        detalles.append("❌ Overhang detectado. Re-estibar necesario.")
+    if data.get("straps") != "flejes":
+        detalles.append("⚠️ Advertencia: Flejes ausentes en carga pesada.")
+
+    if data.get("oldLabels") != "yes":
+        detalles.append("❌ Etiquetas antiguas no borradas, riesgo de misrouting.")
         status = "❌ NO VUELA"
 
-    # Regla 8: Código postal
-    if not data.get("zipCode"):
-        detalles.append("❌ Código postal vacío.")
+    # ================== FASE IV: CRÍTICA (DGR/TSA) ==================
+    if data.get("hasBatteries") == "yes":
+        detalles.append("❌ Declarar UN3480/3481 y presentar 2 originales Shipper’s Declaration.")
         status = "❌ NO VUELA"
 
-    return {"status": status, "detalles": detalles}
+    if data.get("xrayBlocked") == "yes":
+        detalles.append("⚠️ Rayos X bloqueados, embalaje debe permitir reapertura.")
 
-# -------------------------
-# IA para explicaciones unificadas
-# -------------------------
-async def explicar_con_ia_una_vez(detalles):
-    if not detalles:
-        return "No hay errores, carga lista para volar."
-    texto = "\n".join(detalles)
-    prompt = f"Eres AL CIELO de Avianca Cargo. Explica cada error de la lista a continuación, indicando causa, consecuencia y solución:\n{texto}"
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages":[{"role":"user","content":prompt}],
-                    "temperature":0
-                },
-                timeout=30
-            )
-            result = resp.json()
-            return result["choices"][0]["message"]["content"]
-    except:
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    "https://api.gemini.com/v1/generate",
-                    headers={"Authorization": f"Bearer {GEMINI_KEY}"},
-                    json={"prompt":prompt,"max_tokens":500},
-                    timeout=30
-                )
-                result = resp.json()
-                return result.get("output","No se pudo generar explicación IA")
-        except Exception as e:
-            return f"No se pudo generar explicación IA: {str(e)}"
+    desc = data.get("description","")
+    if not desc or "said to contain" in desc.lower():
+        detalles.append("❌ Descripción genérica inválida (Use nombre real).")
+        status = "❌ NO VUELA"
 
-# -------------------------
-# Endpoint Evaluar (con archivos)
-# -------------------------
+    # ================== FASE V: POUCH ==================
+    if data.get("pouchOrganized") != "si":
+        detalles.append("❌ Pouch mal organizado, no se puede evaluar.")
+        status = "❌ NO VUELA"
+
+    explicacion = "Se han evaluado todas las fases: Universal, Técnica, Integridad, Crítica y Pouch."
+    return {"status": status, "detalles": detalles, "explicacion": explicacion}
+
+
 @app.post("/evaluar")
 async def evaluar(
-    clientId: str = Form(...),
-    shipmentType: str = Form(""),
-    highValue: str = Form(""),
+    shipmentType: str = Form(...),
+    manifestHouses: str = Form(""),
+    cargoValue: float = Form(...),
     itnNumber: str = Form(""),
-    awbMaster: str = Form(""),
-    awbHouse: str = Form(""),
-    referenceNumber: str = Form(""),
-    originAirport: str = Form(""),
-    destinationAirport: str = Form(""),
-    departureDate: str = Form(""),
-    pieceHeight: float = Form(0),
-    numPieces: int = Form(0),
-    totalWeight: float = Form(0),
-    dimensions: str = Form(""),
-    needsShoring: str = Form(""),
-    nimf15: str = Form(""),
-    overhang: str = Form(""),
-    damaged: str = Form(""),
-    cargoType: str = Form(""),
-    dgrDocs: str = Form(""),
-    fitoDocs: str = Form(""),
-    arrivalTime: str = Form(""),
-    packaging: str = Form(""),
-    labels: str = Form(""),
-    fragile: str = Form(""),
-    shipperName: str = Form(""),
-    shipperAddress: str = Form(""),
-    shipperPhone: str = Form(""),
-    consigneeName: str = Form(""),
-    consigneeAddress: str = Form(""),
-    consigneePhone: str = Form(""),
-    zipCode: str = Form(""),
-    pouchOrganized: str = Form(""),
-    files: list[UploadFile] = File([])
+    knownShipper: str = Form(...),
+    pieceHeight: float = Form(...),
+    pieceWeight: float = Form(...),
+    weightUnit: str = Form("kg"),
+    volumetricWeight: float = Form(...),
+    nimf15: str = Form(...),
+    straps: str = Form(...),
+    oldLabels: str = Form(...),
+    hasBatteries: str = Form(...),
+    xrayBlocked: str = Form(...),
+    description: str = Form(...),
+    pouchOrganized: str = Form(...),
+    files: List[UploadFile] = File(default=[])
 ):
-    data = {
-        k:v for k,v in locals().items() if k != "files"
-    }
+    # Guardar archivos temporalmente
+    temp_dir = tempfile.mkdtemp()
+    file_paths = []
+    try:
+        for f in files:
+            path = os.path.join(temp_dir, f.filename)
+            with open(path, "wb") as buffer:
+                shutil.copyfileobj(f.file, buffer)
+            file_paths.append(path)
 
-    # Guardar fotos
-    for f in files:
-        path = os.path.join("uploads", f.filename)
-        with open(path,"wb") as buffer:
-            shutil.copyfileobj(f.file, buffer)
+        data = {
+            "shipmentType": shipmentType,
+            "manifestHouses": manifestHouses,
+            "cargoValue": cargoValue,
+            "itnNumber": itnNumber,
+            "knownShipper": knownShipper,
+            "pieceHeight": pieceHeight,
+            "pieceWeight": pieceWeight,
+            "weightUnit": weightUnit,
+            "volumetricWeight": volumetricWeight,
+            "nimf15": nimf15,
+            "straps": straps,
+            "oldLabels": oldLabels,
+            "hasBatteries": hasBatteries,
+            "xrayBlocked": xrayBlocked,
+            "description": description,
+            "pouchOrganized": pouchOrganized,
+            "files": file_paths
+        }
 
-    resultado = evaluar_reglas_duras(data)
-    explicacion = await explicar_con_ia_una_vez(resultado["detalles"])
+        resultado = evaluar_reglas_duras(data)
+        return JSONResponse(content=resultado)
 
-    log = {
-        "fecha": str(datetime.datetime.now()),
-        "cliente": data.get("clientId"),
-        "resultado": resultado,
-        "explicacion": explicacion
-    }
+    finally:
+        # limpiar temporal
+        for f in file_paths:
+            if os.path.exists(f):
+                os.remove(f)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
-    with open("registro_evaluaciones.json","a",encoding="utf-8") as f:
-        f.write(json.dumps(log,ensure_ascii=False)+"\n")
 
-    return JSONResponse({
-        "status": resultado["status"],
-        "detalles": resultado["detalles"],
-        "explicacion": explicacion
-    })
-
-# -------------------------
-# Endpoint Generar PDF
-# -------------------------
 @app.post("/generar_pdf")
 async def generar_pdf(
-    clientId: str = Form(...),
-    shipmentType: str = Form(""),
-    highValue: str = Form(""),
+    shipmentType: str = Form(...),
+    manifestHouses: str = Form(""),
+    cargoValue: float = Form(...),
     itnNumber: str = Form(""),
-    awbMaster: str = Form(""),
-    awbHouse: str = Form(""),
-    referenceNumber: str = Form(""),
-    originAirport: str = Form(""),
-    destinationAirport: str = Form(""),
-    departureDate: str = Form(""),
-    pieceHeight: float = Form(0),
-    numPieces: int = Form(0),
-    totalWeight: float = Form(0),
-    dimensions: str = Form(""),
-    needsShoring: str = Form(""),
-    nimf15: str = Form(""),
-    overhang: str = Form(""),
-    damaged: str = Form(""),
-    cargoType: str = Form(""),
-    dgrDocs: str = Form(""),
-    fitoDocs: str = Form(""),
-    arrivalTime: str = Form(""),
-    packaging: str = Form(""),
-    labels: str = Form(""),
-    fragile: str = Form(""),
-    shipperName: str = Form(""),
-    shipperAddress: str = Form(""),
-    shipperPhone: str = Form(""),
-    consigneeName: str = Form(""),
-    consigneeAddress: str = Form(""),
-    consigneePhone: str = Form(""),
-    zipCode: str = Form(""),
-    pouchOrganized: str = Form(""),
+    knownShipper: str = Form(...),
+    pieceHeight: float = Form(...),
+    pieceWeight: float = Form(...),
+    weightUnit: str = Form("kg"),
+    volumetricWeight: float = Form(...),
+    nimf15: str = Form(...),
+    straps: str = Form(...),
+    oldLabels: str = Form(...),
+    hasBatteries: str = Form(...),
+    xrayBlocked: str = Form(...),
+    description: str = Form(...),
+    pouchOrganized: str = Form(...),
+    files: List[UploadFile] = File(default=[])
 ):
-    data = {
-        k:v for k,v in locals().items()
-    }
-
-    resultado = evaluar_reglas_duras(data)
-
+    # Crear PDF
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
     pdf.add_page()
-    pdf.set_font("Arial","B",16)
-    pdf.cell(0,10,"REPORTE SMARTCARGO",ln=True,align="C")
-    pdf.ln(5)
-
-    for k,v in data.items():
-        pdf.set_font("Arial","",12)
-        pdf.multi_cell(0,8,f"{k}: {v}")
-
-    pdf.ln(5)
     pdf.set_font("Arial","B",14)
-    pdf.multi_cell(0,8,"ERRORES DETECTADOS:")
+    pdf.cell(0,10,"SMARTCARGO - Reporte de Evaluación", ln=True, align="C")
     pdf.set_font("Arial","",12)
-    for item in resultado["detalles"]:
-        pdf.multi_cell(0,8,f"- {item}")
+    pdf.ln(5)
 
-    filename = f"uploads/reporte_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-    pdf.output(filename)
+    pdf.cell(0,10,f"Shipment Type: {shipmentType}", ln=True)
+    pdf.cell(0,10,f"Cargo Value: {cargoValue}", ln=True)
+    pdf.cell(0,10,f"ITN: {itnNumber}", ln=True)
+    pdf.cell(0,10,f"Known Shipper: {knownShipper}", ln=True)
+    pdf.cell(0,10,f"Piece Height: {pieceHeight} in", ln=True)
+    pdf.cell(0,10,f"Piece Weight: {pieceWeight} {weightUnit}", ln=True)
+    pdf.cell(0,10,f"Volumetric Weight: {volumetricWeight}", ln=True)
+    pdf.cell(0,10,f"Pallet NIMF-15: {nimf15}", ln=True)
+    pdf.cell(0,10,f"Straps: {straps}", ln=True)
+    pdf.cell(0,10,f"Old Labels Removed: {oldLabels}", ln=True)
+    pdf.cell(0,10,f"Batteries: {hasBatteries}", ln=True)
+    pdf.cell(0,10,f"X-Ray Blocked: {xrayBlocked}", ln=True)
+    pdf.cell(0,10,f"Description: {description}", ln=True)
+    pdf.cell(0,10,f"Pouch Organized: {pouchOrganized}", ln=True)
 
-    return FileResponse(filename, media_type="application/pdf", filename=os.path.basename(filename))
+    # Guardar imágenes
+    temp_dir = tempfile.mkdtemp()
+    try:
+        y = pdf.get_y() + 5
+        for f in files:
+            img_path = os.path.join(temp_dir, f.filename)
+            with open(img_path,"wb") as buffer:
+                shutil.copyfileobj(f.file, buffer)
+            pdf.image(img_path, x=10, y=y, w=60)
+            y += 65
+
+        pdf_path = os.path.join(UPLOAD_DIR, "reporte_smartcargo.pdf")
+        pdf.output(pdf_path)
+        return FileResponse(pdf_path, media_type='application/pdf', filename="reporte_smartcargo.pdf")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
