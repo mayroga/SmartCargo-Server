@@ -1,205 +1,202 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from fpdf import FPDF
-import datetime
 import os
+import math
+import logging
+from datetime import datetime, timedelta
+from typing import Optional
 
-app = FastAPI(title="SMARTCARGO-AIPA | Avianca Cargo Advisory")
+import jwt
+import httpx
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
 
-# =========================
-# Static Files
-# =========================
-if not os.path.exists("frontend"):
-    os.makedirs("frontend")
+# ==========================================================
+# CONFIG
+# ==========================================================
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+SECRET_KEY = os.getenv("JWT_SECRET", "CHANGE_THIS_SECRET")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("SMARTCARGO")
+
+app = FastAPI(title="SMARTCARGO-AIPA")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+security = HTTPBearer()
+
+# ==========================================================
+# MODELS
+# ==========================================================
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
-# =========================
-# Data Model (100% aligned with frontend)
-# =========================
-class CargoForm(BaseModel):
-    clientId: str
-    highValue: str
-    itnNumber: str = ""
-    shipmentType: str
-
-    pieceHeight: float
-    pieceWeight: float
-    nimf15: str
-    palletType: str
-
-    dangerousGoods: str
+class CargoInput(BaseModel):
     origin: str
-
-    awbCopies: str
-    zipCode: str
-
-    arrivalTime: str
-
-    straps: str
-    awbOnBoxes: str
-    damagedBoxes: str
-    shrinkWrap: str
-    oldLabels: str
-
-    cleanCargo: str
-    fragileLabels: str
-    piecesMatch: str
-
-    tanks: str
-    overhang: float
+    destination: str
+    weight_kg: float = Field(..., gt=0)
+    length_cm: float = Field(..., gt=0)
+    width_cm: float = Field(..., gt=0)
+    height_cm: float = Field(..., gt=0)
+    pieces: int = Field(..., gt=0)
+    temperature_required: Optional[bool] = False
+    dangerous_goods: Optional[bool] = False
+    packaging_ok: bool
+    documents_complete: bool
+    dry_ice_kg: Optional[float] = 0
 
 
-# =========================
-# Serve Frontend
-# =========================
-@app.get("/", response_class=HTMLResponse)
-async def read_index():
-    with open("frontend/index.html", "r", encoding="utf-8") as f:
-        return f.read()
+class CargoResponse(BaseModel):
+    volumetric_weight: float
+    chargeable_weight: float
+    psi: float
+    status: str
+    critical_alert: Optional[str]
+    ai_observation: Optional[str]
 
 
-# =========================
-# Core Evaluation Engine
-# =========================
-def evaluar_carga(data: CargoForm):
-    reporte = []
-    aprobado = True
+# ==========================================================
+# AUTH
+# ==========================================================
 
-    # -------------------
-    # FASE 1
-    # -------------------
-    if not data.clientId.strip():
-        reporte.append("❌ ID Cliente / SCAC es obligatorio.")
-        aprobado = False
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-    if data.highValue == "yes" and not data.itnNumber.strip():
-        reporte.append("❌ ITN obligatorio para mercancía > $2,500 USD.")
-        aprobado = False
 
-    if data.shipmentType == "consolidated":
-        reporte.append("⚠ Envío consolidado: verificar Houses y manifest.")
-
-    # -------------------
-    # FASE 2
-    # -------------------
-    if data.pieceHeight > 96:
-        reporte.append("❌ Altura excede 96'' - No puede volar en Avianca.")
-        aprobado = False
-    elif data.pieceHeight > 63:
-        reporte.append("⚠ Altura >63'' - Solo permitido en carguero.")
-
-    if data.pieceWeight > 150:
-        reporte.append("⚠ Peso >150kg - Requiere Shoring.")
-
-    if data.nimf15 == "no":
-        reporte.append("❌ Sin sello NIMF-15 - Rechazo inmediato.")
-        aprobado = False
-
-    # -------------------
-    # FASE 3
-    # -------------------
-    if data.dangerousGoods == "yes":
-        reporte.append("⚠ Mercancía peligrosa - Requiere DGR y declaración IATA.")
-
-    if data.origin == "yes":
-        reporte.append("⚠ Producto animal/vegetal - Puede requerir FDA/USDA.")
-
-    # -------------------
-    # FASE 4
-    # -------------------
-    if data.awbCopies == "no":
-        reporte.append("❌ AWB incompleto - 3 originales + 6 copias requeridas.")
-        aprobado = False
-
-    if not data.zipCode.strip():
-        reporte.append("❌ Zip Code obligatorio.")
-        aprobado = False
-
-    # -------------------
-    # FASE 5
-    # -------------------
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
-        hora = int(data.arrivalTime.split(":")[0])
-        if hora > 16:
-            reporte.append("⚠ Arribo después del cut-off - Puede perder vuelo.")
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
     except:
-        reporte.append("⚠ Hora inválida.")
-
-    # -------------------
-    # FASE 6
-    # -------------------
-    if data.straps == "no":
-        reporte.append("❌ Falta flejado adecuado.")
-        aprobado = False
-
-    if data.damagedBoxes == "yes":
-        reporte.append("❌ Cajas dañadas detectadas.")
-        aprobado = False
-
-    if data.shrinkWrap == "no":
-        reporte.append("❌ Shrink wrap incorrecto.")
-        aprobado = False
-
-    if data.oldLabels == "yes":
-        reporte.append("⚠ Remover etiquetas viejas.")
-
-    # -------------------
-    # FASE 7
-    # -------------------
-    if data.cleanCargo == "no":
-        reporte.append("❌ Carga sucia o contaminada.")
-        aprobado = False
-
-    if data.piecesMatch == "no":
-        reporte.append("❌ Número de piezas no coincide con AWB.")
-        aprobado = False
-
-    # -------------------
-    # FASE 8
-    # -------------------
-    if data.tanks == "yes":
-        reporte.append("❌ Tanques deben estar vacíos y certificados.")
-        aprobado = False
-
-    if data.overhang > 0:
-        reporte.append("❌ Overhang detectado - Re-estibar.")
-        aprobado = False
-
-    return {
-        "status": "APROBADO" if aprobado else "RECHAZADO",
-        "detalle": reporte
-    }
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
-# =========================
-# API Routes
-# =========================
-@app.post("/evaluar")
-async def evaluar(form: CargoForm):
-    return JSONResponse(content=evaluar_carga(form))
+# ==========================================================
+# AI FALLBACK
+# ==========================================================
+
+async def ai_observation(prompt: str) -> str:
+    # Try OpenAI first
+    if OPENAI_API_KEY:
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                    json={
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    timeout=20
+                )
+                return r.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.warning("OpenAI failed, trying Gemini")
+
+    if GEMINI_API_KEY:
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}",
+                    json={"contents":[{"parts":[{"text":prompt}]}]},
+                    timeout=20
+                )
+                return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except:
+            return "AI service unavailable."
+
+    return "AI not configured."
 
 
-@app.post("/generar_pdf")
-async def generar_pdf(form: CargoForm):
-    resultado = evaluar_carga(form)
+# ==========================================================
+# ROUTES
+# ==========================================================
 
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
+@app.post("/login")
+def login(data: LoginRequest):
+    if data.username == "admin" and data.password == "admin123":
+        token = create_access_token({"sub": data.username})
+        return {"access_token": token}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    pdf.cell(0, 10, "SMARTCARGO-AIPA - Avianca Cargo Advisory", ln=True)
-    pdf.cell(0, 10, f"Fecha: {datetime.datetime.now()}", ln=True)
-    pdf.cell(0, 10, f"Veredicto: {resultado['status']}", ln=True)
-    pdf.ln(5)
 
-    for linea in resultado["detalle"]:
-        pdf.multi_cell(0, 8, f"- {linea}")
+@app.post("/analyze", response_model=CargoResponse)
+async def analyze_cargo(data: CargoInput, user=Depends(verify_token)):
 
-    filename = "frontend/reporte_last.pdf"
-    pdf.output(filename)
+    # -----------------------------
+    # Volumetric weight (IATA 6000)
+    # -----------------------------
+    volume = (data.length_cm * data.width_cm * data.height_cm) / 6000
+    volumetric_weight = round(volume * data.pieces, 2)
 
-    return JSONResponse(content={"url": "/static/reporte_last.pdf"})
+    chargeable_weight = max(volumetric_weight, data.weight_kg)
+
+    # -----------------------------
+    # PSI calculation
+    # -----------------------------
+    base_area = (data.length_cm * data.width_cm) / 10000
+    psi = round((chargeable_weight / base_area) if base_area > 0 else 0, 2)
+
+    status = "CLEARED"
+    critical_alert = None
+
+    # -----------------------------
+    # Hard Rules
+    # -----------------------------
+    if not data.documents_complete:
+        status = "CRITICAL"
+        critical_alert = "Documents incomplete. Must be corrected before departure."
+
+    if not data.packaging_ok:
+        status = "CRITICAL"
+        critical_alert = "Packaging not compliant."
+
+    if psi > 300:
+        status = "CRITICAL"
+        critical_alert = "PSI exceeds aircraft limit."
+
+    if data.dangerous_goods and data.dry_ice_kg > 2.5:
+        status = "CRITICAL"
+        critical_alert = "Dry ice exceeds allowed DG limit."
+
+    # -----------------------------
+    # AI Observation (non-decision)
+    # -----------------------------
+    prompt = f"""
+    Analyze cargo:
+    From {data.origin} to {data.destination}.
+    Chargeable weight: {chargeable_weight}.
+    PSI: {psi}.
+    Provide operational observation only.
+    """
+
+    observation = await ai_observation(prompt)
+
+    logger.info(f"Cargo analyzed by {user['sub']} - Status: {status}")
+
+    return CargoResponse(
+        volumetric_weight=volumetric_weight,
+        chargeable_weight=chargeable_weight,
+        psi=psi,
+        status=status,
+        critical_alert=critical_alert,
+        ai_observation=observation
+    )
