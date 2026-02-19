@@ -2,118 +2,113 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO-AIPA | Avianca Cargo</title>
+<title>SMARTCARGO-AIPA</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body { font-family: Arial; background:#f4f6f9; padding:20px; }
-.container { max-width:900px; margin:auto; background:white; padding:25px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-.section { margin-bottom:20px; border:1px solid #ddd; border-radius:6px; }
-.header { background:#003366; color:white; padding:10px; cursor:pointer; font-weight:bold;}
-.content { display:none; padding:15px;}
-input, select { width:100%; padding:8px; margin-top:6px; margin-bottom:10px;}
-button { padding:12px; border:none; border-radius:6px; cursor:pointer; margin-top:10px;}
-.primary { background:#e10600; color:white; width:100%;}
-.secondary { background:#555; color:white; width:100%;}
-#summary { margin-top:20px; padding:15px; border-radius:6px; display:none;}
+body{background:#111;color:white;font-family:Arial;padding:30px}
+input,button{margin:5px;padding:8px}
+button{cursor:pointer}
+.alert{color:red;font-weight:bold}
+.success{color:lime}
 </style>
 </head>
 <body>
 
-<div class="container">
-<h1>SMARTCARGO-AIPA</h1>
+<h2>SMARTCARGO – Advanced Pre-Counter</h2>
+<button onclick="toggleLang()">🌎 ES / EN</button>
 
-<form id="cargoForm">
-
-<div class="section">
-<div class="header" onclick="toggle(this)">Fase 1</div>
-<div class="content">
-<input type="text" id="clientId" placeholder="Client ID / SCAC">
-<select id="highValue">
-<option value="no">Value ≤ 2500</option>
-<option value="yes">Value > 2500</option>
-</select>
-<input type="text" id="itnNumber" placeholder="ITN">
-<select id="shipmentType">
-<option value="direct">Direct</option>
-<option value="consolidated">Consolidated</option>
-</select>
-</div>
+<div id="loginSection">
+<h3>Login</h3>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
 </div>
 
-<div class="section">
-<div class="header" onclick="toggle(this)">Fase 2</div>
-<div class="content">
-<input type="number" id="pieceHeight" placeholder="Height (inches)">
-<input type="number" id="pieceWeight" placeholder="Max Weight (kg)">
-<select id="nimf15">
-<option value="yes">NIMF-15 OK</option>
-<option value="no">No NIMF-15</option>
-</select>
-<select id="palletType">
-<option value="PMC">PMC</option>
-<option value="PAG">PAG</option>
-<option value="PAJ">PAJ</option>
-</select>
-</div>
-</div>
+<div id="appSection" style="display:none;">
+<h3>Cargo Input</h3>
 
-<!-- Hidden operational defaults -->
-<input type="hidden" id="dangerousGoods" value="no">
-<input type="hidden" id="origin" value="no">
-<input type="hidden" id="awbCopies" value="yes">
-<input type="hidden" id="zipCode" value="33142">
-<input type="hidden" id="arrivalTime" value="12:00">
-<input type="hidden" id="straps" value="yes">
-<input type="hidden" id="awbOnBoxes" value="yes">
-<input type="hidden" id="damagedBoxes" value="no">
-<input type="hidden" id="shrinkWrap" value="yes">
-<input type="hidden" id="oldLabels" value="no">
-<input type="hidden" id="cleanCargo" value="yes">
-<input type="hidden" id="fragileLabels" value="yes">
-<input type="hidden" id="piecesMatch" value="yes">
-<input type="hidden" id="tanks" value="no">
-<input type="hidden" id="overhang" value="0">
+<input id="origin" placeholder="Origin">
+<input id="destination" placeholder="Destination">
+<input id="weight" type="number" placeholder="Weight (kg)">
+<input id="length" type="number" placeholder="Length (cm)">
+<input id="width" type="number" placeholder="Width (cm)">
+<input id="height" type="number" placeholder="Height (cm)">
+<input id="pieces" type="number" placeholder="Pieces">
 
-<button type="button" class="primary" onclick="evaluar()">EVALUAR</button>
-<button type="button" class="secondary" onclick="resetForm()">BORRAR</button>
+<label><input type="checkbox" id="temp"> Temperature Required</label><br>
+<label><input type="checkbox" id="dg"> Dangerous Goods</label><br>
+<label><input type="checkbox" id="packaging"> Packaging OK</label><br>
+<label><input type="checkbox" id="docs"> Documents Complete</label><br>
 
-</form>
+<input id="dryice" type="number" placeholder="Dry Ice (kg)">
 
-<div id="summary"></div>
+<br>
+<button onclick="analyze()">RUN ADVANCED FILTER</button>
 
+<h3>Result</h3>
+<div id="result"></div>
 </div>
 
 <script>
-function toggle(el){
-  el.nextElementSibling.style.display =
-  el.nextElementSibling.style.display === "block" ? "none" : "block";
+let token = null
+let lang = "EN"
+
+function toggleLang(){
+    lang = lang === "EN" ? "ES" : "EN"
+    alert("Language changed to " + lang)
 }
 
-async function evaluar(){
-  const data = {};
-  document.querySelectorAll("input, select").forEach(el=>{
-    data[el.id] = el.type === "number" ? parseFloat(el.value) || 0 : el.value;
-  });
-
-  const res = await axios.post("/evaluar", data);
-
-  const summary = document.getElementById("summary");
-  summary.style.display = "block";
-  summary.style.background = res.data.status === "APROBADO" ? "#d4edda" : "#f8d7da";
-
-  let html = `<h3>Veredicto: ${res.data.status}</h3><ul>`;
-  res.data.detalle.forEach(d => html += `<li>${d}</li>`);
-  html += "</ul>";
-
-  const pdf = await axios.post("/generar_pdf", data);
-  html += `<a href="${pdf.data.url}" target="_blank">📄 Descargar PDF</a>`;
-
-  summary.innerHTML = html;
+async function login(){
+    try{
+        const res = await axios.post("/login",{
+            username:document.getElementById("user").value,
+            password:document.getElementById("pass").value
+        })
+        token = res.data.access_token
+        document.getElementById("loginSection").style.display="none"
+        document.getElementById("appSection").style.display="block"
+    }catch{
+        alert("Login failed")
+    }
 }
 
-function resetForm(){
-  document.getElementById("cargoForm").reset();
-  document.getElementById("summary").style.display="none";
+async function analyze(){
+    try{
+        const res = await axios.post("/analyze",{
+            origin:origin.value,
+            destination:destination.value,
+            weight_kg:parseFloat(weight.value),
+            length_cm:parseFloat(length.value),
+            width_cm:parseFloat(width.value),
+            height_cm:parseFloat(height.value),
+            pieces:parseInt(pieces.value),
+            temperature_required:temp.checked,
+            dangerous_goods:dg.checked,
+            packaging_ok:packaging.checked,
+            documents_complete:docs.checked,
+            dry_ice_kg:parseFloat(dryice.value||0)
+        },{
+            headers:{Authorization:`Bearer ${token}`}
+        })
+
+        let r = res.data
+        let color = r.status==="CLEARED"?"success":"alert"
+
+        result.innerHTML = `
+        <div class="${color}">
+        Status: ${r.status}<br>
+        Volumetric Weight: ${r.volumetric_weight} kg<br>
+        Chargeable Weight: ${r.chargeable_weight} kg<br>
+        PSI: ${r.psi}<br>
+        ${r.critical_alert ? "⚠ "+r.critical_alert+"<br>" : ""}
+        </div>
+        <hr>
+        <b>AI Observation:</b><br>
+        ${r.ai_observation}
+        `
+    }catch(e){
+        alert("Error analyzing cargo")
+    }
 }
 </script>
 
