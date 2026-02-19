@@ -1,23 +1,15 @@
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+import os, shutil, json, datetime
 from fpdf import FPDF
-import os
-import json
-import datetime
 import httpx
-import shutil
 
 app = FastAPI(title="SMARTCARGO INFALIBLE")
 
-# Carpetas
-if not os.path.exists("frontend"):
-    os.makedirs("frontend")
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
-
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Crear carpeta uploads si no existe
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 # API Keys
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
@@ -30,7 +22,6 @@ def evaluar_reglas_duras(data: dict):
     detalles = []
     status = "LISTO PARA VOLAR ✅"
 
-    # Fase 1
     if not data.get("clientId"):
         detalles.append("❌ ID de cliente vacío: Validación Known Shipper no posible.")
         status = "NO VUELA ❌"
@@ -41,7 +32,6 @@ def evaluar_reglas_duras(data: dict):
         detalles.append("❌ AWB Master no proporcionado.")
         status = "NO VUELA ❌"
 
-    # Fase 2
     try:
         pieceHeight = float(data.get("pieceHeight","0"))
         totalWeight = float(data.get("totalWeight","0"))
@@ -61,7 +51,6 @@ def evaluar_reglas_duras(data: dict):
     if data.get("damaged")=="yes":
         detalles.append("⚠️ Daños preexistentes detectados.")
 
-    # Fase 3
     cargoType = data.get("cargoType")
     if cargoType in ["DGR","PER","BIO"]:
         if data.get("dgrDocs")!="si":
@@ -71,7 +60,6 @@ def evaluar_reglas_duras(data: dict):
             detalles.append(f"❌ {cargoType} sin certificado FDA/Fitosanitario.")
             status = "NO VUELA ❌"
 
-    # Fase final
     if not data.get("arrivalTime"):
         detalles.append("⚠️ Hora de llegada no definida.")
     if data.get("packaging") not in ["straps","STRAPS"]:
@@ -95,7 +83,7 @@ def evaluar_reglas_duras(data: dict):
 async def explicar_con_ia(texto):
     prompt = f"""
 Eres un asistente AL CIELO para Avianca Cargo.
-Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias legales y solución:
+Explica detalladamente el siguiente hallazgo, indicando causa, consecuencias legales y solución:
 {texto}
 """
     try:
@@ -103,11 +91,7 @@ Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias 
             resp = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages":[{"role":"user","content":prompt}],
-                    "temperature":0
-                },
+                json={"model":"gpt-4o-mini","messages":[{"role":"user","content":prompt}],"temperature":0},
                 timeout=30
             )
             result = resp.json()
@@ -125,6 +109,16 @@ Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias 
                 return result.get("output","No se pudo generar explicación IA")
         except Exception as e2:
             return f"No se pudo generar explicación IA: {str(e2)}"
+
+# -------------------------
+# Servir frontend directamente
+# -------------------------
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    html_file = os.path.join(os.path.dirname(__file__), "frontend/index.html")
+    if os.path.exists(html_file):
+        return FileResponse(html_file)
+    return HTMLResponse("<h1>index.html no encontrado</h1>", status_code=404)
 
 # -------------------------
 # Endpoint Evaluar con archivos
@@ -170,14 +164,13 @@ async def evaluar(
         packaging=packaging, zipCode=zipCode
     )
 
-    # Guardar archivos
     uploaded_files=[]
     for file in [fotoCarga, docsCertificados]:
         if file:
-            file_path = os.path.join("uploads", file.filename)
-            with open(file_path, "wb") as f:
+            path = os.path.join(UPLOAD_DIR, file.filename)
+            with open(path,"wb") as f:
                 shutil.copyfileobj(file.file, f)
-            uploaded_files.append("/uploads/"+file.filename)
+            uploaded_files.append(f"/uploads/{file.filename}")
 
     resultado = evaluar_reglas_duras(data)
     explicaciones=[]
@@ -185,8 +178,76 @@ async def evaluar(
         texto_ia = await explicar_con_ia(item)
         explicaciones.append({"error": item, "explicacion": texto_ia})
 
-    log={"fecha": str(datetime.datetime.now()), "cliente": clientId, "resultado": resultado, "archivos": uploaded_files}
-    with open("registro_evaluaciones.json", "a", encoding="utf-8") as f:
+    log={"fecha":str(datetime.datetime.now()), "cliente":clientId, "resultado":resultado, "archivos":uploaded_files}
+    with open("registro_evaluaciones.json","a",encoding="utf-8") as f:
         f.write(json.dumps(log, ensure_ascii=False)+"\n")
 
-    return JSONResponse({"status": resultado["status"], "detalles": resultado["detalles"], "explicaciones": explicaciones, "archivos": uploaded_files})
+    return JSONResponse({
+        "status": resultado["status"],
+        "detalles": resultado["detalles"],
+        "explicaciones": explicaciones,
+        "archivos": uploaded_files
+    })
+
+# -------------------------
+# Endpoint Generar PDF
+# -------------------------
+@app.post("/generar_pdf")
+async def generar_pdf(
+    clientId: str = Form(""),
+    shipmentType: str = Form(""),
+    highValue: str = Form(""),
+    itnNumber: str = Form(""),
+    awbMaster: str = Form(""),
+    awbHouse: str = Form(""),
+    referenceNumber: str = Form(""),
+    originAirport: str = Form(""),
+    destinationAirport: str = Form(""),
+    departureDate: str = Form(""),
+    pieceHeight: str = Form("0"),
+    numPieces: str = Form("0"),
+    totalWeight: str = Form("0"),
+    dimensions: str = Form(""),
+    needsShoring: str = Form(""),
+    nimf15: str = Form(""),
+    overhang: str = Form(""),
+    damaged: str = Form(""),
+    cargoType: str = Form(""),
+    dgrDocs: str = Form(""),
+    fitoDocs: str = Form(""),
+    arrivalTime: str = Form(""),
+    packaging: str = Form(""),
+    zipCode: str = Form("")
+):
+    data=dict(
+        clientId=clientId, shipmentType=shipmentType, highValue=highValue,
+        itnNumber=itnNumber, awbMaster=awbMaster, awbHouse=awbHouse,
+        referenceNumber=referenceNumber, originAirport=originAirport,
+        destinationAirport=destinationAirport, departureDate=departureDate,
+        pieceHeight=pieceHeight, numPieces=numPieces, totalWeight=totalWeight,
+        dimensions=dimensions, needsShoring=needsShoring, nimf15=nimf15,
+        overhang=overhang, damaged=damaged, cargoType=cargoType,
+        dgrDocs=dgrDocs, fitoDocs=fitoDocs, arrivalTime=arrivalTime,
+        packaging=packaging, zipCode=zipCode
+    )
+
+    resultado = evaluar_reglas_duras(data)
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial","B",16)
+    pdf.cell(0,10,"Reporte SMARTCARGO",ln=True)
+    pdf.ln(5)
+    pdf.set_font("Arial","",12)
+    for k,v in data.items():
+        pdf.multi_cell(0,8,f"{k}: {v}")
+    pdf.ln(5)
+    pdf.multi_cell(0,8,"Resultado Evaluación:")
+    for det in resultado["detalles"]:
+        pdf.multi_cell(0,8,f"- {det}")
+
+    pdf_filename = f"uploads/reporte_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    pdf.output(pdf_filename)
+
+    return {"url": pdf_filename}
