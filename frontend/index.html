@@ -2,329 +2,319 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO INFALIBLE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTCARGO - AL CIELO</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
     body {
-        margin: 0;
         font-family: Arial, sans-serif;
-        background: #f4f4f4;
-        color: #111;
+        background: #f9f9f9;
+        margin: 0;
+        padding: 0;
+        color: #222;
+    }
+    header {
+        background-color: #e20613;
+        color: white;
+        text-align: center;
+        padding: 20px;
+        font-size: 1.8em;
+        font-weight: bold;
+    }
+    section {
+        margin: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 {
-        font-size: 20px;
         cursor: pointer;
-        background: #222;
-        color: white;
-        padding: 10px;
+        font-size: 1.5em;
         margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .phase-content {
+    .content {
         display: none;
-        padding: 15px;
-        background: #fff;
-        border-bottom: 1px solid #ccc;
+        margin-top: 10px;
+        font-size: 1.1em;
     }
     input, select {
-        width: 95%;
-        padding: 8px;
-        margin: 5px 0 15px 0;
-        font-size: 16px;
-    }
-    button {
-        padding: 12px 20px;
-        font-size: 18px;
-        margin: 10px 5px;
-        cursor: pointer;
-        border: none;
+        width: 100%;
+        padding: 10px;
+        margin: 6px 0 5px 0;
         border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 1em;
     }
-    #evaluarBtn { background: #28a745; color: white; }
-    #pdfBtn { background: #007bff; color: white; }
-    .alert {
-        font-size: 14px;
-        padding: 8px;
+    .ia-feedback {
+        font-size: 0.95em;
         margin-bottom: 10px;
+        padding: 6px;
         border-radius: 5px;
     }
-    .alert-error { background: #f8d7da; color: #721c24; }
-    .alert-warning { background: #fff3cd; color: #856404; }
-    .alert-info { background: #d1ecf1; color: #0c5460; }
-    .ia-explanation { font-size: 14px; margin: 2px 0 10px 10px; color: #444; }
+    .ia-ok { background-color: #d4edda; color: #155724; }
+    .ia-warning { background-color: #fff3cd; color: #856404; }
+    .ia-error { background-color: #f8d7da; color: #721c24; }
+    button {
+        background-color: #e20613;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        margin: 5px 5px 15px 0;
+    }
+    button:hover {
+        background-color: #b10410;
+    }
+    .arrow {
+        font-size: 1.3em;
+    }
+    #resultado, #pdfLink {
+        margin: 20px;
+        padding: 15px;
+        background: #dff0d8;
+        border-radius: 10px;
+        font-size: 1.2em;
+    }
 </style>
 </head>
 <body>
 
-<h1 style="text-align:center; padding: 20px; background:#111; color:white;">SMARTCARGO - PRE COUNTER</h1>
+<header>SMARTCARGO - AL CIELO</header>
 
-<!-- Fase 1 -->
-<h2 onclick="togglePhase('phase1')">Fase 1: Identificación y Seguridad ▲</h2>
-<div id="phase1" class="phase-content">
-    <label>ID Cliente / SCAC:</label>
-    <input type="text" id="clientId" placeholder="Opcional para prueba">
-    <div id="ex-clientId" class="ia-explanation"></div>
+<form id="cargoForm">
 
-    <label>Tipo de envío:</label>
-    <input type="text" id="shipmentType">
-    <div id="ex-shipmentType" class="ia-explanation"></div>
+    <!-- Fase 1: Identificación y Seguridad -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 1: Identificación y Seguridad <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="text" name="clientId" placeholder="ID Cliente / SCAC">
+            <div class="ia-feedback" id="fb-clientId"></div>
 
-    <label>¿Valor > $2,500 USD?</label>
-    <select id="highValue">
-        <option value="">--Dejar en blanco--</option>
-        <option value="yes">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-highValue" class="ia-explanation"></div>
+            <select name="shipmentType">
+                <option value="" disabled selected>Tipo de envío</option>
+                <option value="directo">Directo</option>
+                <option value="consolidado">Consolidado</option>
+            </select>
+            <div class="ia-feedback" id="fb-shipmentType"></div>
 
-    <label>Número ITN (si aplica):</label>
-    <input type="text" id="itnNumber">
-    <div id="ex-itnNumber" class="ia-explanation"></div>
+            <select name="highValue">
+                <option value="" disabled selected>¿Valor > $2,500 USD?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-highValue"></div>
 
-    <label>AWB Master:</label>
-    <input type="text" id="awbMaster">
-    <div id="ex-awbMaster" class="ia-explanation"></div>
+            <input type="text" name="itnNumber" placeholder="Número ITN (si aplica)">
+            <div class="ia-feedback" id="fb-itnNumber"></div>
 
-    <label>AWB House (si aplica):</label>
-    <input type="text" id="awbHouse">
-    <div id="ex-awbHouse" class="ia-explanation"></div>
+            <input type="text" name="awbMaster" placeholder="AWB Master">
+            <div class="ia-feedback" id="fb-awbMaster"></div>
 
-    <label>Reference Number:</label>
-    <input type="text" id="referenceNumber">
-    <div id="ex-referenceNumber" class="ia-explanation"></div>
+            <input type="text" name="awbHouse" placeholder="AWB House (si aplica)">
+            <div class="ia-feedback" id="fb-awbHouse"></div>
 
-    <label>Aeropuerto de origen:</label>
-    <input type="text" id="originAirport">
-    <div id="ex-originAirport" class="ia-explanation"></div>
+            <input type="text" name="referenceNumber" placeholder="Reference Number">
+            <div class="ia-feedback" id="fb-referenceNumber"></div>
 
-    <label>Aeropuerto de destino:</label>
-    <input type="text" id="destinationAirport">
-    <div id="ex-destinationAirport" class="ia-explanation"></div>
+            <input type="text" name="originAirport" placeholder="Aeropuerto de origen">
+            <div class="ia-feedback" id="fb-originAirport"></div>
 
-    <label>Fecha de salida (mm/dd/yyyy):</label>
-    <input type="date" id="departureDate">
-    <div id="ex-departureDate" class="ia-explanation"></div>
-</div>
+            <input type="text" name="destinationAirport" placeholder="Aeropuerto de destino">
+            <div class="ia-feedback" id="fb-destinationAirport"></div>
 
-<!-- Fase 2 -->
-<h2 onclick="togglePhase('phase2')">Fase 2: Anatomía de la Carga ▲</h2>
-<div id="phase2" class="phase-content">
-    <label>Altura de la pieza (inches):</label>
-    <input type="number" id="pieceHeight">
-    <div id="ex-pieceHeight" class="ia-explanation"></div>
+            <input type="date" name="departureDate" placeholder="Fecha de salida">
+            <div class="ia-feedback" id="fb-departureDate"></div>
+        </div>
+    </section>
 
-    <label>Número de piezas:</label>
-    <input type="number" id="numPieces">
-    <div id="ex-numPieces" class="ia-explanation"></div>
+    <!-- Fase 2: Anatomía de la Carga -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 2: Anatomía de la Carga <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="number" step="0.1" name="pieceHeight" placeholder="Altura de la pieza (inches)">
+            <div class="ia-feedback" id="fb-pieceHeight"></div>
 
-    <label>Peso total (kg):</label>
-    <input type="number" id="totalWeight">
-    <div id="ex-totalWeight" class="ia-explanation"></div>
+            <input type="number" name="numPieces" placeholder="Número de piezas">
+            <div class="ia-feedback" id="fb-numPieces"></div>
 
-    <label>Dimensiones (LxAnxAl):</label>
-    <input type="text" id="dimensions">
-    <div id="ex-dimensions" class="ia-explanation"></div>
+            <input type="number" step="0.1" name="totalWeight" placeholder="Peso total (kg)">
+            <div class="ia-feedback" id="fb-totalWeight"></div>
 
-    <label>¿Necesita Shoring?</label>
-    <select id="needsShoring">
-        <option value="">--Dejar en blanco--</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-needsShoring" class="ia-explanation"></div>
+            <input type="text" name="dimensions" placeholder="Dimensiones (LxAnxAl)">
+            <div class="ia-feedback" id="fb-dimensions"></div>
 
-    <label>Pallet NIMF-15:</label>
-    <select id="nimf15">
-        <option value="">--Dejar en blanco--</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-nimf15" class="ia-explanation"></div>
+            <select name="needsShoring">
+                <option value="" disabled selected>¿Necesita Shoring?</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-needsShoring"></div>
 
-    <label>¿Overhang?</label>
-    <select id="overhang">
-        <option value="">--Dejar en blanco--</option>
-        <option value="yes">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-overhang" class="ia-explanation"></div>
+            <select name="nimf15">
+                <option value="" disabled selected>Pallet NIMF-15</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-nimf15"></div>
 
-    <label>¿Hay daños preexistentes?</label>
-    <select id="damaged">
-        <option value="">--Dejar en blanco--</option>
-        <option value="yes">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-damaged" class="ia-explanation"></div>
-</div>
+            <select name="overhang">
+                <option value="" disabled selected>¿Overhang?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-overhang"></div>
 
-<!-- Fase 3 -->
-<h2 onclick="togglePhase('phase3')">Fase 3: Contenidos Críticos ▲</h2>
-<div id="phase3" class="phase-content">
-    <label>Tipo de carga (Normal / DGR / PER / BIO):</label>
-    <select id="cargoType">
-        <option value="">--Dejar en blanco--</option>
-        <option value="Normal">Normal</option>
-        <option value="DGR">DGR</option>
-        <option value="PER">Perecedero</option>
-        <option value="BIO">Biológico</option>
-    </select>
-    <div id="ex-cargoType" class="ia-explanation"></div>
+            <select name="damaged">
+                <option value="" disabled selected>¿Daños preexistentes?</option>
+                <option value="yes">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-damaged"></div>
+        </div>
+    </section>
 
-    <label>Documentos DGR completos:</label>
-    <select id="dgrDocs">
-        <option value="">--Dejar en blanco--</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-dgrDocs" class="ia-explanation"></div>
+    <!-- Fase 3: Contenidos Críticos -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 3: Contenidos Críticos <span class="arrow">▼</span></h2>
+        <div class="content">
+            <select name="cargoType">
+                <option value="" disabled selected>Tipo de carga</option>
+                <option value="NORMAL">Normal</option>
+                <option value="DGR">Mercancía Peligrosa</option>
+                <option value="PER">Perishable</option>
+                <option value="BIO">Biológica</option>
+            </select>
+            <div class="ia-feedback" id="fb-cargoType"></div>
 
-    <label>Certificados FDA/Fitosanitarios:</label>
-    <select id="fitoDocs">
-        <option value="">--Dejar en blanco--</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-    </select>
-    <div id="ex-fitoDocs" class="ia-explanation"></div>
-</div>
+            <select name="dgrDocs">
+                <option value="" disabled selected>Documentos DGR completos</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-dgrDocs"></div>
 
-<!-- Fase 4-8 -->
-<h2 onclick="togglePhase('phase4')">Fase 4-8: Check-list y Logística ▲</h2>
-<div id="phase4" class="phase-content">
-    <label>Hora estimada de llegada al counter:</label>
-    <input type="time" id="arrivalTime">
-    <div id="ex-arrivalTime" class="ia-explanation"></div>
+            <select name="fitoDocs">
+                <option value="" disabled selected>Certificados FDA/Fitosanitarios</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+            <div class="ia-feedback" id="fb-fitoDocs"></div>
+        </div>
+    </section>
 
-    <label>Tipo de embalaje (straps/shrink wrap):</label>
-    <input type="text" id="packaging">
-    <div id="ex-packaging" class="ia-explanation"></div>
+    <!-- Fase 4-8: Check final, embalaje y logística -->
+    <section>
+        <h2 onclick="toggleSection(this)">Fase 4-8: Check-list y Logística <span class="arrow">▼</span></h2>
+        <div class="content">
+            <input type="text" name="arrivalTime" placeholder="Hora estimada de llegada al counter">
+            <div class="ia-feedback" id="fb-arrivalTime"></div>
 
-    <label>Etiquetas (Frágil, Arrow, etc.):</label>
-    <input type="text" id="labels">
-    <div id="ex-labels" class="ia-explanation"></div>
+            <input type="text" name="packaging" placeholder="Tipo de embalaje (straps/shrink wrap)">
+            <div class="ia-feedback" id="fb-packaging"></div>
 
-    <label>Fragilidad de la carga:</label>
-    <input type="text" id="fragile">
-    <div id="ex-fragile" class="ia-explanation"></div>
+            <input type="text" name="labels" placeholder="Etiquetas (Frágil, Arrow, etc.)">
+            <div class="ia-feedback" id="fb-labels"></div>
 
-    <label>Nombre del Shipper:</label>
-    <input type="text" id="shipperName">
-    <div id="ex-shipperName" class="ia-explanation"></div>
+            <input type="text" name="fragile" placeholder="Fragilidad de la carga">
+            <div class="ia-feedback" id="fb-fragile"></div>
 
-    <label>Dirección del Shipper:</label>
-    <input type="text" id="shipperAddress">
-    <div id="ex-shipperAddress" class="ia-explanation"></div>
+            <input type="text" name="shipperName" placeholder="Nombre del Shipper">
+            <div class="ia-feedback" id="fb-shipperName"></div>
 
-    <label>Teléfono del Shipper:</label>
-    <input type="text" id="shipperPhone">
-    <div id="ex-shipperPhone" class="ia-explanation"></div>
+            <input type="text" name="shipperAddress" placeholder="Dirección del Shipper">
+            <div class="ia-feedback" id="fb-shipperAddress"></div>
 
-    <label>Nombre del Consignee:</label>
-    <input type="text" id="consigneeName">
-    <div id="ex-consigneeName" class="ia-explanation"></div>
+            <input type="text" name="shipperPhone" placeholder="Teléfono del Shipper">
+            <div class="ia-feedback" id="fb-shipperPhone"></div>
 
-    <label>Dirección del Consignee:</label>
-    <input type="text" id="consigneeAddress">
-    <div id="ex-consigneeAddress" class="ia-explanation"></div>
+            <input type="text" name="consigneeName" placeholder="Nombre del Consignee">
+            <div class="ia-feedback" id="fb-consigneeName"></div>
 
-    <label>Teléfono del Consignee:</label>
-    <input type="text" id="consigneePhone">
-    <div id="ex-consigneePhone" class="ia-explanation"></div>
+            <input type="text" name="consigneeAddress" placeholder="Dirección del Consignee">
+            <div class="ia-feedback" id="fb-consigneeAddress"></div>
 
-    <label>Código Postal:</label>
-    <input type="text" id="zipCode">
-    <div id="ex-zipCode" class="ia-explanation"></div>
-</div>
+            <input type="text" name="consigneePhone" placeholder="Teléfono del Consignee">
+            <div class="ia-feedback" id="fb-consigneePhone"></div>
 
-<div style="text-align:center; margin: 20px;">
-    <button id="evaluarBtn" onclick="evaluarCarga()">Evaluar Carga</button>
-    <button id="pdfBtn" onclick="generarPDF()">Generar PDF</button>
-</div>
+            <input type="text" name="zipCode" placeholder="Código Postal">
+            <div class="ia-feedback" id="fb-zipCode"></div>
+        </div>
+    </section>
 
-<div id="alertas" style="text-align:center;"></div>
+    <button type="button" onclick="enviarEvaluacion()">Evaluar Carga</button>
+    <button type="button" onclick="generarPDF()">Generar PDF</button>
+</form>
+
+<div id="resultado"></div>
+<div id="pdfLink"></div>
 
 <script>
-function togglePhase(phaseId) {
-    const el = document.getElementById(phaseId);
-    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+function toggleSection(header) {
+    const content = header.nextElementSibling;
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        header.querySelector(".arrow").textContent = "▼";
+    } else {
+        content.style.display = "block";
+        header.querySelector(".arrow").textContent = "▲";
+    }
 }
 
-// Obtener datos del formulario
-function getFormData() {
-    return {
-        clientId: document.getElementById('clientId').value,
-        shipmentType: document.getElementById('shipmentType').value,
-        highValue: document.getElementById('highValue').value,
-        itnNumber: document.getElementById('itnNumber').value,
-        awbMaster: document.getElementById('awbMaster').value,
-        awbHouse: document.getElementById('awbHouse').value,
-        referenceNumber: document.getElementById('referenceNumber').value,
-        originAirport: document.getElementById('originAirport').value,
-        destinationAirport: document.getElementById('destinationAirport').value,
-        departureDate: document.getElementById('departureDate').value,
-        pieceHeight: parseFloat(document.getElementById('pieceHeight').value) || 0,
-        numPieces: parseInt(document.getElementById('numPieces').value) || 0,
-        totalWeight: parseFloat(document.getElementById('totalWeight').value) || 0,
-        dimensions: document.getElementById('dimensions').value,
-        needsShoring: document.getElementById('needsShoring').value,
-        nimf15: document.getElementById('nimf15').value,
-        overhang: document.getElementById('overhang').value,
-        damaged: document.getElementById('damaged').value,
-        cargoType: document.getElementById('cargoType').value,
-        dgrDocs: document.getElementById('dgrDocs').value,
-        fitoDocs: document.getElementById('fitoDocs').value,
-        arrivalTime: document.getElementById('arrivalTime').value,
-        packaging: document.getElementById('packaging').value,
-        labels: document.getElementById('labels').value,
-        fragile: document.getElementById('fragile').value,
-        shipperName: document.getElementById('shipperName').value,
-        shipperAddress: document.getElementById('shipperAddress').value,
-        shipperPhone: document.getElementById('shipperPhone').value,
-        consigneeName: document.getElementById('consigneeName').value,
-        consigneeAddress: document.getElementById('consigneeAddress').value,
-        consigneePhone: document.getElementById('consigneePhone').value,
-        zipCode: document.getElementById('zipCode').value
-    };
-}
+async function enviarEvaluacion() {
+    const form = document.getElementById("cargoForm");
+    const data = Object.fromEntries(new FormData(form).entries());
 
-// Evaluar carga
-async function evaluarCarga() {
-    const data = getFormData();
-    clearExplanations();
-    document.getElementById('alertas').innerHTML = "Evaluando...";
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.textContent = "⏳ Evaluando, por favor espere...";
+
     try {
-        const response = await axios.post('https://smartcargo-server.onrender.com/evaluar', data);
-        const res = response.data;
-        document.getElementById('alertas').innerHTML = `<div class="alert ${res.status==='LISTO PARA VOLAR'?'alert-info':'alert-error'}">Status: ${res.status}</div>`;
+        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data);
+        const detalles = response.data.detalles;
+        const explicaciones = response.data.explicaciones;
 
-        // Mostrar explicaciones debajo de cada input
-        res.explicaciones.forEach(exp => {
-            for (const key in data) {
-                if (exp.error.toLowerCase().includes(key.toLowerCase())) {
-                    const el = document.getElementById('ex-' + key);
-                    if(el) el.innerText = exp.explicacion;
-                }
+        // Mostrar cada feedback IA debajo del input correspondiente
+        for (const item of explicaciones) {
+            const name = item.error;
+            const el = document.getElementById(`fb-${name}`);
+            if(el){
+                // Asignar color según nivel de gravedad
+                let clase = "ia-ok";
+                if(item.nivel==="ADVERTENCIA") clase="ia-warning";
+                else if(item.nivel==="CRITICO") clase="ia-error";
+                el.textContent = item.explicacion;
+                el.className = "ia-feedback " + clase;
             }
-        });
+        }
+
+        let html = `<h3>Resultado: ${response.data.status}</h3>`;
+        resultadoDiv.innerHTML = html;
+
     } catch(err) {
-        document.getElementById('alertas').innerHTML = `<div class="alert alert-error">❌ Error al evaluar la carga: ${err}</div>`;
+        resultadoDiv.textContent = "❌ Error al evaluar la carga: " + err;
     }
 }
 
-// Generar PDF
 async function generarPDF() {
-    const data = getFormData();
-    try {
-        const response = await axios.post('https://smartcargo-server.onrender.com/generar_pdf', data);
-        const pdfUrl = response.data.url;
-        window.open(pdfUrl, '_blank');
-    } catch(err) {
-        document.getElementById('alertas').innerHTML = `<div class="alert alert-error">❌ Error al generar PDF: ${err}</div>`;
-    }
-}
+    const form = document.getElementById("cargoForm");
+    const data = Object.fromEntries(new FormData(form).entries());
 
-function clearExplanations() {
-    document.querySelectorAll('.ia-explanation').forEach(el => el.innerText = '');
+    const pdfDiv = document.getElementById("pdfLink");
+    pdfDiv.textContent = "⏳ Generando PDF...";
+
+    try {
+        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data);
+        pdfDiv.innerHTML = `<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">📄 Abrir PDF AL CIELO</a>`;
+    } catch(err) {
+        pdfDiv.textContent = "❌ Error al generar PDF: " + err;
+    }
 }
 </script>
+
 </body>
 </html>
