@@ -15,7 +15,7 @@
     input, select, textarea { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;}
     input[type="file"] { padding: 3px; }
     #fotosPreview img { border: 1px solid #ccc; border-radius: 4px;}
-    #alerta { padding: 10px; margin-top: 10px; font-weight: bold; }
+    #alerta { padding: 10px; margin-top: 10px; font-weight: bold; white-space: pre-line; }
     button { padding: 10px 20px; border: none; border-radius: 5px; background-color: #0b5ed7; color: white; cursor: pointer; margin-right: 10px;}
     button:hover { background-color: #084298; }
 </style>
@@ -29,13 +29,13 @@
     <fieldset>
         <legend>I. FASE UNIVERSAL: Identificación y Tipo de Envío</legend>
         <small>Antes de abrir el camión, validamos la legitimidad y el formato documental.</small>
+        
         <label for="shipmentType">¿Su envío es para un solo destinatario o contiene paquetes para diferentes personas (Houses)?</label>
         <select id="shipmentType" name="shipmentType" required>
             <option value="">Seleccione</option>
             <option value="single">Un destinatario</option>
             <option value="consolidado">Consolidado</option>
         </select>
-        <p><strong>Instrucción:</strong> Si es Consolidado, grapa el Manifiesto fuera del sobre. La suma de las Houses debe ser EXACTA a la Master.</p>
 
         <label for="highValue">¿El valor de su mercancía supera los $2,500 USD por código arancelario?</label>
         <select id="highValue" name="highValue" required>
@@ -43,6 +43,7 @@
             <option value="yes">Sí</option>
             <option value="no">No</option>
         </select>
+
         <label for="itnNumber">Número de ITN (AES)</label>
         <input type="text" id="itnNumber" name="itnNumber" placeholder="Ingrese ITN si aplica" pattern="X.*">
 
@@ -57,22 +58,21 @@
     <!-- FASE II: Medidas, Peso y Capacidad -->
     <fieldset>
         <legend>II. FASE TÉCNICA: Medidas, Peso y Capacidad</legend>
+
         <label for="pieceHeight">Altura del bulto más alto incluyendo estiba (inches)</label>
         <input type="number" id="pieceHeight" name="pieceHeight" min="0" max="200" required>
-        <p>Belly: 63" / Freighter: 96". Si mide más de 63", su reserva DEBE ser en vuelo Carguero. Si mide más de 96", no entra en ningún avión de Avianca.</p>
 
         <label for="pieceWeight">Peso de la pieza más pesada (kg)</label>
         <input type="number" id="pieceWeight" name="pieceWeight" min="0" max="1000" required>
-        <p>Si pesa más de 150 kg, es obligatorio usar base de madera (skids/shoring).</p>
 
         <label for="volumetricWeight">Peso volumétrico (L × W × H / 166)</label>
         <input type="number" id="volumetricWeight" name="volumetricWeight" min="0" required>
-        <p>Avianca cobra por el mayor entre peso real y volumétrico. Ajuste reserva y presupuesto.</p>
     </fieldset>
 
     <!-- FASE III: Integridad y Embalaje -->
     <fieldset>
         <legend>III. FASE DE INTEGRIDAD: Embalaje y Madera (NIMF-15)</legend>
+
         <label for="nimf15">¿Sus estibas tienen el sello NIMF-15 visible?</label>
         <select id="nimf15" name="nimf15" required>
             <option value="">Seleccione</option>
@@ -98,6 +98,7 @@
     <!-- FASE IV: Contenidos Peligrosos y Prohibidos -->
     <fieldset>
         <legend>IV. FASE CRÍTICA: Contenidos Peligrosos y Prohibidos (DGR/TSA)</legend>
+
         <label for="bateriasLitio">¿Su equipo contiene baterías de litio (aunque internas)?</label>
         <select id="bateriasLitio" name="bateriasLitio" required>
             <option value="">Seleccione</option>
@@ -119,6 +120,7 @@
     <!-- FASE V: Pouch y papelería -->
     <fieldset>
         <legend>V. RESUMEN DE DOCUMENTACIÓN PARA EL COUNTER</legend>
+
         <label for="pouchOrganized">¿Están los 3 originales dentro del sobre y las 6 copias fuera con clip?</label>
         <select id="pouchOrganized" name="pouchOrganized" required>
             <option value="">Seleccione</option>
