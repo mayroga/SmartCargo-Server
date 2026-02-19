@@ -6,34 +6,119 @@
 <title>SMARTCARGO – SISTEMA INFALIBLE</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body{ font-family: Arial,sans-serif; margin:0; background:#f4f6f9; }
-header{ background:#e20613; color:white; padding:20px; text-align:center; font-size:1.8em; font-weight:bold; }
-section{ background:white; margin:20px; padding:20px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-h2{ margin-top:0; border-bottom:2px solid #e20613; padding-bottom:5px; }
-input,select{ width:100%; padding:10px; margin:6px 0 15px 0; border-radius:5px; border:1px solid #ccc; }
-button{ background:#e20613; color:white; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-size:1.1em; }
-button:hover{ background:#b10410; }
-.alert{ padding:10px; margin:8px 0; border-radius:5px; }
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    background:#f4f6f9;
+}
+header{
+    background:#e20613;
+    color:white;
+    padding:20px;
+    text-align:center;
+    font-size:1.8em;
+    font-weight:bold;
+}
+section{
+    background:white;
+    margin:20px;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+h2{
+    margin-top:0;
+    border-bottom:2px solid #e20613;
+    padding-bottom:5px;
+}
+input,select{
+    width:100%;
+    padding:10px;
+    margin:6px 0 15px 0;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+button{
+    background:#e20613;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:1.1em;
+}
+button:hover{
+    background:#b10410;
+}
+.alert{
+    padding:10px;
+    margin:8px 0;
+    border-radius:5px;
+}
 .critical{ background:#f8d7da; color:#721c24; }
 .warning{ background:#fff3cd; color:#856404; }
 .success{ background:#d4edda; color:#155724; }
 .info{ background:#d1ecf1; color:#0c5460; }
-#resultado{ margin:20px; }
-.explicacionIA{ background:#eef2ff; padding:10px; margin-top:5px; border-left:4px solid #4f46e5; font-size:0.95em; }
-.smallinfo{ font-size:0.9em; background:#f1f1f1; padding:8px; border-radius:5px; margin-bottom:10px; }
-.status{ font-size:1.4em; font-weight:bold; margin:10px 0; }
-img.uploaded{ max-width:200px; margin:5px; cursor:zoom-in; transition:0.3s; }
-img.uploaded:hover{ transform:scale(2); }
+#resultado{
+    margin:20px;
+}
+.explicacionIA{
+    background:#eef2ff;
+    padding:10px;
+    margin-top:5px;
+    border-left:4px solid #4f46e5;
+    font-size:0.95em;
+}
+.smallinfo{
+    font-size:0.9em;
+    background:#f1f1f1;
+    padding:8px;
+    border-radius:5px;
+    margin-bottom:10px;
+}
+.preview-img{
+    max-width:100px;
+    margin:5px;
+    cursor:pointer;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+#imageModal{
+    display:none;
+    position:fixed;
+    z-index:1000;
+    left:0; top:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.8);
+    justify-content:center;
+    align-items:center;
+}
+#imageModal img{
+    max-width:90%;
+    max-height:90%;
+    border-radius:10px;
+}
+#imageModal span{
+    position:absolute;
+    top:20px;
+    right:30px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+}
 </style>
 </head>
+
 <body>
 
 <header>SMARTCARGO – SISTEMA INFALIBLE</header>
 
 <form id="cargoForm" enctype="multipart/form-data">
 
+<!-- FASE 1 -->
 <section>
 <h2>Fase 1: Identificación y Seguridad</h2>
+
 <input type="text" name="clientId" placeholder="ID Cliente / Known Shipper">
 <select name="highValue">
 <option value="">¿Valor mayor a $2,500 USD?</option>
@@ -47,38 +132,56 @@ img.uploaded:hover{ transform:scale(2); }
 <input type="date" name="departureDate">
 </section>
 
+<!-- FASE 2 -->
 <section>
 <h2>Fase 2: Anatomía de la Carga</h2>
+
 <div class="smallinfo">
 Altura permitida pasajeros: 63 in.<br>
 Altura máxima carguero: 96 in.<br>
 Pieza >150kg requiere SHORING.<br>
 Full pallet estándar: 48x40 in – máx 1000kg.
 </div>
-<input type="number" step="0.1" name="pieceHeight" placeholder="Altura pieza (in)">
-<input type="number" step="0.1" name="pieceWeight" placeholder="Peso pieza más pesada (kg)">
+
+<input type="number" step="0.1" name="pieceHeight" placeholder="Altura de la pieza más alta (in)">
+<input type="number" step="0.1" name="pieceWeight" placeholder="Peso de la pieza más pesada (kg)">
 <input type="number" name="numPieces" placeholder="Número total de piezas">
 <input type="number" step="0.1" name="totalWeight" placeholder="Peso total (kg)">
+
 <select name="needsShoring">
 <option value="">¿Necesita Shoring?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
+
 <select name="nimf15">
 <option value="">¿Pallet certificado NIMF-15?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
+
 <select name="overhang">
 <option value="">¿Existe Overhang?</option>
 <option value="yes">Sí</option>
 <option value="no">No</option>
 </select>
-<input type="file" name="fotoCarga">
+
+<input type="file" name="fotoCarga" id="fotoCarga" accept="image/*">
+<div id="previewFotos"></div>
+
 </section>
 
+<!-- FASE 3 -->
 <section>
 <h2>Fase 3: Contenidos Críticos</h2>
+
+<div class="smallinfo">
+NORMAL: carga estándar.<br>
+DGR: mercancía peligrosa (requiere 2 Shipper's Declaration originales, etiquetas UN, MSDS).<br>
+PER: perecedero (requiere certificados sanitarios y control temperatura).<br>
+BIO: biológica (requiere embalaje triple capa y certificados FDA).
+</div>
+
 <select name="cargoType">
 <option value="">Tipo de carga</option>
 <option value="NORMAL">Normal</option>
@@ -86,27 +189,35 @@ Full pallet estándar: 48x40 in – máx 1000kg.
 <option value="PER">Perishable</option>
 <option value="BIO">Biológica</option>
 </select>
+
 <select name="dgrDocs">
 <option value="">¿Documentos DGR completos?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
+
 <select name="fitoDocs">
 <option value="">¿Certificados FDA/Fitosanitarios?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
-<input type="file" name="docsCertificados">
+
+<input type="file" name="docsCertificados" id="docsCertificados">
+<div id="previewDocs"></div>
+
 </section>
 
+<!-- FASE FINAL -->
 <section>
 <h2>Fase Final: Logística y Embalaje</h2>
+
 <input type="text" name="arrivalTime" placeholder="Hora llegada counter">
 <select name="packaging">
 <option value="">Tipo de embalaje</option>
 <option value="straps">Straps</option>
 <option value="shrink">Shrink Wrap</option>
 </select>
+
 <input type="text" name="zipCode" placeholder="Código Postal">
 </section>
 
@@ -119,23 +230,64 @@ Full pallet estándar: 48x40 in – máx 1000kg.
 
 <div id="resultado"></div>
 
+<!-- Modal para ver imágenes -->
+<div id="imageModal">
+<span onclick="cerrarModal()">&times;</span>
+<img id="modalImg">
+</div>
+
 <script>
+// Vista previa de fotos
+document.getElementById("fotoCarga").addEventListener("change", function(){
+    const preview = document.getElementById("previewFotos");
+    preview.innerHTML="";
+    for(const file of this.files){
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.className="preview-img";
+        img.onclick=()=>abrirModal(img.src);
+        preview.appendChild(img);
+    }
+});
+
+// Vista previa de documentos (solo imagenes visibles)
+document.getElementById("docsCertificados").addEventListener("change", function(){
+    const preview = document.getElementById("previewDocs");
+    preview.innerHTML="";
+    for(const file of this.files){
+        if(file.type.startsWith("image/")){
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+            img.className="preview-img";
+            img.onclick=()=>abrirModal(img.src);
+            preview.appendChild(img);
+        }
+    }
+});
+
+// Modal
+function abrirModal(src){
+    document.getElementById("imageModal").style.display="flex";
+    document.getElementById("modalImg").src=src;
+}
+function cerrarModal(){
+    document.getElementById("imageModal").style.display="none";
+}
+
+// Evaluar carga
 async function evaluar(){
     const form = document.getElementById("cargoForm");
-    const data = new FormData(form);
     const resultadoDiv = document.getElementById("resultado");
     resultadoDiv.innerHTML="Evaluando...";
 
+    const formData = new FormData(form);
+
     try{
-        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data,{
-            headers: { "Content-Type": "multipart/form-data" }
+        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", formData, {
+            headers: {"Content-Type":"multipart/form-data"}
         });
 
-        let html=`<div class="status">${response.data.status}</div>`;
-
-        response.data.archivos.forEach(url=>{
-            html+=`<img src="https://smartcargo-server.onrender.com${url}" class="uploaded">`;
-        });
+        let html = `<h2>Resultado Final: ${response.data.status}</h2>`;
 
         response.data.explicaciones.forEach(item=>{
             let clase="info";
@@ -147,30 +299,41 @@ async function evaluar(){
             html+=`<div class="explicacionIA">${item.explicacion}</div>`;
         });
 
-        resultadoDiv.innerHTML=html;
+        // Mostrar archivos subidos
+        if(response.data.archivos.length>0){
+            html+="<h3>Archivos Subidos:</h3>";
+            response.data.archivos.forEach(f=>{
+                html+=`<a href="https://smartcargo-server.onrender.com/${f}" target="_blank">${f.split("/").pop()}</a><br>`;
+            });
+        }
 
-    }catch(e){
+        resultadoDiv.innerHTML=html;
+    }catch(err){
+        console.error(err);
         resultadoDiv.innerHTML=`<div class="alert critical">Error conectando con servidor</div>`;
-        console.error(e);
     }
 }
 
+// Generar PDF
 async function generarPDF(){
     const form = document.getElementById("cargoForm");
-    const data = new FormData(form);
     const resultadoDiv = document.getElementById("resultado");
     resultadoDiv.innerHTML="Generando PDF...";
 
+    const formData = new FormData(form);
+
     try{
-        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data,{
-            headers: { "Content-Type": "multipart/form-data" }
+        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", formData, {
+            headers: {"Content-Type":"multipart/form-data"}
         });
-        resultadoDiv.innerHTML=`<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">Abrir Reporte PDF</a>`;
-    }catch(e){
+        const url=response.data.url.startsWith("/") ? "https://smartcargo-server.onrender.com"+response.data.url : response.data.url;
+        resultadoDiv.innerHTML=`<a href="${url}" target="_blank">Abrir Reporte PDF</a>`;
+    }catch(err){
+        console.error(err);
         resultadoDiv.innerHTML=`<div class="alert critical">Error generando PDF</div>`;
-        console.error(e);
     }
 }
 </script>
+
 </body>
 </html>
