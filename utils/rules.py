@@ -1,67 +1,86 @@
 # utils/rules.py
-# Reglas técnicas y alertas SMARTCARGO-AIPA
+# Reglas automáticas de validación SMARTCARGO-AIPA
 
-def validar_respuesta(fase: int, pregunta_id: int, respuesta: str):
+from config import ALERTAS, MAX_HEIGHT_PASSENGER, MAX_HEIGHT_FREIGHTER, MAX_WEIGHT_SINGLE
+
+def validar_respuesta(pregunta_id: int, respuesta: str) -> str:
     """
-    Retorna una alerta si la respuesta viola reglas críticas de Avianca Cargo.
+    Evalúa la respuesta del usuario y retorna alerta si aplica.
     """
-    alerta = None
+    r = respuesta.strip().lower()
+    alerta = ""
 
-    # Fase 1: Identificación y Seguridad
-    if fase == 1:
-        if pregunta_id == 2:  # Valor > $2500
-            if respuesta.lower() in ['sí', 'si', 'yes'] and not respuesta.strip().isdigit():
-                alerta = "⚠ Ingrese el número ITN (AES) obligatorio. Multa federal $10,000 si omite."
-        elif pregunta_id == 3:  # Consolidado o directo
-            if respuesta.lower() not in ['directa', 'consolidado']:
-                alerta = "⚠ Respuesta inválida. Debe ser 'Directa' o 'Consolidado'."
+    # ============================
+    # FASE 1: Identificación y Seguridad
+    if pregunta_id == 1 and r == "":
+        alerta = "⚠ Debe ingresar su ID o SCAC para Known Shipper."
+    if pregunta_id == 2 and r in ["sí", "si", "yes"]:
+        alerta = ALERTAS["itn_faltante"]
+    if pregunta_id == 3 and r in ["consolidado", "multiple"]:
+        alerta = "⚠ Debe generar Manifiesto de Carga y Houses exactas."
 
-    # Fase 2: Anatomía de la Carga
-    if fase == 2:
-        if pregunta_id == 4:  # Altura
-            try:
-                altura = float(respuesta)
-                if altura > 96:
-                    alerta = "❌ Altura excede límite de todos los aviones Avianca. Ajuste antes de continuar."
-                elif altura > 63:
-                    alerta = "⚠ Solo puede volar en avión Carguero (Freighter)."
-            except ValueError:
-                alerta = "⚠ Ingrese un número válido para altura en pulgadas."
-        elif pregunta_id == 5:  # Peso > 150kg
-            try:
-                peso = float(respuesta)
-                if peso > 150:
-                    alerta = "⚠ Es obligatorio usar base de madera (shoring) para distribuir el peso."
-            except ValueError:
-                alerta = "⚠ Ingrese un número válido para peso en kg."
+    # ============================
+    # FASE 2: Anatomía de la Carga
+    if pregunta_id == 4:
+        try:
+            altura = float(r.replace('"',''))
+            if altura > MAX_HEIGHT_FREIGHTER:
+                alerta = ALERTAS["altura_maxima"]
+            elif altura > MAX_HEIGHT_PASSENGER:
+                alerta = ALERTAS["altura_carguero"]
+        except:
+            alerta = "Ingrese altura válida en pulgadas."
+    if pregunta_id == 5 and any(x in r for x in ["sí","si","yes"]):
+        alerta = ALERTAS["peso_excede"]
+    if pregunta_id == 6 and "nimf" not in r:
+        alerta = "⚠ Pallet sin sello NIMF-15; use pallet plástico o certificado."
 
-    # Fase 3: Contenidos Críticos
-    if fase == 3:
-        if pregunta_id == 10:  # Baterías
-            if respuesta.lower() in ['sí', 'si', 'yes']:
-                alerta = "⚠ Requiere 2 originales de Shipper’s Declaration (DGR). Omitirlo es delito federal."
-        if pregunta_id == 11:  # Origen animal/vegetal
-            if respuesta.lower() in ['sí', 'si', 'yes']:
-                alerta = "⚠ Debe presentar Certificado Fitosanitario o Prior Notice FDA."
+    # ============================
+    # FASE 3: Contenidos Críticos (DGR/IATA)
+    if pregunta_id == 7 and any(x in r for x in ["sí","si","yes"]):
+        alerta = "⚠ Mercancía DGR; requiere 2 originales Shipper’s Declaration."
+    if pregunta_id == 8 and any(x in r for x in ["sí","si","yes"]):
+        alerta = "⚠ Requiere Certificado Fitosanitario o Prior Notice FDA."
 
-    # Fase 4: Documental final
-    if fase == 4:
-        if pregunta_id == 12:  # AWB
-            if respuesta.lower() not in ['sí', 'si', 'yes']:
-                alerta = "⚠ Faltan originales o copias de AWB. El chofer perderá su turno."
+    # ============================
+    # FASE 4: Check-list Documental
+    if pregunta_id == 9 and "no" in r:
+        alerta = "⚠ Faltan originales/copias; pérdida de turno en el counter."
+    if pregunta_id == 10 and "no" in r:
+        alerta = "⚠ Código postal incorrecto; sistema bloquea guía."
 
-    # Fase 5: Logística de arribo
-    if fase == 5:
-        if pregunta_id == 13:  # Hora de llegada
-            alerta = "⚠ Cut-off 4 horas antes del vuelo. Llegadas tarde generan cargos por storage."
+    # ============================
+    # FASE 5: Logística de Arribo
+    if pregunta_id == 11:
+        alerta = "⚠ Recuerde: Cut-off 4h antes del vuelo; llegada tardía = cargos Storage."
 
-    # Fase 6: Integridad física y embalaje
-    if fase == 6:
-        if pregunta_id in [14,15,16,17,18]:  # Flejes, etiquetas, plástico
-            alerta = "⚠ Verifique embalaje, flejes y etiquetas. Carga puede ser rechazada."
+    # ============================
+    # FASE 6: Integridad Física y Embalaje
+    if pregunta_id == 12 and "plástico" in r:
+        alerta = "⚠ Tanques/motores pesados deben tener flejes metálicos."
+    if pregunta_id == 13 and "no" in r:
+        alerta = "⚠ Cada bulto debe tener número AWB visible; carga huérfana si no."
+    if pregunta_id == 14 and "sí" in r:
+        alerta = "⚠ Cajas dañadas = rechazo; cambiar antes de enviar."
+    if pregunta_id == 15 and "no" in r:
+        alerta = "⚠ Plástico flojo = riesgo; counter puede devolver camión."
+    if pregunta_id == 16 and "sí" in r:
+        alerta = "⚠ Etiquetas viejas deben eliminarse para evitar confusión."
 
-    # Fase 7 y 8: Seguridad visual y contenedores
-    if fase in [7,8]:
-        alerta = "⚠ Verifique limpieza, etiquetas, número de piezas y Overhang de pallet."
+    # ============================
+    # FASE 7: Seguridad TSA
+    if pregunta_id == 17 and "no" in r:
+        alerta = "⚠ Limpie olores/aceites; riesgo DGR."
+    if pregunta_id == 18 and "no estibar" in r:
+        alerta = "⚠ Costo de flete puede aumentar; restricción de carga."
+    if pregunta_id == 19 and "no" in r:
+        alerta = "⚠ Número de piezas no coincide; corrija documento."
+
+    # ============================
+    # FASE 8: Equipos y Contenedores
+    if pregunta_id == 20 and any(x in r for x in ["sí","si","yes"]):
+        alerta = "⚠ Tanques/cilindros deben estar vacíos y con certificación; válvulas protegidas."
+    if pregunta_id == 21 and any(x in r for x in ["sí","si","yes"]):
+        alerta = "⚠ Overhang detectado; re-estibar carga para alinear con borde del pallet."
 
     return alerta
