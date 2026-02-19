@@ -1,14 +1,10 @@
-# main.py
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from utils.rules import validar_respuesta
-from config import APP_NAME, VERSION, TOTAL_PREGUNTAS
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title=APP_NAME, version=VERSION)
+app = FastAPI(title="SMARTCARGO-AIPA", description="Pre-chequeo técnico para Avianca Cargo Miami")
 
-# CORS para frontend
+# Permitir acceso desde cualquier origen (para frontend)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,69 +12,186 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelo de entrada de usuario
-class CargoInput(BaseModel):
-    fase: int
-    pregunta_id: int
-    respuesta: str
+# Preguntas e instrucciones fase por fase
+questions = [
+    # Fase 1: Identificación y Seguridad (TSA/CBP)
+    {
+        "id": 1,
+        "fase": "Fase 1: Identificación y Seguridad",
+        "question": "Ingrese su ID de Cliente o código SCAC de la empresa de transporte.",
+        "instruction": "Esto valida que usted es un Known Shipper (Embarcador Conocido). Si no lo es, su carga será sometida a una inspección física obligatoria de 24 a 48 horas."
+    },
+    {
+        "id": 2,
+        "fase": "Fase 1: Identificación y Seguridad",
+        "question": "¿El valor de su mercancía por código arancelario supera los $2,500 USD?",
+        "instruction": "Si la respuesta es SÍ, es OBLIGATORIO el número de ITN (AES). Ingréselo ahora para que aparezca en la Guía Aérea. Sin esto, la multa federal es de $10,000 USD."
+    },
+    {
+        "id": 3,
+        "fase": "Fase 1: Identificación y Seguridad",
+        "question": "¿Su carga es para un solo destino o es un consolidado de varios clientes?",
+        "instruction": "Si es consolidado, la App activará la sección de Manifiesto de Carga. Si es directa, pasaremos a la validación de Guía Master única."
+    },
 
-# Preguntas definidas
-PREGUNTAS = {
-    1: {"fase":1, "pregunta":"Ingrese su ID de Cliente o código SCAC de la empresa de transporte.",
-        "instruccion":"Valida Known Shipper. Si no lo es, inspección física 24-48h."},
-    2: {"fase":1, "pregunta":"¿El valor de su mercancía por código arancelario supera los $2,500 USD?",
-        "instruccion":"Se requiere ITN/AES; multa federal $10,000 si falta."},
-    3: {"fase":1, "pregunta":"¿Su carga es para un solo destino o es un consolidado de varios clientes?",
-        "instruccion":"Si consolidado, active Manifiesto de Carga; si directa, pase a la Guía Master."},
-    4: {"fase":2, "pregunta":"¿Cuál es la medida de la pieza más alta, incluyendo la base de madera (estiba)?",
-        "instruccion":"Si >63\", solo puede volar en avión Carguero; si >96\", no puede volar en Avianca."},
-    5: {"fase":2, "pregunta":"¿Alguna pieza pesa más de 150 kg (330 lbs)?",
-        "instruccion":"Debe usar base de madera (skids/shoring) para distribuir peso."},
-    6: {"fase":2, "pregunta":"¿Su estiba de madera tiene el sello NIMF-15 visible en dos lados?",
-        "instruccion":"Sin sello, USDA/CBP ordenará retorno inmediato; use pallet plástico o certificado."},
-    7: {"fase":3, "pregunta":"¿Su mercancía contiene baterías de litio, líquidos, aerosoles, perfumes o imanes?",
-        "instruccion":"Requiere 2 originales de Shipper’s Declaration con bordes rojos."},
-    8: {"fase":3, "pregunta":"¿Su carga es de origen animal, vegetal o para consumo humano (medicinas/comida)?",
-        "instruccion":"Debe presentar Certificado Fitosanitario o Prior Notice FDA, fuera del sobre."},
-    9: {"fase":4, "pregunta":"¿Tiene listos los 3 originales y 6 copias de la Guía Aérea (AWB)?",
-        "instruccion":"El agente no hace copias; falta = pérdida de turno."},
-    10: {"fase":4, "pregunta":"¿El código postal del destinatario coincide con la guía y factura?",
-         "instruccion":"El sistema bloquea guías con códigos postales incompletos; verifique dígito por dígito."},
-    11: {"fase":5, "pregunta":"¿A qué hora estima que su chofer llegará al counter de Avianca en Miami?",
-         "instruccion":"Cut-off es 4h antes del vuelo; llegada tardía = cargos por Storage y pérdida de reserva."},
-    12: {"fase":6, "pregunta":"¿La mercancía está asegurada con flejes o solo con plástico?",
-         "instruccion":"Cargas pesadas DEBEN llevar flejes; si se mueve, counter rechazará la carga."},
-    13: {"fase":6, "pregunta":"¿Cada bulto tiene escrito el número de AWB?",
-         "instruccion":"Si se cae la etiqueta, carga huérfana; obligatorio marcar físicamente."},
-    14: {"fase":6, "pregunta":"¿Hay cajas rotas, aplastadas o con esquinas dobladas?",
-         "instruccion":"Cargas con daño preexistente = rechazo; cambie caja antes de enviar."},
-    15: {"fase":6, "pregunta":"¿El plástico que envuelve el pallet está tenso y cubre toda la carga?",
-         "instruccion":"Si no, riesgo de seguridad; el counter puede devolver el camión."},
-    16: {"fase":6, "pregunta":"¿Existen etiquetas viejas de otros vuelos o aerolíneas?",
-         "instruccion":"Eliminar etiquetas viejas; generan confusión en escáners y retenciones."},
-    17: {"fase":7, "pregunta":"¿La carga está limpia de olores, aceites o grasa?",
-         "instruccion":"Manchas indican fuga de químicos; detiene proceso por riesgo DGR."},
-    18: {"fase":7, "pregunta":"¿Los bultos tienen etiquetas 'Frágil', 'Este Lado Arriba' o 'No Estibar'?",
-         "instruccion":"'No Estibar' = posible aumento de flete; alertar al usuario."},
-    19: {"fase":7, "pregunta":"¿El número de piezas coincide con la Guía Aérea?",
-         "instruccion":"Sistema Avianca no permite ingresos parciales; corrija documento antes de llegar."},
-    20: {"fase":8, "pregunta":"¿Está enviando tanques o cilindros?",
-         "instruccion":"Deben estar vacíos y con certificación; válvulas protegidas."},
-    21: {"fase":8, "pregunta":"¿Su pallet tiene 'Overhang' (carga sobresale de la base)?",
-         "instruccion":"Sobresaliente = re-estibar; carga debe alinearse con borde del pallet."},
-}
+    # Fase 2: Anatomía de la Carga (Filtro Técnico Avianca)
+    {
+        "id": 4,
+        "fase": "Fase 2: Anatomía de la Carga",
+        "question": "¿Cuál es la medida de la pieza más alta, incluyendo la base de madera (estiba)?",
+        "instruction": "Si mide más de 63 pulgadas, solo puede volar en avión Carguero (Freighter). Si mide más de 96 pulgadas, no puede volar en ningún avión de Avianca. Ajuste la altura ahora."
+    },
+    {
+        "id": 5,
+        "fase": "Fase 2: Anatomía de la Carga",
+        "question": "¿Alguna pieza pesa más de 150 kg (330 lbs)?",
+        "instruction": "Si es así, debe tener una base de madera (skids/shoring) para distribuir el peso en el piso del avión. De lo contrario, el jefe de patio rechazará la carga por riesgo de daños estructurales."
+    },
+    {
+        "id": 6,
+        "fase": "Fase 2: Anatomía de la Carga",
+        "question": "¿Su estiba (pallet) de madera tiene el sello NIMF-15 (espiga de trigo) visible en dos lados?",
+        "instruction": "Sin el sello de fumigación, USDA/CBP ordenará el retorno inmediato de la carga. Cámbielo por un pallet de plástico si no está certificado."
+    },
 
-# ============================
-# ENDPOINTS
-# ============================
+    # Fase 3: Contenidos Críticos (Filtro IATA/DOT)
+    {
+        "id": 7,
+        "fase": "Fase 3: Contenidos Críticos",
+        "question": "¿Su mercancía contiene baterías de litio, líquidos, aerosoles, perfumes o imanes?",
+        "instruction": "Estos son artículos de Mercancía Peligrosa (DGR). Requiere 2 originales de la Shipper’s Declaration con bordes rojos. Omitirlo es un delito federal."
+    },
+    {
+        "id": 8,
+        "fase": "Fase 3: Contenidos Críticos",
+        "question": "¿Su carga es de origen animal, vegetal o para consumo humano (medicinas/comida)?",
+        "instruction": "Usted debe presentar el Certificado Fitosanitario Original o el Prior Notice de la FDA. Estos papeles deben ir FUERA del sobre para entrega inmediata al agente."
+    },
 
-@app.get("/get_question/{fase}/{pregunta_id}")
-async def get_question(fase: int, pregunta_id: int):
-    if pregunta_id in PREGUNTAS:
-        return PREGUNTAS[pregunta_id]
-    return JSONResponse(status_code=404, content={"error": "Pregunta no encontrada"})
+    # Fase 4: Check-list Documental Final
+    {
+        "id": 9,
+        "fase": "Fase 4: Check-list Documental Final",
+        "question": "¿Tiene listos los 3 originales y 6 copias de la Guía Aérea (AWB)?",
+        "instruction": "El agente de counter no hace copias. Si falta una, el chofer será enviado a una oficina externa, perdiendo su turno en la fila."
+    },
+    {
+        "id": 10,
+        "fase": "Fase 4: Check-list Documental Final",
+        "question": "¿El código postal (Zip Code) del destinatario está escrito en la guía y coincide con la factura?",
+        "instruction": "El sistema de Avianca bloquea guías con códigos postales incompletos. Verifique dígito por dígito ahora."
+    },
+
+    # Fase 5: Instrucción de Logística de Arribo
+    {
+        "id": 11,
+        "fase": "Fase 5: Logística de Arribo",
+        "question": "¿A qué hora estima que su chofer llegará al counter de Avianca en Miami?",
+        "instruction": "El cierre de recepción (Cut-off) para su vuelo es 4 horas antes de la salida. Si llega después, se aplicarán cargos por Storage (almacenaje) y perderá la reserva."
+    },
+
+    # Fase 6: Integridad Física y Embalaje
+    {
+        "id": 12,
+        "fase": "Fase 6: Integridad Física y Embalaje",
+        "question": "¿La mercancía está asegurada a la estiba con flejes (straps) o solo con plástico (shrink wrap)?",
+        "instruction": "Si envía tanques, motores o piezas pesadas, el plástico no es suficiente. El counter rechazará la carga si no tiene flejes metálicos o de alta resistencia. La carga que se mueve es carga que no vuela."
+    },
+    {
+        "id": 13,
+        "fase": "Fase 6: Integridad Física y Embalaje",
+        "question": "¿Cada bulto tiene escrito el número de Guía Aérea (AWB) con marcador permanente o etiqueta?",
+        "instruction": "Si el plástico se rompe y la etiqueta se cae, la carga queda huérfana. Es obligatorio que el número de guía esté escrito físicamente en la caja o el pallet para que el counter lo acepte."
+    },
+    {
+        "id": 14,
+        "fase": "Fase 6: Integridad Física y Embalaje",
+        "question": "¿Hay cajas rotas, aplastadas o con esquinas dobladas?",
+        "instruction": "Avianca no acepta carga con 'daño pre-existente' sin anotarlo en la guía. Si el daño es mucho, el counter rechazará la carga para evitar reclamos al seguro. Cambie la caja antes de enviarla."
+    },
+    {
+        "id": 15,
+        "fase": "Fase 6: Integridad Física y Embalaje",
+        "question": "¿El plástico que envuelve el pallet está tenso y cubre desde la base de madera hasta el tope?",
+        "instruction": "Un pallet mal envuelto (suelto) es un riesgo de seguridad. Si el agente de counter ve que la carga se puede ladeado, ordenará el re-envoltorio con costo extra o devolverá el camión."
+    },
+    {
+        "id": 16,
+        "fase": "Fase 6: Integridad Física y Embalaje",
+        "question": "¿Existen etiquetas viejas de otros vuelos o de otras aerolíneas en las cajas?",
+        "instruction": "Esto genera confusión en los escáners de la bodega. Elimine toda etiqueta vieja. Una etiqueta de 'Bogotá' en una carga que va a 'Lima' causará que la carga se pierda o sea retenida por seguridad."
+    },
+
+    # Fase 7: Seguridad y Restricciones Visuales
+    {
+        "id": 17,
+        "fase": "Fase 7: Seguridad y Restricciones Visuales",
+        "question": "¿La carga está 'limpia' de olores fuertes, aceites o manchas de grasa?",
+        "instruction": "Manchas de aceite en la base del pallet indican fuga de químicos o motores mal drenados. Esto detiene el proceso por riesgo de Mercancía Peligrosa no declarada."
+    },
+    {
+        "id": 18,
+        "fase": "Fase 7: Seguridad y Restricciones Visuales",
+        "question": "¿Los bultos tienen etiquetas de 'Frágil', 'Este Lado Arriba' (Arrow labels) o 'No Estibar'?",
+        "instruction": "Si pone 'No Estibar', la aplicación debe advertirle que el costo del flete puede subir, ya que no se podrá poner nada encima en la bodega del avión."
+    },
+    {
+        "id": 19,
+        "fase": "Fase 7: Seguridad y Restricciones Visuales",
+        "question": "¿El número de piezas físico es exactamente igual al que escribió en la Guía Aérea?",
+        "instruction": "Si la guía dice 10 bultos y el chofer entrega 9, el counter no recibirá nada. El sistema de Avianca no permite ingresos parciales. Corrija el documento antes de llegar."
+    },
+
+    # Fase 8: Requisitos Específicos de Equipos y Contenedores
+    {
+        "id": 20,
+        "fase": "Fase 8: Requisitos Específicos de Equipos y Contenedores",
+        "question": "¿Está enviando tanques o cilindros?",
+        "instruction": "Deben estar vacíos y con una certificación de que no tienen presión. Si tienen válvulas, deben estar protegidas por una tapa o jaula para evitar aperturas accidentales."
+    },
+    {
+        "id": 21,
+        "fase": "Fase 8: Requisitos Específicos de Equipos y Contenedores",
+        "question": "¿Su pallet tiene 'Overhang' (la carga sobresale de la base de madera)?",
+        "instruction": "Si la carga sobresale, no encajará en las posiciones del avión. El counter le obligará a re-estibar. La carga debe estar alineada con los bordes del pallet."
+    },
+]
+
+@app.get("/questions")
+async def get_questions():
+    return JSONResponse(content=questions)
 
 @app.post("/submit_answer")
-async def submit_answer(input: CargoInput):
-    alerta = validar_respuesta(input.pregunta_id, input.respuesta)
-    return {"fase": input.fase, "pregunta_id": input.pregunta_id, "alerta": alerta}
+async def submit_answer(request: Request):
+    data = await request.json()
+    q_id = data.get("id")
+    answer = data.get("answer")
+
+    # Borrar espacios y normalizar
+    if isinstance(answer, str):
+        answer = answer.strip().lower()
+
+    alert = ""
+    # Lógica de alertas básicas según tu guía
+    if q_id == 2 and answer in ["sí", "si", "yes"]:
+        alert = "ALERTA: Sin ITN (AES) no puede volar. Multa federal $10,000 USD."
+    if q_id == 4:
+        try:
+            height = float(answer)
+            if height > 96:
+                alert = "ALERTA: La carga NO cabe en ningún avión de Avianca."
+            elif height > 63:
+                alert = "INSTRUCCIÓN: Solo puede volar en avión Carguero (Freighter)."
+        except:
+            alert = "Ingrese un valor numérico válido para la altura."
+    if q_id == 5:
+        try:
+            weight = float(answer)
+            if weight > 150:
+                alert = "INSTRUCCIÓN: Use base de madera (shoring) para distribuir peso."
+        except:
+            alert = "Ingrese un valor numérico válido para el peso."
+    if q_id == 21 and answer in ["sí", "si", "yes"]:
+        alert = "ALERTA: Overhang detectado. Re-estibar la carga."
+
+    return JSONResponse(content={"alert": alert})
