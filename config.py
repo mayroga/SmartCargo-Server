@@ -1,40 +1,29 @@
 # config.py
-# Configuración global SMARTCARGO-AIPA
-
 import os
 
-# API Keys (Render o entorno local)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-
-# Configuración general del app
-APP_NAME = "SMARTCARGO-AIPA"
+# Identidad de la Aplicación
+APP_NAME = "AL CIELO - SmartCargo Advisory by May Roga"
 VERSION = "1.0"
-TOTAL_PREGUNTAS = 21
 
-# Límites técnicos de Avianca Cargo
-MAX_HEIGHT_PASSENGER = 63   # pulgadas
-MAX_HEIGHT_FREIGHTER = 96   # pulgadas
-MAX_WEIGHT_SINGLE = 150     # kg por pieza sin shoring
+# Límites Técnicos Operativos
+MAX_HEIGHT_PAX = 63      # Pulgadas (Bellies / Aviones de pasajeros)
+MAX_HEIGHT_FRT = 96      # Pulgadas (Cargueros puros)
+MAX_WEIGHT_SHORING = 150 # KG (Límite antes de requerir distribución de peso)
 
-PALLET_SIZES = {
-    "PMC": {"base": (125, 96), "height": 96, "rating_kg": 6800},
-    "PAG": {"base": (125, 88), "height": 96, "rating_kg": 4626},
-    "PAJ": {"base": (125, 88), "height": 63, "rating_kg": 4626},
-    "PQA": {"base": (125, 96), "height": 96, "rating_kg": 11340},
+# Definición Técnica de ULDs (Pallets)
+ULD_TYPES = {
+    "PMC": {"largo": 125, "ancho": 96, "max_height": 96, "rating": 6800},
+    "PAG": {"largo": 125, "ancho": 88, "max_height": 96, "rating": 4626},
+    "PAJ": {"largo": 125, "ancho": 88, "max_height": 63, "rating": 4626},
+    "PQA": {"largo": 125, "ancho": 96, "max_height": 96, "rating": 11340},
 }
 
-# Mensajes de alerta estándar
-ALERTAS = {
-    "peso_excede": "⚠ Peso excede 150kg: use shoring obligatorio.",
-    "altura_carguero": "⚠ Altura >63'': solo en Freighter.",
-    "altura_maxima": "❌ Altura excede límite de aviones Avianca.",
-    "itn_faltante": "⚠ Ingrese ITN (AES) obligatorio. Multa federal $10,000."
-}
-
-# Configuración de endpoints de IA
-AI_CONFIG = {
-    "model_openai": "gpt-4o-mini",
-    "model_gemini": "gemini-1.5",
-    "timeout": 15  # segundos
+# Mensajes de Asesoría Profesional (Evitando lenguaje de auditoría)
+MSJ_ASESORIA = {
+    "itn_miss": "⚠ Falta ITN: Obligatorio para exportaciones > $2,500 USD (Evite retención CBP).",
+    "nimf_error": "❌ Pallet sin NIMF-15: Se sugiere cambiar por pallet plástico para evitar rechazo.",
+    "height_crit": "❌ Altura Crítica: Excede el límite de fuselaje de Avianca Cargo.",
+    "weight_warn": "⚠ Peso Concentrado: Se sugiere uso de shoring para proteger la malla del ULD.",
+    "dgr_warn": "⚠ Contenido DGR: Requiere Shipper's Declaration original firmada.",
+    "overhang_crit": "⚠ Overhang: Re-estibar carga dentro de los bordes del pallet para evitar rechazo."
 }
