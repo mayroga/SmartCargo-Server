@@ -2,78 +2,130 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMARTCARGO-AIPA | Pre-Chequeo Avianca Cargo Miami</title>
+<title>SMARTCARGO-AIPA | Prechequeo Avianca Cargo</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <style>
-body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0;}
-.container { max-width: 800px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px;}
-h2 { color: #0f4c81; }
-.question { margin: 15px 0; padding: 10px; background: #e8f0fe; border-radius: 5px; }
-.instruction { font-size: 0.9em; color: #333; margin-bottom: 10px; }
-input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;}
-button { background: #0f4c81; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;}
-button:hover { background: #06335a; }
-.alert { margin: 10px 0; padding: 10px; border-radius: 5px; color: white; }
-.alert-danger { background: #d9534f; }
-.alert-info { background: #5bc0de; }
-.fase { font-weight: bold; color: #0f4c81; margin-top: 20px;}
+body { font-family: Arial, sans-serif; background: #f5f5f5; color: #222; margin: 0; padding: 0; }
+.container { max-width: 900px; margin: auto; padding: 20px; }
+h1 { text-align: center; color: #003366; }
+.question-box { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 0 5px #aaa; }
+button { padding: 8px 15px; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; }
+button:hover { opacity: 0.8; }
+.alert { color: red; font-weight: bold; }
+.suggestion { color: blue; font-weight: bold; }
+#status { font-size: 18px; font-weight: bold; margin-top: 20px; text-align: center; }
 </style>
 </head>
 <body>
 <div class="container">
-<h2>SMARTCARGO-AIPA | Pre-Chequeo Técnico</h2>
-<div id="quiz"></div>
-</div>
+<h1>SMARTCARGO-AIPA | Prechequeo Avianca Cargo</h1>
+
+<div id="question-container"></div>
+
+<button onclick="submitAnswers()">Finalizar y Generar Reporte</button>
+<button onclick="downloadPDF()">Descargar PDF</button>
+
+<div id="status"></div>
 
 <script>
-let questions = [];
-let current = 0;
+const questions = [
+    // Fase 1
+    {phase:"Fase 1: Identificación y Seguridad", question:"Ingrese su ID de Cliente o código SCAC de la empresa de transporte."},
+    {phase:"Fase 1: Identificación y Seguridad", question:"¿El valor de su mercancía por código arancelario supera los $2,500 USD?"},
+    {phase:"Fase 1: Identificación y Seguridad", question:"¿Su carga es para un solo destino o es un consolidado de varios clientes?"},
+    // Fase 2
+    {phase:"Fase 2: Anatomía de la Carga", question:"¿Cuál es la medida de la pieza más alta, incluyendo la base de madera (estiba)?"},
+    {phase:"Fase 2: Anatomía de la Carga", question:"¿Alguna pieza pesa más de 150 kg (330 lbs)?"},
+    {phase:"Fase 2: Anatomía de la Carga", question:"¿Su estiba (pallet) de madera tiene el sello NIMF-15 visible en dos lados?"},
+    // Fase 3
+    {phase:"Fase 3: Contenidos Críticos", question:"¿Su mercancía contiene baterías de litio, líquidos, aerosoles, perfumes o imanes?"},
+    {phase:"Fase 3: Contenidos Críticos", question:"¿Su carga es de origen animal, vegetal o para consumo humano (medicinas/comida)?"},
+    // Fase 4
+    {phase:"Fase 4: Check-list Documental", question:"¿Tiene listos los 3 originales y 6 copias de la Guía Aérea (AWB)?"},
+    {phase:"Fase 4: Check-list Documental", question:"¿El código postal (Zip Code) del destinatario está escrito en la guía y coincide con la factura?"},
+    // Fase 5
+    {phase:"Fase 5: Logística de Arribo", question:"¿A qué hora estima que su chofer llegará al counter de Avianca en Miami?"},
+    // Fase 6
+    {phase:"Fase 6: Integridad Física y Embalaje", question:"¿La mercancía está asegurada a la estiba con flejes (straps) o solo con plástico (shrink wrap)?"},
+    {phase:"Fase 6: Integridad Física y Embalaje", question:"¿Cada bulto tiene escrito el número de Guía Aérea (AWB) con marcador permanente o etiqueta?"},
+    {phase:"Fase 6: Integridad Física y Embalaje", question:"¿Hay cajas rotas, aplastadas o con esquinas dobladas?"},
+    {phase:"Fase 6: Integridad Física y Embalaje", question:"¿El plástico que envuelve el pallet está tenso y cubre desde la base de madera hasta el tope?"},
+    {phase:"Fase 6: Integridad Física y Embalaje", question:"¿Existen etiquetas viejas de otros vuelos o de otras aerolíneas en las cajas?"},
+    // Fase 7
+    {phase:"Fase 7: Seguridad Visual", question:"¿La carga está 'limpia' de olores fuertes, aceites o manchas de grasa?"},
+    {phase:"Fase 7: Seguridad Visual", question:"¿Los bultos tienen etiquetas de 'Frágil', 'Este Lado Arriba' (Arrow labels) o 'No Estibar'?"},
+    {phase:"Fase 7: Seguridad Visual", question:"¿El número de piezas físico es exactamente igual al que escribió en la Guía Aérea?"},
+    // Fase 8
+    {phase:"Fase 8: Equipos y Contenedores", question:"¿Está enviando tanques o cilindros?"},
+    {phase:"Fase 8: Equipos y Contenedores", question:"¿Su pallet tiene 'Overhang' (la carga sobresale de la base de madera)?"}
+];
 
-async function loadQuestions() {
-    const res = await axios.get("http://localhost:8000/questions");
-    questions = res.data;
-    showQuestion();
+let answers = [];
+
+function createQuestionBoxes() {
+    const container = document.getElementById("question-container");
+    questions.forEach((q,i) => {
+        const div = document.createElement("div");
+        div.className = "question-box";
+        div.innerHTML = `<strong>${q.phase}</strong><br>${q.question}<br>
+        <input type="text" id="answer-${i}" placeholder="Escriba su respuesta">
+        <div id="alert-${i}" class="alert"></div>
+        <div id="suggestion-${i}" class="suggestion"></div>
+        `;
+        container.appendChild(div);
+    });
 }
 
-function showQuestion() {
-    if (current >= questions.length) {
-        document.getElementById("quiz").innerHTML = "<h3>¡Pre-chequeo completado!</h3>";
+createQuestionBoxes();
+
+async function submitAnswers() {
+    answers = questions.map((q,i) => ({
+        phase: q.phase,
+        question: q.question,
+        answer: document.getElementById(`answer-${i}`).value
+    }));
+
+    try {
+        const res = await axios.post("http://localhost:8000/evaluate", answers);
+        const report = res.data.report;
+        const status = res.data.status;
+
+        // Mostrar alertas y sugerencias fase por fase
+        report.forEach((r,i) => {
+            document.getElementById(`alert-${i}`).innerText = r.alert || "";
+            document.getElementById(`suggestion-${i}`).innerText = r.suggestion || "";
+        });
+
+        document.getElementById("status").innerText = status;
+
+    } catch (err) {
+        console.error(err);
+        alert("Error evaluando respuestas. Revise backend.");
+    }
+}
+
+async function downloadPDF() {
+    if (answers.length === 0) {
+        alert("Primero envíe las respuestas para generar el reporte.");
         return;
     }
-    const q = questions[current];
-    let html = `<div class="fase">${q.fase}</div>
-                <div class="question">${q.question}</div>
-                <div class="instruction">${q.instruction}</div>
-                <input type="text" id="answer" placeholder="Ingrese su respuesta aquí">
-                <button onclick="submitAnswer()">Enviar</button>
-                <div id="alert"></div>`;
-    document.getElementById("quiz").innerHTML = html;
-}
-
-async function submitAnswer() {
-    const answer = document.getElementById("answer").value;
-    if (!answer) return alert("Debe responder la pregunta.");
-
-    const q = questions[current];
-    const res = await axios.post("http://localhost:8000/submit_answer", {id: q.id, answer});
-    const alertDiv = document.getElementById("alert");
-    if(res.data.alert) {
-        if(res.data.alert.includes("ALERTA")) {
-            alertDiv.className = "alert alert-danger";
-        } else {
-            alertDiv.className = "alert alert-info";
-        }
-        alertDiv.innerText = res.data.alert;
-    } else {
-        alertDiv.innerText = "";
+    try {
+        const resEval = await axios.post("http://localhost:8000/evaluate", answers);
+        const dataToPDF = { report: resEval.data.report, status: resEval.data.status };
+        const blob = await axios.post("http://localhost:8000/generate_pdf", dataToPDF, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([blob.data], { type: 'application/pdf' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'reporte_smartcargo.pdf');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch(err) {
+        console.error(err);
+        alert("Error generando PDF.");
     }
-
-    current++;
-    setTimeout(showQuestion, 1500); // Avanza automáticamente después de 1.5s
 }
-
-loadQuestions();
 </script>
+</div>
 </body>
 </html>
