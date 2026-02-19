@@ -1,7 +1,6 @@
 fastapi
-uvicorn
-python-multipart
+uvicorn[standard]
 pydantic
 fpdf
-axios
-jwt
+httpx
+python-dotenv
