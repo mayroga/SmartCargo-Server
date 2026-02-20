@@ -1,13 +1,12 @@
 # main.py
-from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from pathlib import Path
 from fpdf import FPDF
 import shutil
-import json
 
 app = FastAPI(title="SMARTCARGO-AIPA API")
 
@@ -34,7 +33,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 class CargoData(BaseModel):
     shipmentType: str
     highValue: str
-    itnNumber: Optional[str] = ""
+    itnNumber: str = ""
     knownShipper: str
     pieceHeight: float
     pieceWeight: float
@@ -48,7 +47,7 @@ class CargoData(BaseModel):
     pouchOrganized: str
 
 # ----------------------
-# Evaluación de reglas
+# Función de evaluación
 # ----------------------
 def evaluar_reglas(data: CargoData):
     detalles = []
@@ -112,72 +111,128 @@ def evaluar_reglas(data: CargoData):
     return {"status": status, "detalles": detalles}
 
 # ----------------------
-# Endpoint evaluar_carga
+# Endpoint: Evaluar carga
 # ----------------------
-@app.post("/evaluar_carga")
-async def evaluar_carga(request: Request, fotos: List[UploadFile] = File([])):
-    try:
-        # Leer JSON del campo 'data'
-        form = await request.form()
-        data_json = form.get("data")
-        if not data_json:
-            return JSONResponse({"error": "No se recibió data JSON"}, status_code=400)
+@app.post("/evaluar")
+async def evaluar(
+    shipmentType: str = Form(...),
+    highValue: str = Form(...),
+    itnNumber: str = Form(""),
+    knownShipper: str = Form(...),
+    pieceHeight: float = Form(...),
+    pieceWeight: float = Form(...),
+    volumetricWeight: float = Form(...),
+    nimf15: str = Form(...),
+    straps: str = Form(...),
+    oldLabels: str = Form(...),
+    bateriasLitio: str = Form(...),
+    xrayImpenetrable: str = Form(...),
+    descripcionGuia: str = Form(...),
+    pouchOrganized: str = Form(...),
+    fotos: List[UploadFile] = File([]),
+):
+    # Guardar fotos
+    fotos_urls = []
+    for foto in fotos:
+        file_path = UPLOAD_DIR / foto.filename
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(foto.file, f)
+        fotos_urls.append(str(file_path))
 
-        cargo_data = CargoData(**json.loads(data_json))
+    # Crear objeto CargoData
+    data = CargoData(
+        shipmentType=shipmentType,
+        highValue=highValue,
+        itnNumber=itnNumber,
+        knownShipper=knownShipper,
+        pieceHeight=pieceHeight,
+        pieceWeight=pieceWeight,
+        volumetricWeight=volumetricWeight,
+        nimf15=nimf15,
+        straps=straps,
+        oldLabels=oldLabels,
+        bateriasLitio=bateriasLitio,
+        xrayImpenetrable=xrayImpenetrable,
+        descripcionGuia=descripcionGuia,
+        pouchOrganized=pouchOrganized
+    )
 
-        # Guardar fotos
-        fotos_urls = []
-        for foto in fotos:
-            file_path = UPLOAD_DIR / foto.filename
-            with open(file_path, "wb") as f:
-                shutil.copyfileobj(foto.file, f)
-            fotos_urls.append(str(file_path))
-
-        # Evaluar reglas
-        resultado = evaluar_reglas(cargo_data)
-
-        return JSONResponse({"resultado": resultado, "fotos": fotos_urls})
-
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    resultado = evaluar_reglas(data)
+    return JSONResponse({"status": resultado["status"], "detalles": resultado["detalles"], "fotos": fotos_urls})
 
 # ----------------------
-# Endpoint generar_pdf
+# Endpoint: Generar PDF
 # ----------------------
 @app.post("/generar_pdf")
-async def generar_pdf(data: CargoData):
-    try:
-        pdf_filename = f"report_{data.shipmentType}.pdf"
-        pdf_path = UPLOAD_DIR / pdf_filename
+async def generar_pdf(
+    shipmentType: str = Form(...),
+    highValue: str = Form(...),
+    itnNumber: str = Form(""),
+    knownShipper: str = Form(...),
+    pieceHeight: float = Form(...),
+    pieceWeight: float = Form(...),
+    volumetricWeight: float = Form(...),
+    nimf15: str = Form(...),
+    straps: str = Form(...),
+    oldLabels: str = Form(...),
+    bateriasLitio: str = Form(...),
+    xrayImpenetrable: str = Form(...),
+    descripcionGuia: str = Form(...),
+    pouchOrganized: str = Form(...),
+):
+    # Crear objeto CargoData
+    data = CargoData(
+        shipmentType=shipmentType,
+        highValue=highValue,
+        itnNumber=itnNumber,
+        knownShipper=knownShipper,
+        pieceHeight=pieceHeight,
+        pieceWeight=pieceWeight,
+        volumetricWeight=volumetricWeight,
+        nimf15=nimf15,
+        straps=straps,
+        oldLabels=oldLabels,
+        bateriasLitio=bateriasLitio,
+        xrayImpenetrable=xrayImpenetrable,
+        descripcionGuia=descripcionGuia,
+        pouchOrganized=pouchOrganized
+    )
 
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(0, 10, "SMARTCARGO-AIPA | Evaluación de Carga", ln=True, align="C")
-        pdf.ln(10)
+    pdf_filename = f"report_{data.shipmentType}.pdf"
+    pdf_path = UPLOAD_DIR / pdf_filename
 
-        # Campos del formulario
-        for field, value in data.dict().items():
-            pdf.cell(0, 10, f"{field}: {value}", ln=True)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "SMARTCARGO-AIPA | Evaluación de Carga", ln=True, align="C")
+    pdf.ln(10)
 
-        # Evaluación
-        resultado = evaluar_reglas(data)
-        pdf.ln(5)
-        pdf.cell(0, 10, f"Status: {resultado['status']}", ln=True)
-        pdf.ln(5)
-        pdf.cell(0, 10, "Detalles:", ln=True)
-        for det in resultado["detalles"]:
-            pdf.cell(0, 8, det, ln=True)
+    for field, value in data.dict().items():
+        pdf.cell(0, 10, f"{field}: {value}", ln=True)
 
-        pdf.output(str(pdf_path))
+    resultado = evaluar_reglas(data)
+    pdf.ln(5)
+    pdf.cell(0, 10, f"Status: {resultado['status']}", ln=True)
+    pdf.ln(5)
+    pdf.cell(0, 10, "Detalles:", ln=True)
+    for det in resultado["detalles"]:
+        pdf.cell(0, 8, det, ln=True)
 
-        return FileResponse(str(pdf_path), media_type="application/pdf", filename=pdf_filename)
-
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    pdf.output(str(pdf_path))
+    return JSONResponse({"filename": pdf_filename})
 
 # ----------------------
-# Endpoint para fotos
+# Endpoint: Descargar PDF
+# ----------------------
+@app.get("/download/{filename}")
+async def download_file(filename: str):
+    file_path = UPLOAD_DIR / filename
+    if file_path.exists():
+        return FileResponse(str(file_path), media_type="application/pdf", filename=filename)
+    return JSONResponse({"detail": "Archivo no encontrado"}, status_code=404)
+
+# ----------------------
+# Endpoint: Fotos (preview)
 # ----------------------
 @app.get("/uploads/{filename}")
 async def get_foto(filename: str):
