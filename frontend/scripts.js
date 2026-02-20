@@ -1,15 +1,18 @@
 // frontend/scripts.js
 // SMARTCARGO-AIPA | Frontend actualizado 2026
-const BASE_URL = "https://smartcargo-server.onrender.com";
+const BASE_URL = "https://smartcargo-server.onrender.com"; // Asegúrate que sea tu URL real
 
-// Formulario
+// Elementos del DOM
 const form = document.getElementById("cargoForm");
 const alertaDiv = document.getElementById("alerta");
 const fotosInput = document.getElementById("fotos");
 const fotosPreview = document.getElementById("fotosPreview");
 const generarPDFBtn = document.getElementById("generarPDF");
+const limpiarBtn = document.getElementById("limpiarForm");
 
-// --- Subir fotos y mostrar preview con zoom ---
+// ------------------------
+// Preview de fotos + zoom
+// ------------------------
 fotosInput.addEventListener("change", () => {
     fotosPreview.innerHTML = "";
     const files = fotosInput.files;
@@ -22,7 +25,6 @@ fotosInput.addEventListener("change", () => {
             img.style.margin = "5px";
             img.style.cursor = "zoom-in";
             img.addEventListener("click", () => {
-                // Zoom full screen
                 const zoomDiv = document.createElement("div");
                 zoomDiv.style.position = "fixed";
                 zoomDiv.style.top = 0;
@@ -48,15 +50,17 @@ fotosInput.addEventListener("change", () => {
     }
 });
 
-// --- Enviar formulario completo para evaluación ---
+// ------------------------
+// Enviar formulario a /evaluar
+// ------------------------
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     alertaDiv.innerText = "⏳ Evaluando carga...";
-    
+
     try {
-        // Crear FormData para incluir fotos
         const formData = new FormData(form);
-        // Agregar todas las fotos
+
+        // Agregar fotos manualmente
         for (let i = 0; i < fotosInput.files.length; i++) {
             formData.append("fotos", fotosInput.files[i]);
         }
@@ -76,7 +80,9 @@ form.addEventListener("submit", async (e) => {
     }
 });
 
-// --- Generar PDF ---
+// ------------------------
+// Generar PDF
+// ------------------------
 generarPDFBtn.addEventListener("click", async () => {
     alertaDiv.innerText = "⏳ Generando PDF...";
 
@@ -91,7 +97,7 @@ generarPDFBtn.addEventListener("click", async () => {
         });
 
         if (res.data.filename) {
-            // Descargar PDF
+            // Abrir PDF generado en nueva ventana
             window.open(`${BASE_URL}/download/${res.data.filename}`, "_blank");
             alertaDiv.innerText = "✅ PDF generado y listo para descargar";
         } else {
@@ -103,8 +109,9 @@ generarPDFBtn.addEventListener("click", async () => {
     }
 });
 
-// --- Botón para limpiar formulario ---
-const limpiarBtn = document.getElementById("limpiarForm");
+// ------------------------
+// Limpiar formulario
+// ------------------------
 limpiarBtn.addEventListener("click", () => {
     form.reset();
     fotosPreview.innerHTML = "";
