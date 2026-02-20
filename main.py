@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -16,12 +16,8 @@ app = FastAPI(title="SMARTCARGO INFALIBLE")
 if not os.path.exists("frontend"):
     os.makedirs("frontend")
 
-# Montar carpeta estática
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# -------------------------
-# Endpoint raíz para index.html
-# -------------------------
 @app.get("/")
 async def root():
     index_path = os.path.join("frontend", "index.html")
@@ -74,73 +70,92 @@ class CargoForm(BaseModel):
     zipCode: str | None = ""
 
 # -------------------------
-# Evaluación Reglas Duras
+# Evaluación Reglas (Modo Advertencia)
 # -------------------------
 def evaluar_reglas_duras(data: CargoForm):
+
     detalles = []
-    status = "LISTO PARA VOLAR"
+    errores_criticos = 0
 
-    # Fase 1: Identificación y seguridad
+    # Fase 1
     if not data.clientId:
-        detalles.append("❌ ID de cliente vacío: Validación Known Shipper no posible. Requiere inspección física.")
-        status = "NO LISTO"
+        detalles.append("❌ ID de cliente vacío: Validación Known Shipper no posible.")
+        errores_criticos += 1
+
     if data.highValue == "yes" and not data.itnNumber:
-        detalles.append("❌ Valor > $2,500 USD sin ITN. Multa federal $10,000 si no se corrige.")
-        status = "NO LISTO"
+        detalles.append("❌ Valor > $2,500 USD sin ITN.")
+        errores_criticos += 1
+
     if not data.awbMaster:
-        detalles.append("❌ AWB Master no proporcionado. No se puede generar guía correctamente.")
-        status = "NO LISTO"
+        detalles.append("❌ AWB Master no proporcionado.")
+        errores_criticos += 1
 
-    # Fase 2: Anatomía de la carga
+    # Fase 2
     if data.pieceHeight and data.pieceHeight > 63:
-        detalles.append("⚠️ Altura > 63 pulgadas: Solo avión carguero. Si > 96 pulgadas, no puede volar.")
-        status = "NO LISTO"
+        detalles.append("⚠️ Altura > 63 pulgadas. Solo avión carguero.")
+
     if data.totalWeight and data.totalWeight > 150 and data.needsShoring != "si":
-        detalles.append("❌ Pieza >150kg sin shoring. Riesgo de daño estructural.")
-        status = "NO LISTO"
+        detalles.append("❌ Pieza >150kg sin shoring.")
+        errores_criticos += 1
+
     if data.nimf15 != "si":
-        detalles.append("❌ Pallet sin NIMF-15. Retorno inmediato por USDA/CBP.")
-        status = "NO LISTO"
+        detalles.append("❌ Pallet sin NIMF-15.")
+        errores_criticos += 1
+
     if data.damaged == "yes":
-        detalles.append("⚠️ Daños preexistentes detectados. Counter puede rechazar la carga.")
-        status = "NO LISTO"
+        detalles.append("⚠️ Daños preexistentes detectados.")
 
-    # Fase 3: Contenidos críticos
-    if data.cargoType in ["DGR","PER","BIO"]:
+    # Fase 3
+    if data.cargoType in ["DGR", "PER", "BIO"]:
         if data.dgrDocs != "si":
-            detalles.append(f"❌ {data.cargoType} sin documentación completa. Requiere 2 originales de Shipper's Declaration.")
-            status = "NO LISTO"
-        if data.fitoDocs != "si" and data.cargoType in ["PER","BIO"]:
-            detalles.append(f"❌ {data.cargoType} sin certificado FDA/Fitosanitario. Bloqueo en aduana.")
-            status = "NO LISTO"
+            detalles.append(f"❌ {data.cargoType} sin documentación completa.")
+            errores_criticos += 1
 
-    # Fase 4-8: Check final, embalaje y logística
-    if data.arrivalTime == "":
-        detalles.append("⚠️ Hora de llegada no definida. Cut-off 4h antes de salida.")
-    if data.packaging not in ["straps","STRAPS"]:
-        detalles.append("❌ Embalaje insuficiente. Uso de shrink wrap solo no aceptado para cargas pesadas.")
-        status = "NO LISTO"
+        if data.fitoDocs != "si" and data.cargoType in ["PER", "BIO"]:
+            detalles.append(f"❌ {data.cargoType} sin certificado sanitario.")
+            errores_criticos += 1
+
+    # Fase Final
+    if data.packaging not in ["straps", "STRAPS"]:
+        detalles.append("❌ Embalaje insuficiente.")
+        errores_criticos += 1
+
     if data.overhang == "yes":
-        detalles.append("❌ Overhang detectado. Debe re-estibar para encajar en el avión.")
-        status = "NO LISTO"
+        detalles.append("❌ Overhang detectado.")
+
     if not data.zipCode:
-        detalles.append("❌ Código postal vacío. Bloqueo automático del sistema.")
+        detalles.append("❌ Código postal vacío.")
+        errores_criticos += 1
 
-    # Agregar soluciones automáticas
-    for i in range(len(detalles)):
-        detalles[i] += " | Solución: Revise documentación, corrija embalaje y medidas según AL CIELO."
+    # Determinar estado sin bloquear
+    if errores_criticos == 0 and len(detalles) == 0:
+        status = "LISTO PARA VOLAR"
+    else:
+        status = "LISTO CON ADVERTENCIAS"
 
-    return {"status": status, "detalles": detalles}
+    # Añadir recomendación automática
+    detalles_final = []
+    for d in detalles:
+        detalles_final.append(d + " | Recomendación: Corregir antes de presentarse en counter según AL CIELO.")
+
+    return {"status": status, "detalles": detalles_final}
 
 # -------------------------
-# IA para explicaciones avanzadas
+# IA SOLO EXPLICA
 # -------------------------
 async def explicar_con_ia(texto):
+
     prompt = f"""
-    Eres un asistente AL CIELO para Avianca Cargo.
-    Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias legales y solución:
+    Eres AL CIELO, asistente técnico de carga aérea.
+    Explica el siguiente hallazgo.
+    NO tomes decisiones.
+    NO determines si vuela o no.
+    Solo explica causa, impacto operativo y cómo corregir.
+
+    Hallazgo:
     {texto}
     """
+
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
@@ -148,38 +163,43 @@ async def explicar_con_ia(texto):
                 headers={"Authorization": f"Bearer {OPENAI_KEY}"},
                 json={
                     "model": "gpt-4o-mini",
-                    "messages": [{"role":"user","content":prompt}],
-                    "temperature":0
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0
                 },
                 timeout=30
             )
             result = resp.json()
             return result["choices"][0]["message"]["content"]
+
     except Exception:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     "https://api.gemini.com/v1/generate",
                     headers={"Authorization": f"Bearer {GEMINI_KEY}"},
-                    json={"prompt": prompt, "max_tokens":500},
+                    json={"prompt": prompt},
                     timeout=30
                 )
                 result = resp.json()
-                return result.get("output","No se pudo generar explicación")
-        except Exception as e2:
-            return f"No se pudo generar explicación IA: {str(e2)}"
+                return result.get("output", "No se pudo generar explicación.")
+        except Exception as e:
+            return f"No se pudo generar explicación IA: {str(e)}"
 
 # -------------------------
 # Endpoint Evaluar
 # -------------------------
 @app.post("/evaluar")
 async def evaluar(data: CargoForm):
+
     resultado = evaluar_reglas_duras(data)
     explicaciones = []
 
     for item in resultado["detalles"]:
         texto_ia = await explicar_con_ia(item)
-        explicaciones.append({"error": item, "explicacion": texto_ia})
+        explicaciones.append({
+            "error": item,
+            "explicacion": texto_ia
+        })
 
     log = {
         "fecha": str(datetime.datetime.now()),
@@ -198,67 +218,35 @@ async def evaluar(data: CargoForm):
     })
 
 # -------------------------
-# Endpoint Generar PDF
+# Endpoint PDF
 # -------------------------
 @app.post("/generar_pdf")
 async def generar_pdf(data: CargoForm):
+
     resultado = evaluar_reglas_duras(data)
+
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    secciones = [
-        ("Fase 1: Identificación y Seguridad", [
-            f"ID Cliente: {data.clientId}",
-            f"Tipo de envío: {data.shipmentType}",
-            f"Valor alto: {data.highValue}",
-            f"ITN: {data.itnNumber}",
-            f"AWB Master: {data.awbMaster}",
-            f"AWB House: {data.awbHouse}",
-            f"Reference Number: {data.referenceNumber}",
-            f"Origen/Destino: {data.originAirport} → {data.destinationAirport}",
-            f"Fecha de salida: {data.departureDate}"
-        ]),
-        ("Fase 2: Anatomía de la Carga", [
-            f"Altura pieza: {data.pieceHeight} inches",
-            f"Peso pieza: {data.pieceWeight} kg",
-            f"Número de piezas: {data.numPieces}",
-            f"Peso total: {data.totalWeight} kg",
-            f"Dimensiones: {data.dimensions}",
-            f"Shoring: {data.needsShoring}",
-            f"NIMF-15: {data.nimf15}",
-            f"Overhang: {data.overhang}",
-            f"Daños: {data.damaged}"
-        ]),
-        ("Fase 3: Contenidos Críticos", [
-            f"Tipo carga: {data.cargoType}",
-            f"Documentos DGR: {data.dgrDocs}",
-            f"Certificados FDA/Fitosanitarios: {data.fitoDocs}"
-        ]),
-        ("Fase 4-8: Check-list y Logística", [
-            f"Llegada al counter: {data.arrivalTime}",
-            f"Embalaje: {data.packaging}",
-            f"Etiquetas: {data.labels}",
-            f"Fragilidad: {data.fragile}",
-            f"Shipper: {data.shipperName}, {data.shipperAddress}, {data.shipperPhone}",
-            f"Consignee: {data.consigneeName}, {data.consigneeAddress}, {data.consigneePhone}",
-            f"Código Postal: {data.zipCode}"
-        ]),
-        ("Resultado Evaluación", resultado["detalles"])
-    ]
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "SMARTCARGO - REPORTE DE EVALUACION", ln=True)
 
-    for titulo, items in secciones:
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
-        pdf.set_text_color(255,255,255)
-        pdf.set_fill_color(226,6,19)
-        pdf.cell(0,12, titulo, ln=True, fill=True)
-        pdf.ln(5)
-        pdf.set_text_color(0,0,0)
-        pdf.set_font("Arial", "", 12)
-        for item in items:
-            pdf.multi_cell(0,8,f"- {item}")
-            pdf.ln(1)
+    pdf.set_font("Arial", "", 12)
+    pdf.ln(5)
+    pdf.cell(0, 8, f"Fecha: {datetime.datetime.now()}", ln=True)
+    pdf.cell(0, 8, f"Cliente: {data.clientId}", ln=True)
+    pdf.cell(0, 8, f"Resultado: {resultado['status']}", ln=True)
+
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Hallazgos:", ln=True)
+
+    pdf.set_font("Arial", "", 12)
+    for item in resultado["detalles"]:
+        pdf.multi_cell(0, 8, "- " + item)
 
     filename = "frontend/reporte_smartcargo.pdf"
     pdf.output(filename)
+
     return {"url": "/static/reporte_smartcargo.pdf"}
