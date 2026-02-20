@@ -2,144 +2,246 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO-AIPA | Evaluación de Carga</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTCARGO – SISTEMA INFALIBLE</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<link rel="stylesheet" href="styles.css">
+
 <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0;}
-    h1 { text-align: center; margin-top: 20px; }
-    form { max-width: 900px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
-    fieldset { margin-bottom: 15px; padding: 15px; border-radius: 5px; border: 1px solid #ccc;}
-    legend { font-weight: bold; }
-    label { display: block; margin: 8px 0 4px; }
-    input, select, textarea { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;}
-    input[type="file"] { padding: 3px; }
-    #fotosPreview img { border: 1px solid #ccc; border-radius: 4px;}
-    #alerta { padding: 10px; margin-top: 10px; font-weight: bold; white-space: pre-line; }
-    button { padding: 10px 20px; border: none; border-radius: 5px; background-color: #0b5ed7; color: white; cursor: pointer; margin-right: 10px;}
-    button:hover { background-color: #084298; }
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    background:#f4f6f9;
+}
+header{
+    background:#e20613;
+    color:white;
+    padding:20px;
+    text-align:center;
+    font-size:1.8em;
+    font-weight:bold;
+}
+section{
+    background:white;
+    margin:20px;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+h2{
+    margin-top:0;
+    border-bottom:2px solid #e20613;
+    padding-bottom:5px;
+}
+input,select{
+    width:100%;
+    padding:10px;
+    margin:6px 0 15px 0;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+button{
+    background:#e20613;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:1.1em;
+}
+button:hover{
+    background:#b10410;
+}
+.alert{
+    padding:10px;
+    margin:8px 0;
+    border-radius:5px;
+}
+.critical{ background:#f8d7da; color:#721c24; }
+.warning{ background:#fff3cd; color:#856404; }
+.success{ background:#d4edda; color:#155724; }
+.info{ background:#d1ecf1; color:#0c5460; }
+#resultado{
+    margin:20px;
+}
+.explicacionIA{
+    background:#eef2ff;
+    padding:10px;
+    margin-top:5px;
+    border-left:4px solid #4f46e5;
+    font-size:0.95em;
+}
+.smallinfo{
+    font-size:0.9em;
+    background:#f1f1f1;
+    padding:8px;
+    border-radius:5px;
+    margin-bottom:10px;
+}
 </style>
 </head>
+
 <body>
 
-<h1>SMARTCARGO-AIPA | Evaluación de Carga</h1>
+<header>SMARTCARGO – SISTEMA INFALIBLE</header>
 
 <form id="cargoForm">
-    <!-- FASE I: Identificación y Tipo de Envío -->
-    <fieldset>
-        <legend>I. FASE UNIVERSAL: Identificación y Tipo de Envío</legend>
-        <small>Antes de abrir el camión, validamos la legitimidad y el formato documental.</small>
-        
-        <label for="shipmentType">¿Su envío es para un solo destinatario o contiene paquetes para diferentes personas (Houses)?</label>
-        <select id="shipmentType" name="shipmentType" required>
-            <option value="">Seleccione</option>
-            <option value="single">Un destinatario</option>
-            <option value="consolidado">Consolidado</option>
-        </select>
 
-        <label for="highValue">¿El valor de su mercancía supera los $2,500 USD por código arancelario?</label>
-        <select id="highValue" name="highValue" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
+<!-- FASE 1 -->
+<section>
+<h2>Fase 1: Identificación y Seguridad</h2>
 
-        <label for="itnNumber">Número de ITN (AES)</label>
-        <input type="text" id="itnNumber" name="itnNumber" placeholder="Ingrese ITN si aplica" pattern="X.*">
+<input type="text" name="clientId" placeholder="ID Cliente / Known Shipper">
+<select name="highValue">
+<option value="">¿Valor mayor a $2,500 USD?</option>
+<option value="yes">Sí</option>
+<option value="no">No</option>
+</select>
+<input type="text" name="itnNumber" placeholder="Número ITN (si aplica)">
+<input type="text" name="awbMaster" placeholder="AWB Master">
+<input type="text" name="originAirport" placeholder="Aeropuerto origen">
+<input type="text" name="destinationAirport" placeholder="Aeropuerto destino">
+<input type="date" name="departureDate">
 
-        <label for="knownShipper">¿Es un "Known Shipper" y tiene el sello de seguridad del camión anotado?</label>
-        <select id="knownShipper" name="knownShipper" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
-    </fieldset>
+</section>
 
-    <!-- FASE II: Medidas, Peso y Capacidad -->
-    <fieldset>
-        <legend>II. FASE TÉCNICA: Medidas, Peso y Capacidad</legend>
+<!-- FASE 2 -->
+<section>
+<h2>Fase 2: Anatomía de la Carga</h2>
 
-        <label for="pieceHeight">Altura del bulto más alto incluyendo estiba (inches)</label>
-        <input type="number" id="pieceHeight" name="pieceHeight" min="0" max="200" required>
+<div class="smallinfo">
+Altura permitida pasajeros: 63 in.<br>
+Altura máxima carguero: 96 in.<br>
+Pieza >150kg requiere SHORING.<br>
+Full pallet estándar: 48x40 in – máx 1000kg.
+</div>
 
-        <label for="pieceWeight">Peso de la pieza más pesada (kg)</label>
-        <input type="number" id="pieceWeight" name="pieceWeight" min="0" max="1000" required>
+<input type="number" step="0.1" name="pieceHeight" placeholder="Altura de la pieza con mayor dimensión (in)">
+<input type="number" step="0.1" name="pieceWeight" placeholder="Peso de la pieza más pesada (kg)">
+<input type="number" name="numPieces" placeholder="Número total de piezas">
+<input type="number" step="0.1" name="totalWeight" placeholder="Peso total (kg)">
 
-        <label for="volumetricWeight">Peso volumétrico (L × W × H / 166)</label>
-        <input type="number" id="volumetricWeight" name="volumetricWeight" min="0" required>
-    </fieldset>
+<select name="needsShoring">
+<option value="">¿Necesita Shoring?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
 
-    <!-- FASE III: Integridad y Embalaje -->
-    <fieldset>
-        <legend>III. FASE DE INTEGRIDAD: Embalaje y Madera (NIMF-15)</legend>
+<select name="nimf15">
+<option value="">¿Pallet certificado NIMF-15?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
 
-        <label for="nimf15">¿Sus estibas tienen el sello NIMF-15 visible?</label>
-        <select id="nimf15" name="nimf15" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
+<select name="overhang">
+<option value="">¿Existe Overhang?</option>
+<option value="yes">Sí</option>
+<option value="no">No</option>
+</select>
 
-        <label for="straps">¿La carga tiene flejes o solo plástico?</label>
-        <select id="straps" name="straps" required>
-            <option value="">Seleccione</option>
-            <option value="flejes">Flejes</option>
-            <option value="shrink">Plástico</option>
-        </select>
+</section>
 
-        <label for="oldLabels">¿Borró etiquetas viejas de otros vuelos?</label>
-        <select id="oldLabels" name="oldLabels" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
-    </fieldset>
+<!-- FASE 3 -->
+<section>
+<h2>Fase 3: Contenidos Críticos</h2>
 
-    <!-- FASE IV: Contenidos Peligrosos y Prohibidos -->
-    <fieldset>
-        <legend>IV. FASE CRÍTICA: Contenidos Peligrosos y Prohibidos (DGR/TSA)</legend>
+<div class="smallinfo">
+NORMAL: carga estándar.<br>
+DGR: mercancía peligrosa (requiere 2 Shipper's Declaration originales, etiquetas UN, MSDS).<br>
+PER: perecedero (requiere certificados sanitarios y control temperatura).<br>
+BIO: biológica (requiere embalaje triple capa y certificados FDA).
+</div>
 
-        <label for="bateriasLitio">¿Su equipo contiene baterías de litio (aunque internas)?</label>
-        <select id="bateriasLitio" name="bateriasLitio" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
+<select name="cargoType">
+<option value="">Tipo de carga</option>
+<option value="NORMAL">Normal</option>
+<option value="DGR">Mercancía Peligrosa (DGR)</option>
+<option value="PER">Perishable</option>
+<option value="BIO">Biológica</option>
+</select>
 
-        <label for="xrayImpenetrable">¿La carga es impenetrable para Rayos X?</label>
-        <select id="xrayImpenetrable" name="xrayImpenetrable" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
+<select name="dgrDocs">
+<option value="">¿Documentos DGR completos?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
 
-        <label for="descripcionGuia">Descripción específica en la guía (ej. "Partes de motor")</label>
-        <input type="text" id="descripcionGuia" name="descripcionGuia" required placeholder="Evite 'Said to Contain' o 'Carga General'">
-    </fieldset>
+<select name="fitoDocs">
+<option value="">¿Certificados FDA/Fitosanitarios?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
 
-    <!-- FASE V: Pouch y papelería -->
-    <fieldset>
-        <legend>V. RESUMEN DE DOCUMENTACIÓN PARA EL COUNTER</legend>
+</section>
 
-        <label for="pouchOrganized">¿Están los 3 originales dentro del sobre y las 6 copias fuera con clip?</label>
-        <select id="pouchOrganized" name="pouchOrganized" required>
-            <option value="">Seleccione</option>
-            <option value="yes">Sí</option>
-            <option value="no">No</option>
-        </select>
+<!-- FASE FINAL -->
+<section>
+<h2>Fase Final: Logística y Embalaje</h2>
 
-        <label for="fotos">Subir fotos de la carga y papelería</label>
-        <input type="file" id="fotos" name="fotos" multiple accept="image/*">
-        <div id="fotosPreview"></div>
-    </fieldset>
+<input type="text" name="arrivalTime" placeholder="Hora llegada counter">
+<select name="packaging">
+<option value="">Tipo de embalaje</option>
+<option value="straps">Straps</option>
+<option value="shrink">Shrink Wrap</option>
+</select>
 
-    <button type="submit">Evaluar Carga</button>
-    <button type="button" id="generarPDF">Generar PDF</button>
-    <button type="button" id="limpiarForm">Borrar Datos / Nueva Inspección</button>
+<input type="text" name="zipCode" placeholder="Código Postal">
+</section>
 
-    <div id="alerta"></div>
+<section>
+<button type="button" onclick="evaluar()">Evaluar Carga</button>
+<button type="button" onclick="generarPDF()">Generar PDF</button>
+</section>
+
 </form>
 
-<script src="scripts.js"></script>
+<div id="resultado"></div>
+
+<script>
+
+async function evaluar(){
+    const data = Object.fromEntries(new FormData(document.getElementById("cargoForm")).entries());
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.innerHTML = "Evaluando...";
+
+    try{
+        const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data);
+
+        let html = `<h2>Resultado Final: ${response.data.status}</h2>`;
+
+        response.data.explicaciones.forEach(item => {
+
+            let clase = "info";
+
+            if(item.error.includes("❌")) clase="critical";
+            else if(item.error.includes("⚠️")) clase="warning";
+            else if(item.error.includes("✅")) clase="success";
+
+            html += `<div class="alert ${clase}">${item.error}</div>`;
+            html += `<div class="explicacionIA">${item.explicacion}</div>`;
+        });
+
+        resultadoDiv.innerHTML = html;
+
+    }catch(error){
+        resultadoDiv.innerHTML = `<div class="alert critical">Error conectando con servidor</div>`;
+    }
+}
+
+async function generarPDF(){
+    const data = Object.fromEntries(new FormData(document.getElementById("cargoForm")).entries());
+    const resultadoDiv = document.getElementById("resultado");
+
+    resultadoDiv.innerHTML="Generando PDF...";
+
+    try{
+        const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data);
+        resultadoDiv.innerHTML = `<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">Abrir Reporte PDF</a>`;
+    }catch(error){
+        resultadoDiv.innerHTML = `<div class="alert critical">Error generando PDF</div>`;
+    }
+}
+
+</script>
+
 </body>
 </html>
