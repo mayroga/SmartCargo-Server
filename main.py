@@ -50,6 +50,7 @@ class CargoForm(BaseModel):
     destinationAirport: str | None = ""
     departureDate: str | None = ""
     pieceHeight: float | None = 0
+    pieceWeight: float | None = 0
     numPieces: int | None = 0
     totalWeight: float | None = 0
     dimensions: str | None = ""
@@ -124,7 +125,6 @@ def evaluar_reglas_duras(data: CargoForm):
         status = "NO LISTO"
     if not data.zipCode:
         detalles.append("❌ Código postal vacío. Bloqueo automático del sistema.")
-        status = "NO LISTO"
 
     # Agregar soluciones automáticas
     for i in range(len(detalles)):
@@ -141,7 +141,6 @@ async def explicar_con_ia(texto):
     Explica detalladamente el siguiente hallazgo, indicando la causa, consecuencias legales y solución:
     {texto}
     """
-    # OpenAI principal
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
@@ -157,7 +156,6 @@ async def explicar_con_ia(texto):
             result = resp.json()
             return result["choices"][0]["message"]["content"]
     except Exception:
-        # Gemini como respaldo
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
@@ -222,6 +220,7 @@ async def generar_pdf(data: CargoForm):
         ]),
         ("Fase 2: Anatomía de la Carga", [
             f"Altura pieza: {data.pieceHeight} inches",
+            f"Peso pieza: {data.pieceWeight} kg",
             f"Número de piezas: {data.numPieces}",
             f"Peso total: {data.totalWeight} kg",
             f"Dimensiones: {data.dimensions}",
