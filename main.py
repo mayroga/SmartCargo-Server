@@ -3,33 +3,32 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
 from pathlib import Path
 from fpdf import FPDF
-import shutil
+from typing import List
 
 app = FastAPI(title="SMARTCARGO-AIPA API")
 
-# ----------------------
+# ------------------------
 # Configuración CORS
-# ----------------------
+# ------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ajusta al dominio de tu frontend
+    allow_origins=["*"],  # Cambia a tu frontend si quieres restringir
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ----------------------
-# Carpeta de uploads
-# ----------------------
+# ------------------------
+# Carpeta uploads
+# ------------------------
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# ----------------------
+# ------------------------
 # Modelo CargoData
-# ----------------------
+# ------------------------
 class CargoData(BaseModel):
     shipmentType: str
     highValue: str
@@ -46,27 +45,26 @@ class CargoData(BaseModel):
     descripcionGuia: str
     pouchOrganized: str
 
-# ----------------------
+# ------------------------
 # Función de evaluación
-# ----------------------
+# ------------------------
 def evaluar_reglas(data: CargoData):
     detalles = []
     status = "✅ VUELA"
 
-    # Fase I: Documentación y ITN
+    # Fase I
     if data.shipmentType == "consolidado":
         detalles.append("✅ Consolidado: Manifiesto revisado")
     if data.highValue == "yes":
         if not data.itnNumber or not data.itnNumber.startswith("X"):
             detalles.append("❌ ITN ausente o formato inválido")
             status = "❌ NO VUELA"
-
     if data.knownShipper != "yes":
         detalles.append("⚠️ Se requiere Known Shipper con sello de camión correcto")
         if status != "❌ NO VUELA":
             status = "⚠️ REQUIERE REVISIÓN"
 
-    # Fase II: Altura y peso
+    # Fase II
     if data.pieceHeight > 96:
         detalles.append("❌ Altura excede límite de fuselaje (96 in)")
         status = "❌ NO VUELA"
@@ -80,7 +78,7 @@ def evaluar_reglas(data: CargoData):
         if status != "❌ NO VUELA":
             status = "⚠️ REQUIERE REVISIÓN"
 
-    # Fase III: Integridad y embalaje
+    # Fase III
     if data.nimf15 != "yes":
         detalles.append("❌ Estibas sin sello NIMF-15")
         status = "❌ NO VUELA"
@@ -93,7 +91,7 @@ def evaluar_reglas(data: CargoData):
         if status != "❌ NO VUELA":
             status = "⚠️ REQUIERE REVISIÓN"
 
-    # Fase IV: Contenidos peligrosos
+    # Fase IV
     if data.bateriasLitio == "yes":
         detalles.append("⚠️ Baterías de litio declaradas")
         if status != "❌ NO VUELA":
@@ -103,17 +101,18 @@ def evaluar_reglas(data: CargoData):
         if status != "❌ NO VUELA":
             status = "⚠️ REQUIERE REVISIÓN"
 
-    # Fase V: Pouch
+    # Fase V
     if data.pouchOrganized != "yes":
         detalles.append("❌ Pouch mal organizado")
         status = "❌ NO VUELA"
 
     return {"status": status, "detalles": detalles}
 
-# ----------------------
-# Endpoint: Evaluar carga
-# ----------------------
+# ------------------------
+# Endpoint POST /evaluar
+# ------------------------
 @app.post("/evaluar")
+@app.post("/evaluar/")  # Trailing slash opcional
 async def evaluar(
     shipmentType: str = Form(...),
     highValue: str = Form(...),
@@ -129,17 +128,17 @@ async def evaluar(
     xrayImpenetrable: str = Form(...),
     descripcionGuia: str = Form(...),
     pouchOrganized: str = Form(...),
-    fotos: List[UploadFile] = File([]),
+    fotos: List[UploadFile] = File([])
 ):
     # Guardar fotos
     fotos_urls = []
     for foto in fotos:
         file_path = UPLOAD_DIR / foto.filename
         with open(file_path, "wb") as f:
-            shutil.copyfileobj(foto.file, f)
+            f.write(await foto.read())
         fotos_urls.append(str(file_path))
 
-    # Crear objeto CargoData
+    # Crear CargoData y evaluar reglas
     data = CargoData(
         shipmentType=shipmentType,
         highValue=highValue,
@@ -156,14 +155,15 @@ async def evaluar(
         descripcionGuia=descripcionGuia,
         pouchOrganized=pouchOrganized
     )
-
     resultado = evaluar_reglas(data)
+
     return JSONResponse({"status": resultado["status"], "detalles": resultado["detalles"], "fotos": fotos_urls})
 
-# ----------------------
-# Endpoint: Generar PDF
-# ----------------------
+# ------------------------
+# Endpoint POST /generar_pdf
+# ------------------------
 @app.post("/generar_pdf")
+@app.post("/generar_pdf/")
 async def generar_pdf(
     shipmentType: str = Form(...),
     highValue: str = Form(...),
@@ -179,8 +179,15 @@ async def generar_pdf(
     xrayImpenetrable: str = Form(...),
     descripcionGuia: str = Form(...),
     pouchOrganized: str = Form(...),
+    fotos: List[UploadFile] = File([])
 ):
-    # Crear objeto CargoData
+    # Guardar fotos (opcional)
+    for foto in fotos:
+        file_path = UPLOAD_DIR / foto.filename
+        with open(file_path, "wb") as f:
+            f.write(await foto.read())
+
+    # Crear CargoData y evaluar reglas
     data = CargoData(
         shipmentType=shipmentType,
         highValue=highValue,
@@ -197,20 +204,20 @@ async def generar_pdf(
         descripcionGuia=descripcionGuia,
         pouchOrganized=pouchOrganized
     )
+    resultado = evaluar_reglas(data)
 
-    pdf_filename = f"report_{data.shipmentType}.pdf"
+    # Generar PDF
+    pdf_filename = f"report_{shipmentType}.pdf"
     pdf_path = UPLOAD_DIR / pdf_filename
-
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, "SMARTCARGO-AIPA | Evaluación de Carga", ln=True, align="C")
     pdf.ln(10)
 
+    # Datos
     for field, value in data.dict().items():
         pdf.cell(0, 10, f"{field}: {value}", ln=True)
-
-    resultado = evaluar_reglas(data)
     pdf.ln(5)
     pdf.cell(0, 10, f"Status: {resultado['status']}", ln=True)
     pdf.ln(5)
@@ -221,22 +228,12 @@ async def generar_pdf(
     pdf.output(str(pdf_path))
     return JSONResponse({"filename": pdf_filename})
 
-# ----------------------
-# Endpoint: Descargar PDF
-# ----------------------
+# ------------------------
+# Endpoint GET /download/{filename}
+# ------------------------
 @app.get("/download/{filename}")
 async def download_file(filename: str):
     file_path = UPLOAD_DIR / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="application/pdf", filename=filename)
     return JSONResponse({"detail": "Archivo no encontrado"}, status_code=404)
-
-# ----------------------
-# Endpoint: Fotos (preview)
-# ----------------------
-@app.get("/uploads/{filename}")
-async def get_foto(filename: str):
-    file_path = UPLOAD_DIR / filename
-    if file_path.exists():
-        return FileResponse(str(file_path))
-    return JSONResponse({"error": "Foto no encontrada"}, status_code=404)
