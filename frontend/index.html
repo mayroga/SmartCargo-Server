@@ -5,99 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMARTCARGO – SISTEMA INFALIBLE</title>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
 <style>
-body{
-    font-family: Arial, sans-serif;
-    margin:0;
-    background:#f4f6f9;
-    font-size:16px;
-}
-header{
-    background:#e20613;
-    color:white;
-    padding:22px;
-    text-align:center;
-    font-size:1.9em;
-    font-weight:bold;
-}
-.accordion{
-    background:white;
-    margin:20px;
-    border-radius:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-.accordion-header{
-    padding:18px;
-    cursor:pointer;
-    font-weight:bold;
-    border-bottom:1px solid #ddd;
-    font-size:1.1em;
-}
-.accordion-content{
-    display:none;
-    padding:20px;
-}
-input,select{
-    width:100%;
-    padding:12px;
-    margin:8px 0 16px 0;
-    border-radius:6px;
-    border:1px solid #ccc;
-    font-size:15px;
-}
-button{
-    background:#e20613;
-    color:white;
-    border:none;
-    padding:14px 24px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:1.1em;
-}
-button:hover{
-    background:#b10410;
-}
-.alert{
-    padding:14px;
-    margin:10px 0;
-    border-radius:6px;
-    font-size:15px;
-}
-.critical{ background:#f8d7da; color:#721c24; }
-.warning{ background:#fff3cd; color:#856404; }
-.success{ background:#d4edda; color:#155724; }
-.explicacionIA{
-    background:#eef2ff;
-    padding:12px;
-    margin-bottom:12px;
-    border-left:4px solid #4f46e5;
-}
-#resultado{
-    margin:20px;
-}
-.checklist-box{
-    background:#f1f1f1;
-    padding:15px;
-    border-radius:8px;
-    margin-top:15px;
-}
+body{font-family: Arial,sans-serif;margin:0;background:#f4f6f9;}
+header{background:#e20613;color:white;padding:20px;text-align:center;font-size:1.8em;font-weight:bold;}
+section{background:white;margin:20px;padding:20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);display:none;}
+h2{margin-top:0;border-bottom:2px solid #e20613;padding-bottom:5px;}
+input,select{width:100%;padding:10px;margin:6px 0 15px 0;border-radius:5px;border:1px solid #ccc;}
+button{background:#e20613;color:white;border:none;padding:12px 20px;border-radius:5px;cursor:pointer;font-size:1.1em;}
+button:hover{background:#b10410;}
+.alert{padding:10px;margin:8px 0;border-radius:5px;}
+.critical{background:#f8d7da;color:#721c24;}
+.warning{background:#fff3cd;color:#856404;}
+.success{background:#d4edda;color:#155724;}
+.info{background:#d1ecf1;color:#0c5460;}
+#resultado{margin:20px;}
+.explicacionIA{background:#eef2ff;padding:10px;margin-top:5px;border-left:4px solid #4f46e5;font-size:0.95em;}
+.smallinfo{font-size:0.9em;background:#f1f1f1;padding:8px;border-radius:5px;margin-bottom:10px;}
 </style>
 </head>
-
 <body>
 
 <header>SMARTCARGO – SISTEMA INFALIBLE</header>
 
 <form id="cargoForm">
 
-<!-- FASE 1 -->
-<div class="accordion">
-<div class="accordion-header" onclick="toggleAccordion(this)">
-Fase 1: Identificación y Seguridad
-</div>
-<div class="accordion-content">
-
+<!-- Fases condicionales -->
+<section id="fase1">
+<h2>Fase 1: Identificación y Seguridad</h2>
 <input type="text" name="clientId" placeholder="ID Cliente / Known Shipper">
 <select name="highValue">
 <option value="">¿Valor mayor a $2,500 USD?</option>
@@ -109,70 +43,66 @@ Fase 1: Identificación y Seguridad
 <input type="text" name="originAirport" placeholder="Aeropuerto origen">
 <input type="text" name="destinationAirport" placeholder="Aeropuerto destino">
 <input type="date" name="departureDate">
+</section>
 
+<section id="fase2">
+<h2>Fase 2: Anatomía de la Carga</h2>
+<div class="smallinfo">
+Altura permitida pasajeros: 63 in.<br>
+Altura máxima carguero: 96 in.<br>
+Pieza >150kg requiere SHORING.<br>
+Full pallet estándar: 48x40 in – máx 1000kg.
 </div>
-</div>
-
-<!-- FASE 2 -->
-<div class="accordion">
-<div class="accordion-header" onclick="toggleAccordion(this)">
-Fase 2: Anatomía de la Carga
-</div>
-<div class="accordion-content">
-
-<input type="number" step="0.1" name="pieceHeight" placeholder="Altura mayor (in)">
-<input type="number" step="0.1" name="pieceWeight" placeholder="Peso mayor (kg)">
-<input type="number" name="numPieces" placeholder="Número de piezas">
+<input type="number" step="0.1" name="pieceHeight" placeholder="Altura de la pieza con mayor dimensión (in)">
+<input type="number" step="0.1" name="pieceWeight" placeholder="Peso de la pieza más pesada (kg)">
+<input type="number" name="numPieces" placeholder="Número total de piezas">
 <input type="number" step="0.1" name="totalWeight" placeholder="Peso total (kg)">
-
 <select name="needsShoring">
 <option value="">¿Necesita Shoring?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
-
 <select name="nimf15">
 <option value="">¿Pallet certificado NIMF-15?</option>
 <option value="si">Sí</option>
 <option value="no">No</option>
 </select>
-
 <select name="overhang">
 <option value="">¿Existe Overhang?</option>
 <option value="yes">Sí</option>
 <option value="no">No</option>
 </select>
+</section>
 
+<section id="fase3">
+<h2>Fase 3: Contenidos Críticos</h2>
+<div class="smallinfo">
+NORMAL: carga estándar.<br>
+DGR: mercancía peligrosa.<br>
+PER: perecedero.<br>
+BIO: biológica.
 </div>
-</div>
-
-<!-- FASE 3 -->
-<div class="accordion">
-<div class="accordion-header" onclick="toggleAccordion(this)">
-Fase 3: Tipo de Carga y Documentos
-</div>
-<div class="accordion-content">
-
-<select name="cargoType" onchange="mostrarDocumentos(this.value)">
+<select name="cargoType">
 <option value="">Tipo de carga</option>
 <option value="NORMAL">Normal</option>
-<option value="DGR">DGR</option>
+<option value="DGR">Mercancía Peligrosa (DGR)</option>
 <option value="PER">Perishable</option>
 <option value="BIO">Biológica</option>
 </select>
+<select name="dgrDocs">
+<option value="">¿Documentos DGR completos?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
+<select name="fitoDocs">
+<option value="">¿Certificados FDA/Fitosanitarios?</option>
+<option value="si">Sí</option>
+<option value="no">No</option>
+</select>
+</section>
 
-<div id="documentosDinamicos"></div>
-
-</div>
-</div>
-
-<!-- FASE FINAL -->
-<div class="accordion">
-<div class="accordion-header" onclick="toggleAccordion(this)">
-Fase Final: Logística
-</div>
-<div class="accordion-content">
-
+<section id="fase4">
+<h2>Fase Final: Logística y Embalaje</h2>
 <input type="text" name="arrivalTime" placeholder="Hora llegada counter">
 <select name="packaging">
 <option value="">Tipo de embalaje</option>
@@ -180,89 +110,44 @@ Fase Final: Logística
 <option value="shrink">Shrink Wrap</option>
 </select>
 <input type="text" name="zipCode" placeholder="Código Postal">
+</section>
 
-<div class="checklist-box">
-<strong>Checklist obligatorio antes de evaluar:</strong><br><br>
-<input type="checkbox" id="check1"> Confirmo que la documentación fue revisada<br>
-<input type="checkbox" id="check2"> Confirmo que las medidas son correctas<br>
-<input type="checkbox" id="check3"> Confirmo que el embalaje es adecuado<br>
-</div>
-
-<br>
+<section>
 <button type="button" onclick="evaluar()">Evaluar Carga</button>
 <button type="button" onclick="generarPDF()">Generar PDF</button>
-
-</div>
-</div>
+</section>
 
 </form>
 
 <div id="resultado"></div>
 
 <script>
-
-function toggleAccordion(element){
-    const content = element.nextElementSibling;
-    content.style.display = content.style.display === "block" ? "none" : "block";
-}
-
-function mostrarDocumentos(tipo){
-    const contenedor = document.getElementById("documentosDinamicos");
-    contenedor.innerHTML="";
-
-    if(tipo === "DGR"){
-        contenedor.innerHTML = `
-        <div class="checklist-box">
-        <strong>Checklist DGR:</strong><br><br>
-        <input type="checkbox" name="dgrDocs" value="si"> Shipper's Declaration (2 originales)<br>
-        <input type="checkbox" checked disabled> Etiquetas UN correctas<br>
-        </div>`;
-    }
-
-    if(tipo === "PER"){
-        contenedor.innerHTML = `
-        <div class="checklist-box">
-        <strong>Checklist Perishable:</strong><br><br>
-        <input type="checkbox" name="fitoDocs" value="si"> Certificado Fitosanitario<br>
-        <input type="checkbox" checked disabled> Control de temperatura validado<br>
-        </div>`;
-    }
-
-    if(tipo === "BIO"){
-        contenedor.innerHTML = `
-        <div class="checklist-box">
-        <strong>Checklist Biológica:</strong><br><br>
-        <input type="checkbox" name="dgrDocs" value="si"> Declaración DGR<br>
-        <input type="checkbox" name="fitoDocs" value="si"> Certificado FDA<br>
-        </div>`;
-    }
-}
+const fases = ["fase1","fase2","fase3","fase4"];
 
 async function evaluar(){
-
-    if(!document.getElementById("check1").checked ||
-       !document.getElementById("check2").checked ||
-       !document.getElementById("check3").checked){
-        alert("Debe completar el checklist obligatorio antes de evaluar.");
-        return;
-    }
-
     const data = Object.fromEntries(new FormData(document.getElementById("cargoForm")).entries());
     const resultadoDiv = document.getElementById("resultado");
     resultadoDiv.innerHTML = "Evaluando...";
-
+    
     try{
         const response = await axios.post("https://smartcargo-server.onrender.com/evaluar", data);
+        
+        // Mostrar solo fases permitidas
+        response.data.fases.forEach((fase,i)=>{
+            const sec = document.getElementById(fases[i]);
+            if(fase.mostrar_siguiente) sec.style.display="block";
+            else sec.style.display="none";
+        });
 
+        // Construir alertas con explicación IA
         let html = `<h2>Resultado Final: ${response.data.status}</h2>`;
-
-        response.data.explicaciones.forEach(item => {
-
+        response.data.explicaciones.forEach(item=>{
             let clase = "info";
-            if(item.error.includes("❌")) clase="critical";
-            else if(item.error.includes("⚠️")) clase="warning";
+            if(item.alerta.includes("❌")) clase="critical";
+            else if(item.alerta.includes("⚠️")) clase="warning";
+            else if(item.alerta.includes("✅")) clase="success";
 
-            html += `<div class="alert ${clase}">${item.error}</div>`;
+            html += `<div class="alert ${clase}">${item.alerta}</div>`;
             html += `<div class="explicacionIA">${item.explicacion}</div>`;
         });
 
@@ -276,9 +161,7 @@ async function evaluar(){
 async function generarPDF(){
     const data = Object.fromEntries(new FormData(document.getElementById("cargoForm")).entries());
     const resultadoDiv = document.getElementById("resultado");
-
     resultadoDiv.innerHTML="Generando PDF...";
-
     try{
         const response = await axios.post("https://smartcargo-server.onrender.com/generar_pdf", data);
         resultadoDiv.innerHTML = `<a href="https://smartcargo-server.onrender.com${response.data.url}" target="_blank">Abrir Reporte PDF</a>`;
@@ -286,7 +169,6 @@ async function generarPDF(){
         resultadoDiv.innerHTML = `<div class="alert critical">Error generando PDF</div>`;
     }
 }
-
 </script>
 
 </body>
