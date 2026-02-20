@@ -1,237 +1,163 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from fpdf import FPDF
-import os, json, datetime, httpx
+import math
 
-app = FastAPI(title="SMARTCARGO INFALIBLE")
+app = FastAPI(title="Avianca Cargo - Prevención de Errores")
 
-# -------------------------
-# Carpeta Frontend
-# -------------------------
-if not os.path.exists("frontend"):
-    os.makedirs("frontend")
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+# ---------------------------
+# MODELOS DE DATOS
+# ---------------------------
+class Cliente(BaseModel):
+    nombre: str
+    contacto: str
+    tipo_cliente: str
+    tipo_envio: str
+    tipo_mercancia: str
 
-# -------------------------
-# Endpoint raíz
-# -------------------------
-@app.get("/")
-async def root():
-    index_path = os.path.join("frontend", "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "index.html no encontrado"}
+class Pieza(BaseModel):
+    descripcion: str
+    largo_cm: float
+    ancho_cm: float
+    alto_cm: float
+    peso_kg: float
+    en_pallet: bool
 
-# -------------------------
-# API Keys
-# -------------------------
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+class Solicitud(BaseModel):
+    cliente: Cliente
+    piezas: list[Pieza]
 
-# -------------------------
-# Modelo de carga
-# -------------------------
-class CargoForm(BaseModel):
-    clientId: str | None = ""
-    shipmentType: str | None = ""
-    highValue: str | None = ""
-    itnNumber: str | None = ""
-    awbMaster: str | None = ""
-    awbHouse: str | None = ""
-    pieceHeight: float | None = 0
-    numPieces: int | None = 0
-    totalWeight: float | None = 0
-    needsShoring: str | None = ""
-    nimf15: str | None = ""
-    overhang: str | None = ""
-    damaged: str | None = ""
-    cargoType: str | None = ""
-    dgrDocs: str | None = ""
-    fitoDocs: str | None = ""
-    arrivalTime: str | None = ""
-    packaging: str | None = ""
-    zipCode: str | None = ""
+# ---------------------------
+# CONSTANTES AVIANA CARGO
+# ---------------------------
+LIMITES_AVIONES = {
+    "pasajero": {"alto_cm": 160, "ancho_cm": 120, "peso_kg": 150},
+    "carguero": {"alto_cm": 300, "ancho_cm": 250, "peso_kg": 500},
+}
 
-# -------------------------
-# Reglas duras y flujo condicional
-# -------------------------
-def evaluar_reglas_duras(data: CargoForm):
-    detalles = []
-    status = "LISTO PARA VOLAR"
+# ---------------------------
+# FUNCIONES AUXILIARES
+# ---------------------------
+def cm_to_in(cm):
+    return round(cm / 2.54, 2)
 
-    # ---- FASE 1: Identidad ----
-    if not data.clientId:
-        detalles.append("❌ ID Cliente vacío. Validación Known Shipper no posible.")
-        status = "NO LISTO"
-    if data.highValue == "yes" and not data.itnNumber:
-        detalles.append("❌ Valor > $2,500 USD sin ITN. Multa federal $10,000.")
-        status = "NO LISTO"
-    if not data.awbMaster:
-        detalles.append("❌ AWB Master no proporcionado.")
-        status = "NO LISTO"
+def kg_to_lb(kg):
+    return round(kg * 2.20462, 2)
 
-    # ---- FASE 2: Anatomía de la carga ----
-    if data.pieceHeight and data.pieceHeight > 63:
-        detalles.append("⚠️ Altura > 63 in: Solo avión carguero. >96 in no cabe en ningún avión.")
-        status = "NO LISTO"
-    if data.totalWeight and data.totalWeight > 150 and data.needsShoring != "si":
-        detalles.append("❌ Pieza >150kg sin shoring. Riesgo estructural.")
-        status = "NO LISTO"
-    if data.nimf15 != "si":
-        detalles.append("❌ Pallet sin NIMF-15. Retorno USDA/CBP.")
-        status = "NO LISTO"
-    if data.damaged == "yes":
-        detalles.append("⚠️ Daños detectados. Counter puede rechazar la carga.")
-        status = "NO LISTO"
+def calcular_volumen_cm3(largo_cm, ancho_cm, alto_cm):
+    return largo_cm * ancho_cm * alto_cm
 
-    # ---- FASE 3: Contenidos críticos ----
-    if data.cargoType in ["DGR","PER","BIO"]:
-        if data.dgrDocs != "si":
-            detalles.append(f"❌ {data.cargoType} sin documentos DGR completos.")
-            status = "NO LISTO"
-        if data.fitoDocs != "si" and data.cargoType in ["PER","BIO"]:
-            detalles.append(f"❌ {data.cargoType} sin certificados FDA/Fitosanitarios.")
-            status = "NO LISTO"
+def calcular_volumen_m3(largo_cm, ancho_cm, alto_cm):
+    return round(calcular_volumen_cm3(largo_cm, ancho_cm, alto_cm)/1_000_000, 3)
 
-    # ---- FASE FINAL: Logística ----
-    if not data.arrivalTime:
-        detalles.append("⚠️ Hora de llegada no definida. Cut-off 4h antes de salida.")
-    if data.packaging not in ["straps","STRAPS"]:
-        detalles.append("❌ Embalaje insuficiente. Shrink wrap solo no aceptado.")
-        status = "NO LISTO"
-    if data.overhang == "yes":
-        detalles.append("❌ Overhang detectado. Reestibar necesario.")
-        status = "NO LISTO"
-    if not data.zipCode:
-        detalles.append("❌ Código postal vacío. Bloqueo automático del sistema.")
-        status = "NO LISTO"
+def peso_cobrable(peso_kg, volumen_m3):
+    peso_volumetrico_kg = volumen_m3 * 167  # factor estándar Avianca Cargo
+    return max(peso_kg, peso_volumetrico_kg)
 
-    # Agregar mensaje de solución
-    for i in range(len(detalles)):
-        detalles[i] += " | Solución: Revise documentación y embalaje según AL CIELO."
+def detectar_DGR(descripcion):
+    keywords = ["bateria de litio", "liquido inflamable", "gas", "explosivo", "aerosol"]
+    descripcion_lower = descripcion.lower()
+    for k in keywords:
+        if k in descripcion_lower:
+            return True
+    return False
 
-    return {"status": status, "detalles": detalles}
+def verificar_reglas(pieza, tipo_avion):
+    limites = LIMITES_AVIONES[tipo_avion]
+    alertas = []
 
-# -------------------------
-# IA explicaciones
-# -------------------------
-async def explicar_con_ia(texto):
-    prompt = f"""
-    Eres un asistente AL CIELO para Avianca Cargo.
-    Explica detalladamente el siguiente hallazgo, indicando causa, consecuencias legales y solución:
-    {texto}
-    """
-    # OpenAI
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENAI_KEY}"},
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages":[{"role":"user","content":prompt}],
-                    "temperature":0
-                },
-                timeout=30
-            )
-            result = resp.json()
-            return result["choices"][0]["message"]["content"]
-    except:
-        # Gemini fallback
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    "https://api.gemini.com/v1/generate",
-                    headers={"Authorization": f"Bearer {GEMINI_KEY}"},
-                    json={"prompt":prompt, "max_tokens":500},
-                    timeout=30
-                )
-                result = resp.json()
-                return result.get("output","No se pudo generar explicación")
-        except Exception as e2:
-            return f"No se pudo generar explicación IA: {str(e2)}"
+    if pieza.alto_cm > limites["alto_cm"]:
+        alertas.append(f"Pieza demasiado alta ({pieza.alto_cm} cm), límite {limites['alto_cm']} cm. Reubique en carguero si es posible.")
+    if pieza.ancho_cm > limites["ancho_cm"]:
+        alertas.append(f"Pieza demasiado ancha ({pieza.ancho_cm} cm), límite {limites['ancho_cm']} cm. Reubique o reempaque.")
+    if pieza.peso_kg > limites["peso_kg"]:
+        alertas.append(f"Pieza demasiado pesada ({pieza.peso_kg} kg), límite {limites['peso_kg']} kg. Use shoring o divida carga.")
 
-# -------------------------
-# Endpoint Evaluar
-# -------------------------
-@app.post("/evaluar")
-async def evaluar(data: CargoForm):
-    resultado = evaluar_reglas_duras(data)
-    explicaciones = []
-    for item in resultado["detalles"]:
-        texto_ia = await explicar_con_ia(item)
-        explicaciones.append({"error": item, "explicacion": texto_ia})
+    if detectar_DGR(pieza.descripcion):
+        alertas.append("DG detectado: coloque Shipper's Declaration y etiquetas rojas visibles.")
 
-    log = {
-        "fecha": str(datetime.datetime.now()),
-        "cliente": data.clientId,
-        "resultado": resultado,
-        "explicaciones": explicaciones
-    }
-    with open("registro_evaluaciones.json", "a", encoding="utf-8") as f:
-        f.write(json.dumps(log, ensure_ascii=False) + "\n")
+    return alertas
 
-    return JSONResponse({
-        "status": resultado["status"],
-        "detalles": resultado["detalles"],
-        "explicaciones": explicaciones
-    })
+# ---------------------------
+# ENDPOINTS
+# ---------------------------
 
-# -------------------------
-# Endpoint Generar PDF
-# -------------------------
-@app.post("/generar_pdf")
-async def generar_pdf(data: CargoForm):
-    resultado = evaluar_reglas_duras(data)
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+@app.post("/validar_cliente")
+async def validar_cliente(cliente: Cliente):
+    alertas = []
 
-    secciones = [
-        ("Fase 1: Identificación y Seguridad", [
-            f"ID Cliente: {data.clientId}",
-            f"Tipo de envío: {data.shipmentType}",
-            f"Valor alto: {data.highValue}",
-            f"ITN: {data.itnNumber}",
-            f"AWB Master: {data.awbMaster}",
-            f"AWB House: {data.awbHouse}"
-        ]),
-        ("Fase 2: Anatomía de la Carga", [
-            f"Altura pieza: {data.pieceHeight} in",
-            f"Número de piezas: {data.numPieces}",
-            f"Peso total: {data.totalWeight} kg",
-            f"Shoring: {data.needsShoring}",
-            f"NIMF-15: {data.nimf15}",
-            f"Overhang: {data.overhang}",
-            f"Daños: {data.damaged}"
-        ]),
-        ("Fase 3: Contenidos Críticos", [
-            f"Tipo carga: {data.cargoType}",
-            f"Documentos DGR: {data.dgrDocs}",
-            f"Certificados FDA/Fitosanitarios: {data.fitoDocs}"
-        ]),
-        ("Fase Final: Logística", [
-            f"Llegada: {data.arrivalTime}",
-            f"Embalaje: {data.packaging}",
-            f"Código Postal: {data.zipCode}"
-        ]),
-        ("Resultado Evaluación", resultado["detalles"])
+    if not cliente.nombre:
+        alertas.append("⚠️ Llene el campo nombre completo antes de avanzar.")
+    if not cliente.contacto:
+        alertas.append("⚠️ Llene el campo contacto antes de avanzar.")
+    if not cliente.tipo_cliente:
+        alertas.append("⚠️ Llene el campo tipo_cliente antes de avanzar.")
+    if not cliente.tipo_envio:
+        alertas.append("⚠️ Llene el campo tipo_envio antes de avanzar.")
+    if not cliente.tipo_mercancia:
+        alertas.append("⚠️ Llene el campo tipo_mercancia antes de avanzar.")
+
+    # Papelería inicial según tipo_envio y tipo_mercancia
+    documentos = []
+    copias = {}
+    if cliente.tipo_envio.lower() == "consolidado":
+        documentos.append("Manifiesto + HAWB por cliente")
+        copias["AWB"] = {"originales": 3, "copias": 6}
+    else:
+        documentos.append("Guía Master + Factura + Packing List")
+        copias["AWB"] = {"originales": 3, "copias": 3}
+
+    if cliente.tipo_mercancia.lower() == "dg":
+        documentos.append("Shipper’s Declaration")
+        documentos.append("Etiquetas rojas visibles en cada bulto")
+    elif cliente.tipo_mercancia.lower() == "perecedera":
+        documentos.append("Certificado sanitario")
+    elif cliente.tipo_mercancia.lower() == "human remains":
+        documentos.append("Permisos especiales + embalaje específico")
+    elif cliente.tipo_mercancia.lower() == "medicamentos":
+        documentos.append("FDA / permisos médicos")
+
+    return {"alertas": alertas, "documentos_requeridos": documentos, "copias": copias}
+
+@app.post("/validar_carga")
+async def validar_carga(solicitud: Solicitud):
+    resultado = []
+    for pieza in solicitud.piezas:
+        volumen_m3 = calcular_volumen_m3(pieza.largo_cm, pieza.ancho_cm, pieza.alto_cm)
+        peso_calc = peso_cobrable(pieza.peso_kg, volumen_m3)
+        alertas = verificar_reglas(pieza, tipo_avion="pasajero")  # default pasajero, puede ajustarse según selección
+
+        resultado.append({
+            "descripcion": pieza.descripcion,
+            "largo_cm": pieza.largo_cm,
+            "largo_in": cm_to_in(pieza.largo_cm),
+            "ancho_cm": pieza.ancho_cm,
+            "ancho_in": cm_to_in(pieza.ancho_cm),
+            "alto_cm": pieza.alto_cm,
+            "alto_in": cm_to_in(pieza.alto_cm),
+            "peso_kg": pieza.peso_kg,
+            "peso_lb": kg_to_lb(pieza.peso_kg),
+            "volumen_m3": volumen_m3,
+            "peso_cobrable_kg": round(peso_calc,2),
+            "peso_cobrable_lb": round(kg_to_lb(peso_calc),2),
+            "alertas": alertas
+        })
+    return {"resultado": resultado}
+
+@app.post("/reporte_final")
+async def reporte_final(solicitud: Solicitud):
+    carga_val = await validar_carga(solicitud)
+    errores = []
+    for pieza in carga_val["resultado"]:
+        if pieza["alertas"]:
+            errores.append({pieza["descripcion"]: pieza["alertas"]})
+
+    estado = "✅ Aprobada" if not errores else "⚠️ Correcciones requeridas"
+    instrucciones = [
+        "Entregar documentos: AWB originales y copias según tipo de envío, Shipper’s Declaration si DG, Certificado sanitario si perecedera",
+        "Etiquetas visibles en cada bulto y sobre rojo para DG",
+        "Ajustes de piezas según alertas",
+        "Confirmar medidas y peso antes de presentar al counter"
     ]
 
-    for titulo, items in secciones:
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
-        pdf.set_text_color(255,255,255)
-        pdf.set_fill_color(226,6,19)
-        pdf.cell(0,12,titulo, ln=True, fill=True)
-        pdf.ln(5)
-        pdf.set_text_color(0,0,0)
-        pdf.set_font("Arial", "", 12)
-        for item in items:
-            pdf.multi_cell(0,8,f"- {item}")
-            pdf.ln(1)
-
-    filename = "frontend/reporte_smartcargo.pdf"
-    pdf.output(filename)
-    return {"url": "/static/reporte_smartcargo.pdf"}
+    return {"estado_carga": estado, "errores": errores, "instrucciones_finales": instrucciones}
