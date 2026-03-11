@@ -1,10 +1,6 @@
 {
-  "GEN": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list"
-    ],
+  "GENERAL": {
+    "documents": ["air_waybill", "commercial_invoice", "packing_list"],
     "notes": "Carga general estándar"
   },
   "DGR": {
@@ -26,7 +22,7 @@
       "health_certificate",
       "temperature_log"
     ],
-    "notes": "Perecederos con necesidad de log de temperatura"
+    "notes": "Perecederos con log de temperatura"
   },
   "AVI": {
     "documents": [
@@ -36,7 +32,7 @@
       "commercial_invoice",
       "packing_list"
     ],
-    "notes": "Animales vivos certificación veterinaria"
+    "notes": "Animales vivos con certificación veterinaria"
   },
   "HUM": {
     "documents": [
