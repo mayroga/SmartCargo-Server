@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import json, datetime
 
-app=FastAPI(title="SMARTCARGO Server")
+app=FastAPI(title="SMARTGOSERVER")
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_methods=["*"],allow_headers=["*"])
 app.mount("/static",StaticFiles(directory="static"),name="static")
 
