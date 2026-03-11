@@ -3,12 +3,62 @@
     "air_waybill",
     "commercial_invoice",
     "packing_list",
-    "export_declaration",
+    "export_permits",
+    "health_and_safety_certs",
     "special_certificates"
   ],
   "document_quality": [
     "no_tachaduras",
     "no_borrones",
-    "letra_legible"
-  ]
+    "letra_legible",
+    "version_valida"
+  ],
+  "country_specific": {
+    "USA": [
+      "EEI_AES_export",
+      "FDA_prior_notice_if_food",
+      "USDA_permits_if_agri",
+      "TSA_known_shipper_compliance"
+    ],
+    "COL": [
+      "DIAN_export_declaration",
+      "ICA_sanitary_permit_if_applicable"
+    ],
+    "MEX": [
+      "Pedimento_EXPORT",
+      "SAGARPA_permit_if_agri"
+    ],
+    "PER": [
+      "SUNAT_export_declaration",
+      "DIGESA_if_food"
+    ],
+    "BRA": [
+      "RADAR_export",
+      "MAPA_phytosanitary"
+    ],
+    "ARG": [
+      "AFIP_export_doc",
+      "SENASA_if_animal"
+    ],
+    "ESP": [
+      "EU_export_declaration",
+      "sanitary_permit_EU"
+    ],
+    "FRA": [
+      "EU_export_declaration",
+      "sanitary_permit_EU"
+    ],
+    "GBR": [
+      "UK_export_declaration",
+      "sanitary_permit_UK"
+    ],
+    "CAN": [
+      "CFIA_phytosanitary",
+      "CCPC_permits"
+    ],
+    "CRI": ["MAG_sanitary"],
+    "PAN": ["AUPSA_permits"],
+    "ECU": ["AGRO_export_permit"],
+    "VEN": ["SENIAT_export_doc"]
+  }
 }
