@@ -1,273 +1,137 @@
-let cargoRules = {};
-let aviancaRules = {};
-let allDocuments = new Set();
-
-/* -----------------------------
-Cargar reglas desde backend
-------------------------------*/
-
-async function loadRules(){
-    const cargo = await fetch("/static/cargo_rules.json");
-    cargoRules = await cargo.json();
-
-    const avi = await fetch("/static/avianca_rules.json");
-    aviancaRules = await avi.json();
-
-    buildDocumentLibrary();
-}
-
-loadRules();
-
-/* -----------------------------
-Construir biblioteca global de documentos
-------------------------------*/
-
-function buildDocumentLibrary(){
-
-    Object.keys(cargoRules).forEach(type=>{
-        let docs = cargoRules[type].documents || [];
-        docs.forEach(d=>allDocuments.add(d));
-    });
-
-    const docList = document.getElementById("documents");
-
-    if(docList){
-        docList.innerHTML = "";
-
-        allDocuments.forEach(doc=>{
-            let opt = document.createElement("option");
-            opt.value = doc;
-            opt.textContent = doc;
-            docList.appendChild(opt);
-        });
+ACTUALIZA Y ESCRIBE COMPLETO A static/app.js:<!DOCTYPE html> 
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: Arial, sans-serif; background: #f4f6f8; color: #111; margin:0; padding:20px;}
+h1 { text-align:center; color:#0a3d62;}
+.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+label { display:block; margin:8px 0 4px;}
+input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc;}
+.alert { color:red; font-weight:bold; margin:5px 0;}
+.success { color:green; font-weight:bold; margin:5px 0;}
+.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px;}
+</style>
+<script>
+function calcularVolumen() {
+    let largo = parseFloat(document.getElementById('largo').value) || 0;
+    let ancho = parseFloat(document.getElementById('ancho').value) || 0;
+    let alto = parseFloat(document.getElementById('alto').value) || 0;
+    let volumen = (largo * ancho * alto)/1000000; // cm³ a m³
+    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
+    // Validación automática
+    if(alto > 244) {
+        document.getElementById('alertAltura').innerText = "ALERTA: Altura excede límite de Carguero (244 cm)";
+    } else if(alto > 160) {
+        document.getElementById('alertAltura').innerText = "ADVERTENCIA: Altura excede límite de pasajero (160 cm)";
+    } else {
+        document.getElementById('alertAltura').innerText = "";
     }
-
+    if(largo > 318 || ancho > 244) {
+        document.getElementById('alertDim').innerText = "ALERTA: Dimensiones exceden máximo permitido (Largo 318 cm, Ancho 244 cm)";
+    } else {
+        document.getElementById('alertDim').innerText = "";
+    }
+    let peso = parseFloat(document.getElementById('peso').value) || 0;
+    if(peso > 6800) {
+        document.getElementById('alertPeso').innerText = "ALERTA: Peso excede máximo permitido del pallet (6800 kg)";
+    } else {
+        document.getElementById('alertPeso').innerText = "";
+    }
 }
 
-/* -----------------------------
-Autocompletar documentos según carga
-------------------------------*/
-
-function autofillDocs(){
-
-    const cargoType = document.getElementById("cargo_type").value;
-
-    if(!cargoRules[cargoType]) return;
-
-    const docs = cargoRules[cargoType].documents;
-
-    const docField = document.getElementById("documents_input");
-
-    docField.value = docs.join(", ");
-}
-
-/* -----------------------------
-Cálculo volumen
-------------------------------*/
-
-function calculateVolume(){
-
-    let l = parseFloat(document.getElementById("length").value);
-    let w = parseFloat(document.getElementById("width").value);
-    let h = parseFloat(document.getElementById("height").value);
-
-    if(!l || !w || !h) return;
-
-    let vol = (l*w*h)/1728;
-
-    document.getElementById("volume").value = vol.toFixed(3);
-
-}
-
-document.getElementById("length")?.addEventListener("input",calculateVolume);
-document.getElementById("width")?.addEventListener("input",calculateVolume);
-document.getElementById("height")?.addEventListener("input",calculateVolume);
-
-/* -----------------------------
-Control fases UI
-------------------------------*/
-
-document.querySelectorAll(".phase").forEach(p=>{
-    p.addEventListener("click",()=>{
-        let content = document.getElementById("phase"+p.dataset.phase);
-
-        if(content.style.display==="block")
-            content.style.display="none";
-        else
-            content.style.display="block";
-    });
-});
-
-/* -----------------------------
-Recolectar UN numbers
-------------------------------*/
-
-function parseUN(){
-
-    const raw = document.getElementById("un_numbers").value;
-
-    if(!raw) return [];
-
-    return raw.split(",")
-        .map(x=>x.trim().toUpperCase())
-        .filter(x=>x.startsWith("UN"));
-
-}
-
-/* -----------------------------
-Enviar validación
-------------------------------*/
-
-document.getElementById("validateBtn").addEventListener("click",()=>{
-
-    const data = {
-
-        mawb: document.getElementById("mawb").value.trim(),
-
-        hawb: document.getElementById("hawb").value.trim(),
-
-        airline: document.getElementById("airline").value.trim(),
-
-        flight_number: document.getElementById("flight_number").value.trim(),
-
-        flight_date: document.getElementById("flight_date").value,
-
-        origin: document.getElementById("origin").value.trim(),
-
-        destination: document.getElementById("destination").value.trim(),
-
-        cargo_type: document.getElementById("cargo_type").value,
-
-        pieces: parseInt(document.getElementById("pieces").value),
-
-        gross_weight: parseFloat(document.getElementById("gross_weight").value),
-
-        length: parseFloat(document.getElementById("length").value),
-
-        width: parseFloat(document.getElementById("width").value),
-
-        height: parseFloat(document.getElementById("height").value),
-
-        volume: parseFloat(document.getElementById("volume").value),
-
-        /* medidas críticas */
-
-        tallest_piece: parseFloat(document.getElementById("tallest_piece").value),
-
-        longest_piece: parseFloat(document.getElementById("longest_piece").value),
-
-        widest_piece: parseFloat(document.getElementById("widest_piece").value),
-
-        heaviest_piece: parseFloat(document.getElementById("heaviest_piece").value),
-
-        documents: document.getElementById("documents_input")
-            .value
-            .split(",")
-            .map(d=>d.trim())
-            .filter(d=>d),
-
-        un_numbers: parseUN(),
-
-        security:{
-
-            known_shipper: document.getElementById("known_shipper").value==="true",
-
-            screening: document.getElementById("screening").value,
-
-            regulated_agent: document.getElementById("regulated_agent").value==="true"
-
-        },
-
-        role: document.getElementById("role").value
-
+// Mostrar documentos según tipo de carga
+function mostrarDocumentos() {
+    let tipo = document.getElementById('tipoCarga').value;
+    let docs = {
+        "HUM": "Air Waybill, Death Certificate, Funeral Certificate, Embalming Certificate, Known Shipper / Screening / Regulated Agent",
+        "PER": "Air Waybill, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening / Regulated Agent",
+        "DGR": "Air Waybill, Shipper’s Declaration x2, Certificado Fitosanitario si aplica, Known Shipper / Screening / Regulated Agent",
+        "GEN": "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent"
     };
-
-    fetch("/validate_shipment",{
-
-        method:"POST",
-
-        headers:{
-            "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify(data)
-
-    })
-    .then(r=>r.json())
-    .then(res=>{
-
-        let txt = "";
-
-        if(res.status==="GREEN")
-            txt+="GREEN ✅ CARGA APROBADA\n\n";
-        else
-            txt+="RED ❌ CARGA BLOQUEADA\n\n";
-
-        if(res.errors.length>0){
-
-            txt+="ERRORES DETECTADOS\n";
-
-            res.errors.forEach(e=>{
-                txt+="• "+e+"\n";
-            });
-
-        }
-
-        if(res.corrections.length>0){
-
-            txt+="\nSOLUCIONES RECOMENDADAS\n";
-
-            res.corrections.forEach(c=>{
-                txt+="• "+c+"\n";
-            });
-
-        }
-
-        txt+=`\nValidado por ${res.role} @ ${res.timestamp}`;
-
-        document.getElementById("result").innerText = txt;
-
-        /* pintar fases */
-
-        for(let i=1;i<=8;i++){
-
-            let pid="phase"+i;
-
-            let box=document.getElementById(pid);
-
-            if(res.phases[pid].length===0)
-                box.innerHTML="Sin alertas";
-            else
-                box.innerHTML=res.phases[pid].join("<br>");
-
-        }
-
-    });
-
-});
-
-/* -----------------------------
-Validación técnica frontend
-------------------------------*/
-
-function checkAircraftLimits(){
-
-    let height = parseFloat(document.getElementById("tallest_piece").value);
-
-    if(height>96){
-        alert("❌ Altura mayor a 96 pulgadas. No puede volar en Avianca.");
-    }
-
-    if(height>63 && height<=96){
-        alert("⚠️ Solo puede volar en avión carguero (Freighter)");
-    }
-
+    document.getElementById('documentos').innerText = docs[tipo] || "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent";
 }
 
-document.getElementById("tallest_piece")?.addEventListener("change",checkAircraftLimits);
+// Mostrar rol dinámico
+function actualizarRol() {
+    let rol = document.getElementById('rol').value;
+    let opciones = "";
+    if(rol === "Chofer" || rol === "Camionero") opciones = "Forwarder, Dueño, Counter";
+    if(rol === "Forwarder") opciones = "Chofer, Dueño, Counter";
+    document.getElementById('rolAlternativo').innerText = opciones;
+}
 
-/* -----------------------------
-Cambio tipo carga
-------------------------------*/
+function validarCarga() {
+    alert("Validación ejecutada al momento. Revise alertas visibles en pantalla.");
+}
+</script>
+</head>
+<body>
 
-document.getElementById("cargo_type")?.addEventListener("change",autofillDocs);
+<h1>SMARTGOSERVER - Asesoría Técnica de Carga</h1>
+
+<div class="section">
+<h2>I. Identificación y Tipo de Envío</h2>
+<label for="clienteID">ID de Cliente / Código SCAC:</label>
+<input type="text" id="clienteID" placeholder="Ingrese su ID o SCAC">
+
+<label for="tipoCarga">Tipo de Carga:</label>
+<select id="tipoCarga" onchange="mostrarDocumentos()">
+    <option value="">Seleccione</option>
+    <option value="HUM">HUM (Human Remains)</option>
+    <option value="PER">PER (Perishable Goods)</option>
+    <option value="DGR">DGR (Dangerous Goods)</option>
+    <option value="GEN">GEN (General Cargo)</option>
+</select>
+
+<label for="destino">Destino:</label>
+<input type="text" id="destino" placeholder="Ciudad / País">
+
+<label for="rol">Rol del Usuario:</label>
+<select id="rol" onchange="actualizarRol()">
+    <option value="">Seleccione</option>
+    <option value="Chofer">Chofer</option>
+    <option value="Camionero">Camionero</option>
+    <option value="Forwarder">Forwarder</option>
+</select>
+<p id="rolAlternativo" style="font-style:italic;"></p>
+
+</div>
+
+<div class="section">
+<h2>II. Dimensiones y Peso</h2>
+<label for="largo">Largo (cm):</label>
+<input type="number" id="largo" oninput="calcularVolumen()">
+
+<label for="ancho">Ancho (cm):</label>
+<input type="number" id="ancho" oninput="calcularVolumen()">
+
+<label for="alto">Alto (cm):</label>
+<input type="number" id="alto" oninput="calcularVolumen()">
+
+<label for="peso">Peso (kg):</label>
+<input type="number" id="peso" oninput="calcularVolumen()">
+
+<label for="volumen">Volumen (m³):</label>
+<input type="text" id="volumen" readonly>
+
+<p id="alertAltura" class="alert"></p>
+<p id="alertDim" class="alert"></p>
+<p id="alertPeso" class="alert"></p>
+</div>
+
+<div class="section">
+<h2>III. Documentos Obligatorios</h2>
+<div id="documentos" class="docs">Seleccione un tipo de carga para ver documentos.</div>
+</div>
+
+<div class="section">
+<h2>IV. Validación Final</h2>
+<button onclick="validarCarga()">Validar Carga</button>
+<p class="success">Respuesta al momento: Todos los campos críticos deben revisarse antes de generar AWB.</p>
+</div>
+
+</body>
+</html>
