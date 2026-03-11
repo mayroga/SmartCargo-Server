@@ -1,0 +1,14 @@
+{
+  "folder_order": [
+    "air_waybill",
+    "commercial_invoice",
+    "packing_list",
+    "export_declaration",
+    "special_certificates"
+  ],
+  "document_quality": [
+    "no_tachaduras",
+    "no_borrones",
+    "letra_legible"
+  ]
+}
