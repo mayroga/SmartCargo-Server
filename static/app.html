@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMARTGOSERVER Validation</title>
+<title>SMARTCARGO Validation</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 body{font-family:'Inter',sans-serif;background:#0f172a;color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:0;}
-#app{width:95%;max-width:800px;background:#111827;border-radius:20px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
+#app{width:95%;max-width:900px;background:#111827;border-radius:20px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
 h1{font-size:24px;text-align:center;margin-bottom:10px;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 label{margin-top:10px;font-weight:600;}
 input, select{width:100%;padding:8px;margin-top:4px;border-radius:8px;border:none;font-size:14px;}
@@ -24,9 +24,18 @@ button:hover{background:#3b82f6;}
 </head>
 <body>
 <div id="app">
-<h1>SMARTGOSERVER Validation</h1>
+<h1>SMARTCARGO Validation</h1>
 
-<!-- Form Inputs -->
+<!-- Campos completos -->
+<label>MAWB:</label><input type="text" id="mawb" placeholder="Número de guía master">
+<label>HAWB:</label><input type="text" id="hawb" placeholder="Número de guía house">
+<label>Aerolínea:</label><input type="text" id="airline" placeholder="Ej: Avianca">
+<label>Número de vuelo:</label><input type="text" id="flight_number">
+<label>Fecha de vuelo:</label><input type="date" id="flight_date">
+<label>Origen:</label><input type="text" id="origin">
+<label>Destino:</label><input type="text" id="destination">
+<label>Rol del operador:</label><input type="text" id="role" placeholder="Ej: Agente de carga">
+
 <label>Tipo de carga:</label>
 <select id="cargo_type">
 <option value="GENERAL">GENERAL</option>
@@ -35,6 +44,20 @@ button:hover{background:#3b82f6;}
 <option value="AVI">AVI</option>
 <option value="HUM">HUM</option>
 <option value="VAL">VAL</option>
+<option value="PHR">PHR</option>
+<option value="FSH">FSH</option>
+<option value="ELD">ELD</option>
+<option value="BAT">BAT</option>
+<option value="PRT">PRT</option>
+<option value="MED">MED</option>
+<option value="FTZ">FTZ</option>
+<option value="AGR">AGR</option>
+<option value="REF">REF</option>
+<option value="CMM">CMM</option>
+<option value="PAX">PAX</option>
+<option value="CTR">CTR</option>
+<option value="TMP">TMP</option>
+<option value="HAZ">HAZ</option>
 </select>
 
 <label>Número de piezas:</label><input type="number" id="pieces" value="1" min="1">
@@ -44,49 +67,18 @@ button:hover{background:#3b82f6;}
 <label>Peso bruto (kg):</label><input type="number" id="gross_weight" value="1" min="0.1" step="0.1">
 <label>Volumen (m³):</label><input type="number" id="volume" value="0.125" step="0.001" readonly>
 <label>Documentos presentes (separados por coma):</label><input type="text" id="documents" placeholder="invoice, packing_list">
-<label>Known Shipper:</label>
-<select id="known_shipper"><option value="true">Sí</option><option value="false">No</option></select>
-<label>Screening:</label>
-<select id="screening"><option value="xray">X-Ray</option><option value="manual">Manual</option></select>
-<label>Regulated Agent:</label>
-<select id="regulated_agent"><option value="true">Sí</option><option value="false">No</option></select>
+<label>Known Shipper:</label><select id="known_shipper"><option value="true">Sí</option><option value="false">No</option></select>
+<label>Screening:</label><select id="screening"><option value="xray">X-Ray</option><option value="manual">Manual</option></select>
+<label>Regulated Agent:</label><select id="regulated_agent"><option value="true">Sí</option><option value="false">No</option></select>
 
-<!-- Accordion Phases -->
-<div class="phase" data-phase="1">Fase 1: Dimensiones y Peso</div>
-<div class="phase-content" id="phase1"></div>
-<div class="phase" data-phase="2">Fase 2: Documentos Obligatorios</div>
-<div class="phase-content" id="phase2"></div>
-<div class="phase" data-phase="3">Fase 3: Seguridad / Known Shipper</div>
-<div class="phase-content" id="phase3"></div>
+<!-- Fases Avianca -->
+<div id="phases-container"></div>
 
 <button id="validateBtn">Validar Carga</button>
 <div id="result"></div>
 
 <script>
-// Configuración de reglas de carga
-const cargoRules = {
-  "GENERAL":["air_waybill","commercial_invoice","packing_list"],
-  "DGR":["air_waybill","dangerous_goods_declaration","msds","commercial_invoice","packing_list","UN_number_list"],
-  "PER":["air_waybill","commercial_invoice","packing_list","health_certificate","temperature_log"],
-  "AVI":["air_waybill","live_animals_certificate","health_certificate","commercial_invoice","packing_list"],
-  "HUM":["air_waybill","death_certificate","funeral_certificate","embalming_certificate"],
-  "VAL":["air_waybill","commercial_invoice","packing_list","insurance_certificate","value_declaration"]
-};
-
-// Accordion toggle
-document.querySelectorAll('.phase').forEach(p=>{
-  p.onclick = ()=>{ 
-    const idx = parseInt(p.dataset.phase);
-    if(idx>1){
-      const prevStatus = document.getElementById(`phase${idx-1}_status`);
-      if(prevStatus && prevStatus.dataset.status !== 'ok'){ alert('Complete fase anterior'); return; }
-    }
-    const content = p.nextElementSibling;
-    content.style.display = content.style.display==='block'?'none':'block';
-  };
-});
-
-// Calcular volumen automáticamente
+// Cálculo de volumen automático
 ['length','width','height'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
     const l=parseFloat(document.getElementById('length').value);
@@ -97,46 +89,80 @@ document.querySelectorAll('.phase').forEach(p=>{
   });
 });
 
-// Validación completa
-document.getElementById('validateBtn').onclick=function(){
-  const type=document.getElementById('cargo_type').value;
-  const l=parseFloat(document.getElementById('length').value);
-  const w=parseFloat(document.getElementById('width').value);
-  const h=parseFloat(document.getElementById('height').value);
-  const wt=parseFloat(document.getElementById('gross_weight').value);
-  const vol=parseFloat(document.getElementById('volume').value);
-  const docsInput=document.getElementById('documents').value.split(',').map(d=>d.trim().toLowerCase());
-  const ks=document.getElementById('known_shipper').value==='true';
-  const sc=document.getElementById('screening').value;
-  const ra=document.getElementById('regulated_agent').value==='true';
+// Crear placeholders de fases
+for(let i=1;i<=8;i++){
+  const container=document.getElementById('phases-container');
+  const phaseDiv=document.createElement('div');
+  phaseDiv.className='phase';
+  phaseDiv.dataset.phase=i;
+  phaseDiv.textContent=`Fase ${i}`;
+  const contentDiv=document.createElement('div');
+  contentDiv.className='phase-content';
+  contentDiv.id=`phase${i}`;
+  container.appendChild(phaseDiv);
+  container.appendChild(contentDiv);
+}
 
-  let resultText='', global='ok';
+// Toggle fases
+document.querySelectorAll('.phase').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    const content=p.nextElementSibling;
+    content.style.display=content.style.display==='block'?'none':'block';
+  });
+});
 
-  // Fase 1: Dimensiones y Peso
-  let phase1Status='ok';
-  if(isNaN(l)||isNaN(w)||isNaN(h)||isNaN(wt)){phase1Status='error'; global='error';}
-  if(l>2.5||w>2.5||h>2.5||wt>500){phase1Status='error'; global='error';}
-  document.getElementById('phase1').innerHTML=`<span class="status ${phase1Status}" id="phase1_status" data-status="${phase1Status}">${phase1Status==='ok'?'✅ OK':'❌ ERROR'}</span>
-  Volumen calculado: ${vol} m³, Peso: ${wt} kg`;
+// Validación con backend
+document.getElementById('validateBtn').addEventListener('click',()=>{
+  const data={
+    mawb: document.getElementById('mawb').value.trim(),
+    hawb: document.getElementById('hawb').value.trim(),
+    airline: document.getElementById('airline').value.trim(),
+    flight_number: document.getElementById('flight_number').value.trim(),
+    flight_date: document.getElementById('flight_date').value,
+    origin: document.getElementById('origin').value.trim(),
+    destination: document.getElementById('destination').value.trim(),
+    cargo_type: document.getElementById('cargo_type').value,
+    pieces: parseInt(document.getElementById('pieces').value),
+    length: parseFloat(document.getElementById('length').value),
+    width: parseFloat(document.getElementById('width').value),
+    height: parseFloat(document.getElementById('height').value),
+    volume: parseFloat(document.getElementById('volume').value),
+    gross_weight: parseFloat(document.getElementById('gross_weight').value),
+    documents: document.getElementById('documents').value.split(',').map(d=>d.trim()).filter(d=>d),
+    security:{
+      known_shipper: document.getElementById('known_shipper').value==="true",
+      screening: document.getElementById('screening').value,
+      regulated_agent: document.getElementById('regulated_agent').value==="true"
+    },
+    role: document.getElementById('role').value
+  };
 
-  // Fase 2: Documentos
-  const requiredDocs=cargoRules[type].map(d=>d.toLowerCase());
-  const missingDocs=requiredDocs.filter(d=>!docsInput.includes(d));
-  let phase2Status='ok';
-  if(missingDocs.length>0){phase2Status='error'; global='error';}
-  document.getElementById('phase2').innerHTML=`<span class="status ${phase2Status}" id="phase2_status" data-status="${phase2Status}">${phase2Status==='ok'?'✅ OK':'❌ Faltan docs'}</span>
-  ${missingDocs.length>0?'Faltan: '+missingDocs.join(', '):'Todos los documentos presentes'}`;
+  fetch("/validate_shipment",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    // Resultado global
+    let txt=`${res.status==="GREEN"?"✅ Verde":"❌ Rojo"}\n`;
+    if(res.errors.length>0) txt+="Errores:\n• "+res.errors.join("\n• ")+"\n";
+    if(res.corrections.length>0) txt+="Correcciones sugeridas:\n• "+res.corrections.join("\n• ")+"\n";
+    txt+=`Trazabilidad: ${res.role} @ ${res.timestamp}`;
+    document.getElementById('result').innerText=txt;
 
-  // Fase 3: Known Shipper / Screening / Regulated Agent
-  let phase3Status='ok';
-  if((type==='DGR' && (!ks || !sc)) || (type==='AVI' && !ra)){phase3Status='error'; global='error';}
-  document.getElementById('phase3').innerHTML=`<span class="status ${phase3Status}" id="phase3_status" data-status="${phase3Status}">${phase3Status==='ok'?'✅ OK':'❌ Seguridad incompleta'}</span>`;
-
-  // Resultado global
-  const resultDiv=document.getElementById('result');
-  if(global==='ok') resultDiv.textContent='✅ Verde: Todo correcto';
-  else resultDiv.textContent='❌ Rojo: Errores críticos';
-};
+    // Mostrar fases completas
+    if(res.phases){
+      Object.keys(res.phases).forEach(pid=>{
+        document.getElementById(pid).innerHTML=res.phases[pid].length>0 ? res.phases[pid].join("<br>") : "Sin alertas";
+      });
+    }
+  })
+  .catch(e=>{
+    document.getElementById('result').innerText='❌ Error al conectar con el servidor';
+    console.error(e);
+  });
+});
 </script>
 </div>
 </body>
