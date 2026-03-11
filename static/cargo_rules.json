@@ -1,0 +1,27 @@
+{
+  "GEN": {
+    "documents": ["invoice", "packing_list"],
+    "copies_inside": 2,
+    "copies_outside": 1
+  },
+  "DGR": {
+    "documents": ["dangerous_goods_declaration", "msds", "invoice", "packing_list"],
+    "copies_inside": 3,
+    "copies_outside": 1
+  },
+  "PER": {
+    "documents": ["health_certificate", "invoice", "packing_list"],
+    "copies_inside": 2,
+    "copies_outside": 1
+  },
+  "AVI": {
+    "documents": ["live_animals_certificate", "invoice", "packing_list"],
+    "copies_inside": 2,
+    "copies_outside": 1
+  },
+  "HUM": {
+    "documents": ["funeral_certificate", "death_certificate"],
+    "copies_inside": 1,
+    "copies_outside": 1
+  }
+}
