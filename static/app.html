@@ -6,37 +6,46 @@
 <title>SMARTGOSERVER Validation</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-body{font-family:'Inter',sans-serif;background:#0f172a;color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:0;}
-#app{width:95%;max-width:900px;background:#111827;border-radius:20px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
-h1{font-size:24px;text-align:center;margin-bottom:10px;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-label{margin-top:10px;font-weight:600;}
-input, select{width:100%;padding:8px;margin-top:4px;border-radius:8px;border:none;font-size:14px;}
-button{padding:12px;margin-top:15px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:600;cursor:pointer;transition:all 0.2s;}
-button:hover{background:#3b82f6;}
-.phase{margin-top:15px;background:#1e293b;padding:10px;border-radius:12px;cursor:pointer;}
-.phase-content{display:none;padding:10px;margin-top:5px;background:#0f172a;border-radius:8px;}
-.status{font-weight:bold;margin-left:10px;}
-.ok{color:green;}
-.warning{color:orange;}
-.error{color:red;}
-#result{margin-top:20px;padding:15px;border-radius:12px;background:#1e293b;white-space:pre-line;font-size:14px;}
+body{font-family:'Inter',sans-serif;background:#0f172a;color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
+#app{width:95%;max-width:900px;background:#111827;border-radius:20px;padding:20px}
+input,select{width:100%;padding:8px;margin-top:4px;border-radius:8px;border:none}
+button{padding:12px;margin-top:15px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:600}
+.phase{margin-top:10px;background:#1e293b;padding:10px;border-radius:10px;cursor:pointer}
+.phase-content{display:none;padding:10px;background:#0f172a;margin-top:5px;border-radius:8px}
+#result{margin-top:15px;background:#1e293b;padding:10px;border-radius:10px;white-space:pre-line}
 </style>
 </head>
 <body>
+
 <div id="app">
+
 <h1>SMARTGOSERVER Validation</h1>
 
-<!-- Campos completos -->
-<label>MAWB:</label><input type="text" id="mawb" placeholder="Número de guía master">
-<label>HAWB:</label><input type="text" id="hawb" placeholder="Número de guía house">
-<label>Aerolínea:</label><input type="text" id="airline" placeholder="Ej: Avianca">
-<label>Número de vuelo:</label><input type="text" id="flight_number">
-<label>Fecha de vuelo:</label><input type="date" id="flight_date">
-<label>Origen:</label><input type="text" id="origin">
-<label>Destino:</label><input type="text" id="destination">
-<label>Rol del operador:</label><input type="text" id="role" placeholder="Ej: Agente de carga">
+<label>MAWB</label>
+<input id="mawb">
 
-<label>Tipo de carga:</label>
+<label>HAWB</label>
+<input id="hawb">
+
+<label>Aerolínea</label>
+<input id="airline">
+
+<label>Vuelo</label>
+<input id="flight_number">
+
+<label>Fecha</label>
+<input type="date" id="flight_date">
+
+<label>Origen</label>
+<input id="origin">
+
+<label>Destino</label>
+<input id="destination">
+
+<label>Rol</label>
+<input id="role">
+
+<label>Tipo carga</label>
 <select id="cargo_type">
 <option value="GENERAL">GENERAL</option>
 <option value="DGR">DGR</option>
@@ -60,110 +69,157 @@ button:hover{background:#3b82f6;}
 <option value="HAZ">HAZ</option>
 </select>
 
-<label>Número de piezas:</label><input type="number" id="pieces" value="1" min="1">
-<label>Largo (m):</label><input type="number" id="length" value="0.5" step="0.01">
-<label>Ancho (m):</label><input type="number" id="width" value="0.5" step="0.01">
-<label>Alto (m):</label><input type="number" id="height" value="0.5" step="0.01">
-<label>Peso bruto (kg):</label><input type="number" id="gross_weight" value="1" min="0.1" step="0.1">
-<label>Volumen (m³):</label><input type="number" id="volume" value="0.125" step="0.001" readonly>
-<label>Documentos presentes (separados por coma):</label><input type="text" id="documents" placeholder="invoice, packing_list">
-<label>Known Shipper:</label><select id="known_shipper"><option value="true">Sí</option><option value="false">No</option></select>
-<label>Screening:</label><select id="screening"><option value="xray">X-Ray</option><option value="manual">Manual</option></select>
-<label>Regulated Agent:</label><select id="regulated_agent"><option value="true">Sí</option><option value="false">No</option></select>
+<label>Piezas</label>
+<input type="number" id="pieces">
 
-<!-- Fases Avianca -->
-<div id="phases-container"></div>
+<label>Peso total kg</label>
+<input type="number" id="gross_weight">
 
-<button id="validateBtn">Validar Carga</button>
+<label>Largo m</label>
+<input type="number" id="length">
+
+<label>Ancho m</label>
+<input type="number" id="width">
+
+<label>Alto m</label>
+<input type="number" id="height">
+
+<label>Volumen</label>
+<input id="volume">
+
+<h3>Pieza más crítica</h3>
+
+<label>Altura máxima pulgadas</label>
+<input id="tallest_piece">
+
+<label>Ancho máximo pulgadas</label>
+<input id="widest_piece">
+
+<label>Largo máximo pulgadas</label>
+<input id="longest_piece">
+
+<label>Peso pieza kg</label>
+<input id="heaviest_piece">
+
+<label>UN Numbers</label>
+<input id="un_numbers" placeholder="UN3480, UN1845">
+
+<label>Documentos</label>
+<input id="documents">
+
+<label>Known Shipper</label>
+<select id="known_shipper">
+<option value="true">Sí</option>
+<option value="false">No</option>
+</select>
+
+<label>Screening</label>
+<select id="screening">
+<option value="xray">Xray</option>
+<option value="manual">Manual</option>
+</select>
+
+<label>Regulated Agent</label>
+<select id="regulated_agent">
+<option value="true">Sí</option>
+<option value="false">No</option>
+</select>
+
+<div id="phases"></div>
+
+<button id="validateBtn">Validar</button>
+
 <div id="result"></div>
 
-<script>
-// Cálculo de volumen automático
-['length','width','height'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', ()=>{
-    const l=parseFloat(document.getElementById('length').value);
-    const w=parseFloat(document.getElementById('width').value);
-    const h=parseFloat(document.getElementById('height').value);
-    const vol=(l*w*h).toFixed(3);
-    document.getElementById('volume').value=vol;
-  });
-});
+</div>
 
-// Crear placeholders de fases
+<script>
+
 for(let i=1;i<=8;i++){
-  const container=document.getElementById('phases-container');
-  const phaseDiv=document.createElement('div');
-  phaseDiv.className='phase';
-  phaseDiv.dataset.phase=i;
-  phaseDiv.textContent=`Fase ${i}`;
-  const contentDiv=document.createElement('div');
-  contentDiv.className='phase-content';
-  contentDiv.id=`phase${i}`;
-  container.appendChild(phaseDiv);
-  container.appendChild(contentDiv);
+
+let p=document.createElement("div")
+p.className="phase"
+p.innerText="Fase "+i
+
+let c=document.createElement("div")
+c.className="phase-content"
+c.id="phase"+i
+
+p.onclick=()=>{
+
+c.style.display=c.style.display==="block"?"none":"block"
+
 }
 
-// Toggle fases
-document.querySelectorAll('.phase').forEach(p=>{
-  p.addEventListener('click', ()=>{
-    const content=p.nextElementSibling;
-    content.style.display=content.style.display==='block'?'none':'block';
-  });
-});
+document.getElementById("phases").appendChild(p)
+document.getElementById("phases").appendChild(c)
 
-// Validación con backend
-document.getElementById('validateBtn').addEventListener('click',()=>{
-  const data={
-    mawb: document.getElementById('mawb').value.trim(),
-    hawb: document.getElementById('hawb').value.trim(),
-    airline: document.getElementById('airline').value.trim(),
-    flight_number: document.getElementById('flight_number').value.trim(),
-    flight_date: document.getElementById('flight_date').value,
-    origin: document.getElementById('origin').value.trim(),
-    destination: document.getElementById('destination').value.trim(),
-    cargo_type: document.getElementById('cargo_type').value,
-    pieces: parseInt(document.getElementById('pieces').value),
-    length: parseFloat(document.getElementById('length').value),
-    width: parseFloat(document.getElementById('width').value),
-    height: parseFloat(document.getElementById('height').value),
-    volume: parseFloat(document.getElementById('volume').value),
-    gross_weight: parseFloat(document.getElementById('gross_weight').value),
-    documents: document.getElementById('documents').value.split(',').map(d=>d.trim()).filter(d=>d),
-    security:{
-      known_shipper: document.getElementById('known_shipper').value==="true",
-      screening: document.getElementById('screening').value,
-      regulated_agent: document.getElementById('regulated_agent').value==="true"
-    },
-    role: document.getElementById('role').value
-  };
+}
 
-  fetch("/validate_shipment",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(data)
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    // Resultado global
-    let txt=`${res.status==="GREEN"?"✅ Verde":"❌ Rojo"}\n`;
-    if(res.errors.length>0) txt+="Errores:\n• "+res.errors.join("\n• ")+"\n";
-    if(res.corrections.length>0) txt+="Correcciones sugeridas:\n• "+res.corrections.join("\n• ")+"\n";
-    txt+=`Trazabilidad: ${res.role} @ ${res.timestamp}`;
-    document.getElementById('result').innerText=txt;
+document.getElementById("validateBtn").onclick=()=>{
 
-    // Mostrar fases completas
-    if(res.phases){
-      Object.keys(res.phases).forEach(pid=>{
-        document.getElementById(pid).innerHTML=res.phases[pid].length>0 ? res.phases[pid].join("<br>") : "Sin alertas";
-      });
-    }
-  })
-  .catch(e=>{
-    document.getElementById('result').innerText='❌ Error al conectar con el servidor';
-    console.error(e);
-  });
-});
+const data={
+
+mawb:mawb.value,
+hawb:hawb.value,
+airline:airline.value,
+flight_number:flight_number.value,
+flight_date:flight_date.value,
+origin:origin.value,
+destination:destination.value,
+cargo_type:cargo_type.value,
+pieces:parseInt(pieces.value),
+gross_weight:parseFloat(gross_weight.value),
+length:parseFloat(length.value),
+width:parseFloat(width.value),
+height:parseFloat(height.value),
+volume:parseFloat(volume.value),
+tallest_piece:parseFloat(tallest_piece.value),
+widest_piece:parseFloat(widest_piece.value),
+longest_piece:parseFloat(longest_piece.value),
+heaviest_piece:parseFloat(heaviest_piece.value),
+un_numbers:un_numbers.value.split(",").map(x=>x.trim()),
+documents:documents.value.split(",").map(x=>x.trim()),
+security:{
+known_shipper:known_shipper.value==="true",
+screening:screening.value,
+regulated_agent:regulated_agent.value==="true"
+},
+role:role.value
+
+}
+
+fetch("/validate_shipment",{
+
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+
+})
+
+.then(r=>r.json())
+.then(res=>{
+
+let txt=res.status==="GREEN"?"GREEN ✅":"RED ❌"
+
+if(res.errors.length) txt+="\n"+res.errors.join("\n")
+if(res.corrections.length) txt+="\n"+res.corrections.join("\n")
+
+result.innerText=txt
+
+for(let i=1;i<=8;i++){
+
+let p="phase"+i
+
+document.getElementById(p).innerHTML=res.phases[p].join("<br>")||"Sin alertas"
+
+}
+
+})
+
+}
+
 </script>
-</div>
+
 </body>
 </html>
