@@ -7,12 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 body{font-family:'Inter',sans-serif;background:#0f172a;color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:0;}
-#app{width:95%;max-width:600px;background:#111827;border-radius:20px;padding:25px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
+#app{width:95%;max-width:800px;background:#111827;border-radius:20px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
 h1{font-size:24px;text-align:center;margin-bottom:10px;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 label{margin-top:10px;font-weight:600;}
-input, select, textarea{width:100%;padding:10px;margin-top:4px;border-radius:8px;border:none;font-size:14px;}
-button{padding:12px;margin-top:20px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:600;cursor:pointer;transition:all 0.2s;}
+input, select, textarea{width:100%;padding:8px;margin-top:4px;border-radius:8px;border:none;font-size:14px;}
+button{padding:12px;margin-top:15px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:600;cursor:pointer;transition:all 0.2s;}
 button:hover{background:#3b82f6;}
+.phase{margin-top:15px;background:#1e293b;padding:10px;border-radius:12px;cursor:pointer;}
+.phase-content{display:none;padding:10px;margin-top:5px;background:#0f172a;border-radius:8px;}
 #result{margin-top:20px;padding:15px;border-radius:12px;background:#1e293b;white-space:pre-line;font-size:14px;}
 </style>
 </head>
@@ -42,7 +44,7 @@ button:hover{background:#3b82f6;}
 <input type="text" id="destination" placeholder="BOG">
 <label>Tipo de carga:</label>
 <select id="cargo_type">
-<option value="GEN">GEN</option>
+<option value="GENERAL">GENERAL</option>
 <option value="DGR">DGR</option>
 <option value="PER">PER</option>
 <option value="AVI">AVI</option>
@@ -51,10 +53,16 @@ button:hover{background:#3b82f6;}
 </select>
 <label>Número de piezas:</label>
 <input type="number" id="pieces" value="1" min="1">
+<label>Largo (m):</label>
+<input type="number" id="length" value="0.5" step="0.01">
+<label>Ancho (m):</label>
+<input type="number" id="width" value="0.5" step="0.01">
+<label>Alto (m):</label>
+<input type="number" id="height" value="0.5" step="0.01">
 <label>Peso bruto (kg):</label>
 <input type="number" id="gross_weight" value="1" min="0.1" step="0.1">
 <label>Volumen (m³):</label>
-<input type="number" id="volume" value="0.1" min="0.01" step="0.01">
+<input type="number" id="volume" value="0.125" step="0.001" readonly>
 <label>Documentos presentes (separados por coma):</label>
 <input type="text" id="documents" placeholder="invoice, packing_list">
 <label>Known Shipper:</label>
@@ -63,6 +71,31 @@ button:hover{background:#3b82f6;}
 <select id="screening"><option value="xray">X-Ray</option><option value="manual">Manual</option></select>
 <label>Regulated Agent:</label>
 <select id="regulated_agent"><option value="true">Sí</option><option value="false">No</option></select>
+
+<div class="phase" data-phase="1">Fase 1: Identificación y Seguridad</div>
+<div class="phase-content" id="phase1"></div>
+
+<div class="phase" data-phase="2">Fase 2: Anatomía de la Carga</div>
+<div class="phase-content" id="phase2"></div>
+
+<div class="phase" data-phase="3">Fase 3: Contenidos Críticos</div>
+<div class="phase-content" id="phase3"></div>
+
+<div class="phase" data-phase="4">Fase 4: Checklist Documental</div>
+<div class="phase-content" id="phase4"></div>
+
+<div class="phase" data-phase="5">Fase 5: Logística de Arribo</div>
+<div class="phase-content" id="phase5"></div>
+
+<div class="phase" data-phase="6">Fase 6: Integridad Física y Embalaje</div>
+<div class="phase-content" id="phase6"></div>
+
+<div class="phase" data-phase="7">Fase 7: Seguridad Visual / TSA</div>
+<div class="phase-content" id="phase7"></div>
+
+<div class="phase" data-phase="8">Fase 8: Equipos y Contenedores</div>
+<div class="phase-content" id="phase8"></div>
+
 <button id="validateBtn">Validar Carga</button>
 <div id="result"></div>
 <script src="/static/app.js"></script>
