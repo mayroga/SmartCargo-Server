@@ -1,8 +1,16 @@
 {
   "GENERAL": {
-    "documents": ["air_waybill", "commercial_invoice", "packing_list"],
+    "documents": [
+      "air_waybill",
+      "commercial_invoice",
+      "packing_list"
+    ],
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "special_handling_codes": [],
     "notes": "Carga general estándar"
   },
+
   "DGR": {
     "documents": [
       "air_waybill",
@@ -12,8 +20,13 @@
       "packing_list",
       "UN_number_list"
     ],
-    "notes": "Mercancías peligrosas según IATA DGR"
+    "copies_inside": 2,
+    "copies_outside": 2,
+    "special_handling_codes": ["DGR"],
+    "regulatory_agencies": ["IATA", "ICAO", "DOT"],
+    "notes": "Mercancía peligrosa IATA DGR"
   },
+
   "PER": {
     "documents": [
       "air_waybill",
@@ -22,37 +35,55 @@
       "health_certificate",
       "temperature_log"
     ],
-    "notes": "Perecederos con log de temperatura"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["PER"],
+    "temperature_range": "0C to 8C",
+    "notes": "Perecederos"
   },
+
   "AVI": {
     "documents": [
       "air_waybill",
       "live_animals_certificate",
-      "health_certificate",
+      "veterinary_health_certificate",
       "commercial_invoice",
       "packing_list"
     ],
-    "notes": "Animales vivos con certificación veterinaria"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["AVI"],
+    "regulatory_agencies": ["IATA_LAR"],
+    "notes": "Animales vivos"
   },
+
   "HUM": {
     "documents": [
       "air_waybill",
       "death_certificate",
-      "funeral_certificate",
+      "funeral_home_letter",
       "embalming_certificate"
     ],
-    "notes": "Restos humanos con embalaje y certificados"
+    "copies_inside": 2,
+    "copies_outside": 2,
+    "special_handling_codes": ["HUM"],
+    "notes": "Restos humanos"
   },
+
   "VAL": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "insurance_certificate",
-      "value_declaration"
+      "value_declaration",
+      "insurance_certificate"
     ],
-    "notes": "Carga valiosa con declaración de valor y seguro"
+    "copies_inside": 2,
+    "copies_outside": 2,
+    "special_handling_codes": ["VAL"],
+    "notes": "Carga valiosa"
   },
+
   "PHR": {
     "documents": [
       "air_waybill",
@@ -61,18 +92,26 @@
       "pharma_certificate",
       "temperature_log"
     ],
-    "notes": "Farmacéuticos CEIV o equivalente"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["PHARMA"],
+    "temperature_range": "2C to 8C",
+    "notes": "Farmacéuticos"
   },
+
   "FSH": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "phytosanitary_certificate",
-      "cold_chain_cert"
+      "phytosanitary_certificate"
     ],
-    "notes": "Productos frescos con certificado fitosanitario"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["FSH"],
+    "notes": "Pescado fresco"
   },
+
   "ELD": {
     "documents": [
       "air_waybill",
@@ -80,35 +119,52 @@
       "packing_list",
       "electronics_safety_cert"
     ],
-    "notes": "Electrónicos con certificaciones específicas"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "special_handling_codes": [],
+    "notes": "Electrónicos"
   },
+
   "BAT": {
     "documents": [
       "air_waybill",
       "dangerous_goods_declaration",
       "msds",
-      "battery_spec_sheet"
+      "battery_test_summary"
     ],
-    "notes": "Baterías como DG con DGD"
+    "copies_inside": 2,
+    "copies_outside": 2,
+    "special_handling_codes": ["BATTERY"],
+    "regulatory_agencies": ["IATA_DGR"],
+    "notes": "Baterías de litio"
   },
+
   "PRT": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "parts_cert"
+      "parts_certificate"
     ],
-    "notes": "Partes y componentes"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "special_handling_codes": [],
+    "notes": "Partes aeronáuticas"
   },
+
   "MED": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "medical_device_cert"
+      "medical_device_certificate"
     ],
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["MEDICAL"],
     "notes": "Dispositivos médicos"
   },
+
   "FTZ": {
     "documents": [
       "air_waybill",
@@ -116,28 +172,40 @@
       "packing_list",
       "free_trade_zone_permit"
     ],
-    "notes": "Carga zona franca con permiso especial"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "special_handling_codes": [],
+    "notes": "Zona franca"
   },
+
   "AGR": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "agricultural_permit",
       "phytosanitary_certificate"
     ],
-    "notes": "Productos agrícolas exportación"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["AGRICULTURE"],
+    "regulatory_agencies": ["USDA"],
+    "notes": "Productos agrícolas"
   },
+
   "REF": {
     "documents": [
       "air_waybill",
       "commercial_invoice",
       "packing_list",
-      "temperature_log",
-      "cold_chain_cert"
+      "temperature_log"
     ],
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "special_handling_codes": ["COL"],
+    "temperature_range": "-20C to +5C",
     "notes": "Carga refrigerada"
   },
+
   "CMM": {
     "documents": [
       "air_waybill",
@@ -145,24 +213,33 @@
       "packing_list",
       "sample_declaration"
     ],
+    "copies_inside": 1,
+    "copies_outside": 1,
     "notes": "Muestras comerciales"
   },
+
   "PAX": {
     "documents": [
       "air_waybill",
       "baggage_manifest",
       "security_declaration"
     ],
-    "notes": "Equipaje de pasajeros como carga"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "notes": "Equipaje transportado como carga"
   },
+
   "CTR": {
     "documents": [
       "air_waybill",
-      "mail_manifest",
+      "courier_manifest",
       "customs_declaration"
     ],
-    "notes": "Courier y correo internacional"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "notes": "Courier"
   },
+
   "TMP": {
     "documents": [
       "air_waybill",
@@ -170,15 +247,21 @@
       "packing_list",
       "temperature_log"
     ],
-    "notes": "Control de temperatura"
+    "copies_inside": 2,
+    "copies_outside": 1,
+    "temperature_range": "variable",
+    "notes": "Carga control temperatura"
   },
+
   "HAZ": {
     "documents": [
       "air_waybill",
-      "hazardous_non_dg_declaration",
+      "hazardous_material_statement",
       "commercial_invoice",
       "packing_list"
     ],
-    "notes": "Materiales peligrosos no clasificados como DG"
+    "copies_inside": 1,
+    "copies_outside": 1,
+    "notes": "Material peligroso no clasificado DG"
   }
 }
