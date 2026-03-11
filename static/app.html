@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTCARGO Validation - Avianca Cargo</title>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
+#app{background:white;padding:20px;border-radius:12px;width:95%;max-width:500px;margin-top:30px;box-shadow:0 10px 25px rgba(0,0,0,0.2);}
+h1{text-align:center;color:#2563eb;margin-bottom:20px;}
+label{display:block;margin-top:10px;font-weight:bold;}
+input, select{width:100%;padding:8px;margin-top:4px;border-radius:6px;border:1px solid #ccc;}
+button{margin-top:15px;width:100%;padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;}
+button:hover{background:#3b82f6;}
+.result{margin-top:15px;padding:15px;border-radius:8px;font-weight:bold;text-align:center;}
+.result.green{background:#22c55e;color:white;}
+.result.red{background:#ef4444;color:white;}
+#trace{margin-top:10px;font-size:14px;}
+</style>
+</head>
+<body>
+<div id="app">
+<h1>SMARTCARGO Validation</h1>
+
+<label for="role">Selecciona rol:</label>
+<select id="role">
+<option value="forwarder">Freight Forwarder</option>
+<option value="truck">Camionero</option>
+<option value="warehouse">Warehouse</option>
+<option value="owner">Dueño de mercancía</option>
+</select>
+
+<label for="cargo_type">Tipo de carga:</label>
+<select id="cargo_type">
+<option value="GEN">GEN</option>
+<option value="DGR">DGR</option>
+<option value="PER">PER</option>
+<option value="AVI">AVI</option>
+<option value="HUM">HUM</option>
+</select>
+
+<label for="documents">Documentos presentes (separados por coma):</label>
+<input type="text" id="documents" placeholder="invoice, packing_list, msds">
+
+<label for="pieces">Número de piezas:</label>
+<input type="number" id="pieces" value="1">
+
+<label for="gross_weight">Peso bruto (kg):</label>
+<input type="number" id="gross_weight" value="1">
+
+<label for="volume">Volumen (m³):</label>
+<input type="number" id="volume" value="0.1" step="0.01">
+
+<label for="known_shipper">Known Shipper:</label>
+<select id="known_shipper">
+<option value="true">Sí</option>
+<option value="false">No</option>
+</select>
+
+<label for="screening">Screening:</label>
+<select id="screening">
+<option value="xray">X-Ray</option>
+<option value="none">No</option>
+</select>
+
+<label for="regulated_agent">Regulated Agent:</label>
+<select id="regulated_agent">
+<option value="true">Sí</option>
+<option value="false">No</option>
+</select>
+
+<button id="validateBtn">Validar Carga</button>
+
+<div id="result" class="result" style="display:none;"></div>
+<div id="trace"></div>
+
+<script src="/static/app.js"></script>
+</div>
+</body>
+</html>
