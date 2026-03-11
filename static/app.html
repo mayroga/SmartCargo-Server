@@ -2,143 +2,142 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Avianca Cargo Validator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTGOSERVER Validation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-body { font-family: Arial, sans-serif; background: #f0f2f5; margin:0; padding:0; }
-h2 { background: #111827; color: white; padding: 10px; cursor: pointer; margin:0; }
-.section { padding: 15px; border-bottom: 1px solid #ccc; display:none; }
-.ok { color: green; font-weight:bold; }
-.alert { color: orange; font-weight:bold; }
-.error { color: red; font-weight:bold; }
-button { padding: 10px 20px; margin: 10px; cursor:pointer; }
-input[type=number], input[type=text] { width: 60px; }
+body{font-family:'Inter',sans-serif;background:#0f172a;color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:0;}
+#app{width:95%;max-width:800px;background:#111827;border-radius:20px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;}
+h1{font-size:24px;text-align:center;margin-bottom:10px;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+label{margin-top:10px;font-weight:600;}
+input, select{width:100%;padding:8px;margin-top:4px;border-radius:8px;border:none;font-size:14px;}
+button{padding:12px;margin-top:15px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:600;cursor:pointer;transition:all 0.2s;}
+button:hover{background:#3b82f6;}
+.phase{margin-top:15px;background:#1e293b;padding:10px;border-radius:12px;cursor:pointer;}
+.phase-content{display:none;padding:10px;margin-top:5px;background:#0f172a;border-radius:8px;}
+.status{font-weight:bold;margin-left:10px;}
+.ok{color:green;}
+.warning{color:orange;}
+.error{color:red;}
+#result{margin-top:20px;padding:15px;border-radius:12px;background:#1e293b;white-space:pre-line;font-size:14px;}
 </style>
 </head>
 <body>
-<h1>Validador de Carga Avianca Cargo</h1>
+<div id="app">
+<h1>SMARTGOSERVER Validation</h1>
 
-<label>Tipo de carga: 
-<select id="cargoType">
-  <option value="">Seleccione</option>
-  <option value="GEN">GEN</option>
-  <option value="DGR">DGR</option>
-  <option value="PER">PER</option>
-  <option value="AVI">AVI</option>
-  <option value="HUM">HUM</option>
-  <option value="VAL">VAL</option>
-  <option value="PHR">PHR</option>
-  <option value="FSH">FSH</option>
-  <option value="ELD">ELD</option>
-  <option value="BAT">BAT</option>
-  <option value="PRT">PRT</option>
-  <option value="MED">MED</option>
-  <option value="FTZ">FTZ</option>
-  <option value="AGR">AGR</option>
-  <option value="REF">REF</option>
-  <option value="CMM">CMM</option>
-  <option value="PAX">PAX</option>
-  <option value="CTR">CTR</option>
-  <option value="TMP">TMP</option>
-  <option value="HAZ">HAZ</option>
+<!-- Form Inputs -->
+<label>Tipo de carga:</label>
+<select id="cargo_type">
+<option value="GENERAL">GENERAL</option>
+<option value="DGR">DGR</option>
+<option value="PER">PER</option>
+<option value="AVI">AVI</option>
+<option value="HUM">HUM</option>
+<option value="VAL">VAL</option>
 </select>
-</label>
 
-<div id="phases"></div>
-<button onclick="validateCarga()">Validar Carga</button>
-<h2>Resultado Global: <span id="globalStatus">❌</span></h2>
+<label>Número de piezas:</label><input type="number" id="pieces" value="1" min="1">
+<label>Largo (m):</label><input type="number" id="length" value="0.5" step="0.01">
+<label>Ancho (m):</label><input type="number" id="width" value="0.5" step="0.01">
+<label>Alto (m):</label><input type="number" id="height" value="0.5" step="0.01">
+<label>Peso bruto (kg):</label><input type="number" id="gross_weight" value="1" min="0.1" step="0.1">
+<label>Volumen (m³):</label><input type="number" id="volume" value="0.125" step="0.001" readonly>
+<label>Documentos presentes (separados por coma):</label><input type="text" id="documents" placeholder="invoice, packing_list">
+<label>Known Shipper:</label>
+<select id="known_shipper"><option value="true">Sí</option><option value="false">No</option></select>
+<label>Screening:</label>
+<select id="screening"><option value="xray">X-Ray</option><option value="manual">Manual</option></select>
+<label>Regulated Agent:</label>
+<select id="regulated_agent"><option value="true">Sí</option><option value="false">No</option></select>
+
+<!-- Accordion Phases -->
+<div class="phase" data-phase="1">Fase 1: Dimensiones y Peso</div>
+<div class="phase-content" id="phase1"></div>
+<div class="phase" data-phase="2">Fase 2: Documentos Obligatorios</div>
+<div class="phase-content" id="phase2"></div>
+<div class="phase" data-phase="3">Fase 3: Seguridad / Known Shipper</div>
+<div class="phase-content" id="phase3"></div>
+
+<button id="validateBtn">Validar Carga</button>
+<div id="result"></div>
 
 <script>
-// Cargar JSON estático
-let cargoRules;
-let aviancaLimits;
-fetch('static/cargo_rules.json').then(r=>r.json()).then(data=>cargoRules=data);
-fetch('static/avianca_rules.json').then(r=>r.json()).then(data=>aviancaLimits=data);
+// Configuración de reglas de carga
+const cargoRules = {
+  "GENERAL":["air_waybill","commercial_invoice","packing_list"],
+  "DGR":["air_waybill","dangerous_goods_declaration","msds","commercial_invoice","packing_list","UN_number_list"],
+  "PER":["air_waybill","commercial_invoice","packing_list","health_certificate","temperature_log"],
+  "AVI":["air_waybill","live_animals_certificate","health_certificate","commercial_invoice","packing_list"],
+  "HUM":["air_waybill","death_certificate","funeral_certificate","embalming_certificate"],
+  "VAL":["air_waybill","commercial_invoice","packing_list","insurance_certificate","value_declaration"]
+};
 
-const phasesData = [
-  { id:1, title:"Dimensiones y Peso", fields:["largo","ancho","alto","peso"] },
-  { id:2, title:"Documentos Obligatorios", fields:["documents"] },
-  { id:3, title:"Known Shipper / Screening", fields:["known_shipper"] }
-];
-
-const phasesDiv = document.getElementById('phases');
-document.getElementById('cargoType').addEventListener('change', function() {
-  const type = this.value;
-  if(!type) { phasesDiv.innerHTML=''; return; }
-  renderPhases(type);
+// Accordion toggle
+document.querySelectorAll('.phase').forEach(p=>{
+  p.onclick = ()=>{ 
+    const idx = parseInt(p.dataset.phase);
+    if(idx>1){
+      const prevStatus = document.getElementById(`phase${idx-1}_status`);
+      if(prevStatus && prevStatus.dataset.status !== 'ok'){ alert('Complete fase anterior'); return; }
+    }
+    const content = p.nextElementSibling;
+    content.style.display = content.style.display==='block'?'none':'block';
+  };
 });
 
-function renderPhases(type){
-  phasesDiv.innerHTML='';
-  phasesData.forEach((phase,i)=>{
-    const div = document.createElement('div');
-    div.innerHTML=`<h2 onclick="toggleSection(${i})">${phase.title} <span id="status${i}">❌</span></h2>
-    <div class="section" id="section${i}"></div>`;
-    phasesDiv.appendChild(div);
-    renderFields(i,type);
+// Calcular volumen automáticamente
+['length','width','height'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    const l=parseFloat(document.getElementById('length').value);
+    const w=parseFloat(document.getElementById('width').value);
+    const h=parseFloat(document.getElementById('height').value);
+    const vol=(l*w*h).toFixed(3);
+    document.getElementById('volume').value=vol;
   });
-}
+});
 
-function toggleSection(i){
-  const s=document.getElementById(`section${i}`);
-  s.style.display=(s.style.display==='block')?'none':'block';
-}
+// Validación completa
+document.getElementById('validateBtn').onclick=function(){
+  const type=document.getElementById('cargo_type').value;
+  const l=parseFloat(document.getElementById('length').value);
+  const w=parseFloat(document.getElementById('width').value);
+  const h=parseFloat(document.getElementById('height').value);
+  const wt=parseFloat(document.getElementById('gross_weight').value);
+  const vol=parseFloat(document.getElementById('volume').value);
+  const docsInput=document.getElementById('documents').value.split(',').map(d=>d.trim().toLowerCase());
+  const ks=document.getElementById('known_shipper').value==='true';
+  const sc=document.getElementById('screening').value;
+  const ra=document.getElementById('regulated_agent').value==='true';
 
-function renderFields(i,type){
-  const section = document.getElementById(`section${i}`);
-  section.innerHTML='';
-  if(i===0){ // Dimensiones y peso
-    section.innerHTML=`Largo(cm): <input type="number" id="largo"><br>
-    Ancho(cm): <input type="number" id="ancho"><br>
-    Alto(cm): <input type="number" id="alto"><br>
-    Peso(kg): <input type="number" id="peso"><br>`;
-  }else if(i===1){ // Documentos
-    const docs=cargoRules[type].documents;
-    section.innerHTML=docs.map(d=>`${d}: <input type="checkbox" id="${d}"><br>`).join('');
-  }else if(i===2){ // Known Shipper
-    section.innerHTML=`Known Shipper/Screening/Regulated Agent: <input type="checkbox" id="known_shipper">`;
-  }
-}
+  let resultText='', global='ok';
 
-function validateCarga(){
-  let global='green';
-  // fase 0 dimensiones
-  let largo=parseFloat(document.getElementById('largo')?.value)||0;
-  let ancho=parseFloat(document.getElementById('ancho')?.value)||0;
-  let alto=parseFloat(document.getElementById('alto')?.value)||0;
-  let peso=parseFloat(document.getElementById('peso')?.value)||0;
-  const vol = (largo*ancho*alto)/1000000;
-  let f0='ok';
-  if(peso>aviancaLimits.limits.peso_max_kg || alto>aviancaLimits.limits.alto_max_cm || largo>aviancaLimits.limits.largo_max_cm || ancho>aviancaLimits.limits.ancho_max_cm){
-    f0='error'; global='red';
-  }
-  document.getElementById('status0').innerText=(f0==='ok')?'✅':'❌';
+  // Fase 1: Dimensiones y Peso
+  let phase1Status='ok';
+  if(isNaN(l)||isNaN(w)||isNaN(h)||isNaN(wt)){phase1Status='error'; global='error';}
+  if(l>2.5||w>2.5||h>2.5||wt>500){phase1Status='error'; global='error';}
+  document.getElementById('phase1').innerHTML=`<span class="status ${phase1Status}" id="phase1_status" data-status="${phase1Status}">${phase1Status==='ok'?'✅ OK':'❌ ERROR'}</span>
+  Volumen calculado: ${vol} m³, Peso: ${wt} kg`;
 
-  // fase 1 documentos
-  const type = document.getElementById('cargoType').value;
-  const docs=cargoRules[type].documents;
-  let missing=false;
-  docs.forEach(d=>{
-    const chk=document.getElementById(d);
-    if(chk && !chk.checked) missing=true;
-  });
-  let f1='ok';
-  if(missing) { f1='error'; global='red'; }
-  document.getElementById('status1').innerText=(f1==='ok')?'✅':'❌';
+  // Fase 2: Documentos
+  const requiredDocs=cargoRules[type].map(d=>d.toLowerCase());
+  const missingDocs=requiredDocs.filter(d=>!docsInput.includes(d));
+  let phase2Status='ok';
+  if(missingDocs.length>0){phase2Status='error'; global='error';}
+  document.getElementById('phase2').innerHTML=`<span class="status ${phase2Status}" id="phase2_status" data-status="${phase2Status}">${phase2Status==='ok'?'✅ OK':'❌ Faltan docs'}</span>
+  ${missingDocs.length>0?'Faltan: '+missingDocs.join(', '):'Todos los documentos presentes'}`;
 
-  // fase 2 Known Shipper
-  const ks=document.getElementById('known_shipper')?.checked;
-  let f2='ok';
-  if(['DGR','VAL','PHR','AVI','REF','BAT'].includes(type) && !ks){ f2='error'; global='red'; }
-  document.getElementById('status2').innerText=(f2==='ok')?'✅':'❌';
+  // Fase 3: Known Shipper / Screening / Regulated Agent
+  let phase3Status='ok';
+  if((type==='DGR' && (!ks || !sc)) || (type==='AVI' && !ra)){phase3Status='error'; global='error';}
+  document.getElementById('phase3').innerHTML=`<span class="status ${phase3Status}" id="phase3_status" data-status="${phase3Status}">${phase3Status==='ok'?'✅ OK':'❌ Seguridad incompleta'}</span>`;
 
-  // resultado global
-  let globalIcon;
-  if(global==='green') globalIcon='✅ Verde';
-  else if(global==='red') globalIcon='❌ Rojo';
-  document.getElementById('globalStatus').innerText=globalIcon;
-
-  alert(`Volumen(m³): ${vol.toFixed(3)}\nPeso(kg): ${peso}\nDimensiones(cm): ${largo}x${ancho}x${alto}`);
-}
+  // Resultado global
+  const resultDiv=document.getElementById('result');
+  if(global==='ok') resultDiv.textContent='✅ Verde: Todo correcto';
+  else resultDiv.textContent='❌ Rojo: Errores críticos';
+};
 </script>
+</div>
 </body>
 </html>
