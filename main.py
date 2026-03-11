@@ -1,86 +1,48 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import json
-import os
+from fastapi.middleware.cors import CORSMiddleware
+import json, datetime
 
-app = FastAPI(title="SMARTCARGO Validation Engine")
+app=FastAPI(title="SMARTGOSERVER")
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_methods=["*"],allow_headers=["*"])
+app.mount("/static",StaticFiles(directory="static"),name="static")
 
-# =======================
-# Archivos estáticos
-# =======================
-app.mount("/static", StaticFiles(directory="static"), name="static")
+with open("static/cargo_rules.json","r",encoding="utf-8") as f:cargo_rules=json.load(f)
+with open("static/avianca_rules.json","r",encoding="utf-8") as f:avianca_rules=json.load(f)
 
-# =======================
-# Cargar reglas
-# =======================
-CARGO_RULES_PATH = "static/cargo_rules.json"
-AVI_RULES_PATH = "static/avianca_rules.json"
-
-def load_json(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-cargo_rules = load_json(CARGO_RULES_PATH)
-avianca_rules = load_json(AVI_RULES_PATH)
-
-# =======================
-# Rutas
-# =======================
-@app.get("/", response_class=HTMLResponse)
+@app.get("/",response_class=HTMLResponse)
 async def home():
-    try:
-        with open("static/app.html", "r", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
-    except Exception as e:
-        return HTMLResponse(f"<h1>Error cargando interfaz</h1><p>{e}</p>")
+    with open("static/app.html","r",encoding="utf-8") as f:return HTMLResponse(f.read())
 
 @app.get("/health")
-async def health():
-    return {"status":"ok"}
+async def health():return {"status":"ok"}
 
-@app.get("/cargo_rules")
-async def get_cargo_rules():
-    return JSONResponse({"cargo_rules": cargo_rules, "avianca_rules": avianca_rules})
+def validate_shipment(data,rules,c_rules):
+    errors=[]
+    corrections=[]
+    cargo_type=data["cargo_type"]
+    docs_required=c_rules.get(cargo_type,{}).get("documents",[])
+    copies_inside=c_rules.get(cargo_type,{}).get("copies_inside",1)
+    copies_outside=c_rules.get(cargo_type,{}).get("copies_outside",1)
+    for doc in docs_required:
+        if doc not in data["documents"]:
+            errors.append(f"Falta documento obligatorio: {doc}")
+            corrections.append(f"Subir {doc} válido con {copies_inside} copias dentro y {copies_outside} afuera")
+    if data["pieces"]<=0:errors.append("Número de piezas inválido");corrections.append("Ingresar número de piezas válido")
+    if data["gross_weight"]<=0:errors.append("Peso bruto inválido");corrections.append("Ingresar peso correcto")
+    if data["volume"]<=0:errors.append("Volumen inválido");corrections.append("Ingresar volumen correcto")
+    for check in avianca_rules.get("document_quality",[]):
+        for doc in data["documents"]:
+            if check=="no_tachaduras" and "tachadura" in doc.lower():errors.append(f"{doc} tiene tachaduras");corrections.append(f"Corregir {doc}")
+            if check=="no_borrones" and "borrón" in doc.lower():errors.append(f"{doc} tiene borrones");corrections.append(f"Corregir {doc}")
+            if check=="letra_legible" and "ilegible" in doc.lower():errors.append(f"{doc} ilegible");corrections.append(f"Reescribir {doc}")
+    if not data["security"]["known_shipper"]:errors.append("Shipper desconocido");corrections.append("Verificar Known Shipper")
+    if not data["security"]["regulated_agent"]:errors.append("No Regulated Agent");corrections.append("Verificar agente regulado")
+    status="GREEN" if len(errors)==0 else "RED"
+    return {"status":status,"errors":errors,"corrections":corrections,"timestamp":datetime.datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")}
 
 @app.post("/validate_shipment")
-async def validate_shipment(data: dict):
-    errors = []
-    cargo_type = data.get("cargo_type")
-    documents = data.get("documents", [])
-    pieces = data.get("pieces", 0)
-    gross_weight = data.get("gross_weight", 0)
-    volume = data.get("volume", 0)
-    security = data.get("security", {})
-
-    # Documentos obligatorios cargo_type
-    required_docs = cargo_rules.get(cargo_type, {}).get("documents", [])
-    for doc in required_docs:
-        if doc not in documents:
-            errors.append(f"Falta documento: {doc}")
-
-    # Checklist Avianca simplificado
-    for doc in avianca_rules.get("folder_order", []):
-        if "invoice" in doc and "invoice" not in documents:
-            errors.append("Invoice no cumple checklist Avianca")
-        if "packing_list" in doc and "packing_list" not in documents:
-            errors.append("Packing List no cumple checklist Avianca")
-
-    # Validación física
-    if pieces <= 0: errors.append("Número de piezas inválido")
-    if gross_weight <= 0: errors.append("Peso inválido")
-    if volume <= 0: errors.append("Volumen inválido")
-
-    # Seguridad
-    if not security.get("known_shipper", False): errors.append("Shipper no autorizado")
-    if security.get("screening") != "xray": errors.append("No se ha realizado screening X-Ray")
-    if not security.get("regulated_agent", False): errors.append("No es Regulated Agent")
-
-    status = "GREEN" if len(errors) == 0 else "RED"
-    message = "Shipment acceptable" if status=="GREEN" else "Do not go to counter"
-
-    return JSONResponse({
-        "status": status,
-        "message": message,
-        "errors": errors
-    })
+async def validate(data:dict):
+    result=validate_shipment(data,avianca_rules,cargo_rules)
+    return JSONResponse(result)
