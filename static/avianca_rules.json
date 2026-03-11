@@ -1,18 +1,71 @@
 {
-  "folder_order": [
-    "air_waybill",
-    "commercial_invoice",
-    "packing_list",
-    "export_permits",
-    "health_and_safety_certs",
-    "special_certificates"
+  "aircraft_limits": {
+    "max_height_belly_in": 63,
+    "max_height_freighter_in": 96,
+    "max_piece_weight_kg": 150,
+    "max_pallet_weight_kg": 6800
+  },
+
+  "uld_types": {
+    "PMC": {
+      "type": "Pallet",
+      "size_in": "96x125",
+      "max_weight_kg": 6800
+    },
+    "PAG": {
+      "type": "Container",
+      "max_weight_kg": 4600
+    },
+    "PAJ": {
+      "type": "Container",
+      "max_weight_kg": 4600
+    },
+    "AKE": {
+      "type": "Container",
+      "max_weight_kg": 1500
+    }
+  },
+
+  "screening_methods": [
+    "xray",
+    "physical",
+    "etd",
+    "manual"
   ],
+
+  "tsa_rules": {
+    "known_shipper_required": true,
+    "screening_required_if_unknown": true
+  },
+
+  "usda_rules": {
+    "wood_packaging_requires_ISPM15": true,
+    "agriculture_requires_phytosanitary": true
+  },
+
+  "fda_rules": {
+    "food_requires_prior_notice": true
+  },
+
+  "iata_dgr": {
+    "requires_shipper_declaration": true,
+    "requires_msds": true,
+    "requires_un_number"
+: true
+  },
+
   "document_quality": [
     "no_tachaduras",
     "no_borrones",
     "letra_legible",
     "version_valida"
   ],
+
+  "cutoff_rules": {
+    "standard_cutoff_hours": 4,
+    "dangerous_goods_cutoff_hours": 6
+  },
+
   "country_specific": {
     "USA": [
       "EEI_AES_export",
@@ -60,139 +113,5 @@
     "PAN": ["AUPSA_permits"],
     "ECU": ["AGRO_export_permit"],
     "VEN": ["SENIAT_export_doc"]
-  },
-  "phases": [
-    {
-      "phase": 1,
-      "title": "Identificación y Seguridad (TSA/CBP)",
-      "questions": [
-        {
-          "question": "Ingrese su ID de Cliente o código SCAC de la empresa de transporte.",
-          "instruction": "Esto valida que usted es un Known Shipper. Si no lo es, su carga será sometida a inspección física obligatoria de 24-48h."
-        },
-        {
-          "question": "¿El valor de su mercancía por código arancelario supera los $2,500 USD?",
-          "instruction": "Si la respuesta es SÍ, es obligatorio el número de ITN (AES). Sin esto, multa federal $10,000 USD."
-        },
-        {
-          "question": "¿Su carga es para un solo destino o consolidado?",
-          "instruction": "Consolidado: activar Manifiesto de Carga. Directo: validar Guía Master única."
-        }
-      ]
-    },
-    {
-      "phase": 2,
-      "title": "Anatomía de la Carga (Filtro Técnico Avianca)",
-      "questions": [
-        {
-          "question": "¿Cuál es la medida de la pieza más alta, incluyendo la base de madera?",
-          "instruction": "Si >63\": solo avión Carguero. Si >96\": no puede volar. Ajuste altura."
-        },
-        {
-          "question": "¿Alguna pieza pesa más de 150 kg (330 lbs)?",
-          "instruction": "Debe usar base de madera (shoring) para distribuir peso. Si no, riesgo de rechazo."
-        },
-        {
-          "question": "¿Su estiba de madera tiene sello NIMF-15 visible en dos lados?",
-          "instruction": "Sin sello: USDA/CBP ordena retorno. Cambie a pallet plástico certificado."
-        }
-      ]
-    },
-    {
-      "phase": 3,
-      "title": "Contenidos Críticos (Filtro IATA/DOT)",
-      "questions": [
-        {
-          "question": "¿Su mercancía contiene baterías de litio, líquidos, aerosoles, perfumes o imanes?",
-          "instruction": "Artículos DG: requiere 2 originales de Shipper’s Declaration con bordes rojos. Omitir = delito federal."
-        },
-        {
-          "question": "¿Carga de origen animal, vegetal o para consumo humano?",
-          "instruction": "Debe presentar Certificado Fitosanitario o FDA Prior Notice. Papeles visibles para entrega inmediata."
-        }
-      ]
-    },
-    {
-      "phase": 4,
-      "title": "Check-list Documental Final",
-      "questions": [
-        {
-          "question": "¿Tiene listos 3 originales y 6 copias de la Guía Aérea (AWB)?",
-          "instruction": "Si falta, chofer debe ir a oficina externa perdiendo turno."
-        },
-        {
-          "question": "¿Zip Code del destinatario coincide con la factura?",
-          "instruction": "Código incompleto bloquea guía en sistema Avianca."
-        }
-      ]
-    },
-    {
-      "phase": 5,
-      "title": "Instrucción Logística de Arribo",
-      "questions": [
-        {
-          "question": "¿Hora estimada de llegada del chofer al counter?",
-          "instruction": "Cierre Cut-off = 4h antes del vuelo. Llegada tardía = cargos por storage o vuelo perdido."
-        }
-      ]
-    },
-    {
-      "phase": 6,
-      "title": "Integridad Física y Embalaje",
-      "questions": [
-        {
-          "question": "¿Carga asegurada con flejes o solo shrink wrap?",
-          "instruction": "Plástico solo = rechazo. Flejes metálicos obligatorios si carga pesada."
-        },
-        {
-          "question": "¿Cada bulto tiene número AWB visible?",
-          "instruction": "Número invisible = rechazo en counter."
-        },
-        {
-          "question": "¿Hay cajas dañadas?",
-          "instruction": "Daño preexistente = cambiar embalaje."
-        },
-        {
-          "question": "¿Plástico cubre desde base hasta tope?",
-          "instruction": "Mal envuelto = re-envolver antes de presentar."
-        },
-        {
-          "question": "¿Etiquetas viejas en cajas?",
-          "instruction": "Eliminar todas para evitar confusión en escáneres."
-        }
-      ]
-    },
-    {
-      "phase": 7,
-      "title": "Seguridad y Restricciones Visuales (TSA)",
-      "questions": [
-        {
-          "question": "¿Carga limpia de olores fuertes, aceites o grasa?",
-          "instruction": "Manchas = riesgo DG no declarado. Detiene proceso."
-        },
-        {
-          "question": "¿Bultos tienen etiquetas 'Frágil', 'Este Lado Arriba' o 'No Estibar'?",
-          "instruction": "Etiqueta No Estibar = incremento en costo de flete."
-        },
-        {
-          "question": "¿Número de piezas coincide con AWB?",
-          "instruction": "Si difiere, sistema bloquea ingreso parcial."
-        }
-      ]
-    },
-    {
-      "phase": 8,
-      "title": "Requisitos de Equipos y Contenedores",
-      "questions": [
-        {
-          "question": "¿Envío tanques o cilindros?",
-          "instruction": "Vacíos, válvulas protegidas con tapa o jaula."
-        },
-        {
-          "question": "¿Carga sobresale del pallet (Overhang)?",
-          "instruction": "Sobresaliente = re-estibar. Debe alinearse con borde del pallet."
-        }
-      ]
-    }
-  ]
+  }
 }
