@@ -1,227 +1,117 @@
 {
-  "Identificacion": {
-    "roles": ["Dueño", "Forwarder", "Chofer / Camionero", "Agente Warehouse", "Counter Agent"],
-    "campos": ["AWB", "Forwarder", "Origen", "Destino"]
+  "aircraft_limits": {
+    "max_height_belly_in": 63,
+    "max_height_freighter_in": 96,
+    "max_piece_weight_kg": 150,
+    "max_pallet_weight_kg": 6800
   },
-  "TipoCarga": {
-    "GEN": "General cargo",
-    "PER": "Perecedero",
-    "HUM": "Human remains",
-    "VAL": "Valores",
-    "AVI": "Animales",
-    "DGR": "Mercancía peligrosa"
-  },
-  "Dimensiones": {
-    "campos_obligatorios": ["Número de piezas","Peso total","Peso por pieza","Largo","Ancho","Alto"],
-    "calculos": ["Volumen=L*W*H","Peso volumétrico=Volumen*167"]
-  },
-  "Pallets": ["Loose cargo","PMC pallet","PAG pallet","Contenedor"],
-  "Avion": {
-    "MaxPasajeroCm": 160,
-    "MaxCargueroCm": 244,
-    "MaxPesoPalletKg": 6800
-  },
-  "TSA": {
-    "KnownShipper": ["Sí", "No"]
-  },
-  "Documentos": {
-    "HUM": ["Air Waybill","Death certificate","Embalming certificate","Funeral letter"],
-    "PER": ["AWB","Packing list","Certificado fitosanitario","FDA Prior Notice"],
-    "DGR": ["AWB","Shipper Declaration","MSDS"]
-  },
-  "Cutoff": "18:00",
-  "preguntas": [
-    {
-      "id": 1,
-      "fase": "Identificación y Tipo de Envío",
-      "pregunta": "¿Su envío es para un solo destinatario o contiene paquetes para diferentes personas (Houses)?",
-      "porque": "CBP/AMS: Si es consolidado y no entrega el Manifiesto de Houses, Avianca no puede transmitir datos a la Aduana.",
-      "instruccion": "Si es Consolidado: Grapa el Manifiesto fuera del sobre. La suma de las Houses debe ser EXACTA a la Master.",
-      "alerta_condicional": { "si": "consolidado", "accion": "Grapa el Manifiesto, valide suma de Houses", "tipo": "documental" }
+
+  "uld_types": {
+    "PMC": {
+      "type": "Pallet",
+      "size_in": "96x125",
+      "max_weight_kg": 6800
     },
-    {
-      "id": 2,
-      "fase": "Identificación y Tipo de Envío",
-      "pregunta": "¿El valor de su mercancía supera los $2,500 USD por código arancelario?",
-      "porque": "CBP: Exportaciones de alto valor requieren el número de ITN (AES).",
-      "instruccion": "Ingrese el ITN ahora. Sin esto, la multa federal es de $10,000 USD y la carga no vuela.",
-      "alerta_condicional": { "si": "si_valor > 2500 && !itn", "accion": "Bloquear reporte final hasta incluir ITN", "tipo": "crítica" }
+    "PAG": {
+      "type": "Container",
+      "max_weight_kg": 4600
     },
-    {
-      "id": 3,
-      "fase": "Identificación y Tipo de Envío",
-      "pregunta": "¿Es un 'Known Shipper' y tiene el sello de seguridad del camión anotado?",
-      "porque": "TSA: Si el sello está roto o no coincide, se rechaza por sospecha de manipulación o terrorismo.",
-      "instruccion": "Verifique que el número de sello en el camión coincida con su manifiesto de salida antes de hacer la fila.",
-      "alerta_condicional": { "si": "no_known_shipper", "accion": "Rechazo inmediato por seguridad", "tipo": "crítica" }
+    "PAJ": {
+      "type": "Container",
+      "max_weight_kg": 4600
     },
-    {
-      "id": 4,
-      "fase": "Medidas, Peso y Capacidad",
-      "pregunta": "¿Cuál es la altura del bulto más alto incluyendo la estiba?",
-      "porque": "Belly: 63\" / Freighter: 96\". Evita rechazo por no caber.",
-      "instruccion": "Si >63\", reserve solo Carguero. Si >96\", no entra en ningún avión.",
-      "alerta_condicional": { "si": "alto > 96", "accion": "Rechazar carga", "tipo": "crítica" }
-    },
-    {
-      "id": 5,
-      "fase": "Medidas, Peso y Capacidad",
-      "pregunta": "¿Alguna pieza pesa más de 150 kg (330 lbs)?",
-      "porque": "Resistencia del piso del avión.",
-      "instruccion": "Use base de madera (skids/shoring) para distribuir el peso. Sin esto, rechazo por riesgo estructural.",
-      "alerta_condicional": { "si": "peso_pieza > 150", "accion": "Obligatorio pallet reforzado", "tipo": "seguridad" }
-    },
-    {
-      "id": 6,
-      "fase": "Medidas, Peso y Capacidad",
-      "pregunta": "¿Ya calculó el peso volumétrico (L×W×H/166)?",
-      "porque": "Costo de flete y reserva de espacio.",
-      "instruccion": "Avianca cobra el mayor entre peso real y volumétrico. Evite sorpresas al llegar al counter.",
-      "alerta_condicional": { "si": "no_calculo_volumetrico", "accion": "Calcular peso volumétrico", "tipo": "informativa" }
-    },
-    {
-      "id": 7,
-      "fase": "Integridad: Embalaje y Madera",
-      "pregunta": "¿Sus estibas de madera tienen el sello visible de la 'espiga' (NIMF-15)?",
-      "porque": "USDA: La madera sin sello es plaga biológica.",
-      "instruccion": "NO DESPACHE. Cambie a pallet de plástico o madera certificada. El counter ordenará retorno inmediato si no hay sello.",
-      "alerta_condicional": { "si": "no_nimf15", "accion": "Cambio inmediato a pallet certificado", "tipo": "crítica" }
-    },
-    {
-      "id": 8,
-      "fase": "Integridad: Embalaje y Madera",
-      "pregunta": "¿La carga tiene flejes (straps) o solo plástico (shrink wrap)?",
-      "porque": "Estabilidad en vuelo.",
-      "instruccion": "Tanques, motores o piezas pesadas DEBEN llevar flejes. Si se mueve, el counter no la recibe.",
-      "alerta_condicional": { "si": "solo_shrink_wrap", "accion": "Agregar flejes metálicos", "tipo": "seguridad" }
-    },
-    {
-      "id": 9,
-      "fase": "Integridad: Embalaje y Madera",
-      "pregunta": "¿Borró etiquetas viejas de otros vuelos o aerolíneas?",
-      "porque": "Error de ruta (Misrouting).",
-      "instruccion": "Elimine toda marca previa. Una etiqueta de vuelo anterior puede causar que su carga llegue al destino equivocado.",
-      "alerta_condicional": { "si": "etiquetas_previas", "accion": "Eliminar etiquetas viejas", "tipo": "documental" }
-    },
-    {
-      "id": 10,
-      "fase": "Contenidos Peligrosos y Prohibidos",
-      "pregunta": "¿Su equipo contiene baterías de litio (aunque estén dentro)?",
-      "porque": "DOT/FAA: Mercancía Peligrosa.",
-      "instruccion": "Declare UN3480/3481 y presente 2 originales de Shipper’s Declaration con bordes rojos. Omitirlo es un delito.",
-      "alerta_condicional": { "si": "bateria_litio", "accion": "Declarar UN y entregar documentos", "tipo": "crítica" }
-    },
-    {
-      "id": 11,
-      "fase": "Contenidos Peligrosos y Prohibidos",
-      "pregunta": "¿La carga es impenetrable para Rayos X (metal sólido >12\")?",
-      "porque": "TSA Screening.",
-      "instruccion": "Si Rayos X no la atraviesa, se abrirá físicamente. Use embalaje que pueda volver a sellar.",
-      "alerta_condicional": { "si": "no_penetrable", "accion": "Permitir inspección física", "tipo": "seguridad" }
-    },
-    {
-      "id": 12,
-      "fase": "Contenidos Peligrosos y Prohibidos",
-      "pregunta": "¿La descripción en la guía es específica (ej. 'Partes de motor')?",
-      "porque": "CBP: Prohibido usar 'Said to Contain' o 'Carga General'.",
-      "instruccion": "Ponga el nombre real del producto. Descripciones genéricas activan alertas de seguridad y retenciones (Holds).",
-      "alerta_condicional": { "si": "descripcion_generica", "accion": "Actualizar descripción exacta", "tipo": "documental" }
-    },
-    {
-      "id": 13,
-      "fase": "Documentación",
-      "pregunta": "¿Tiene listos los 3 originales y 6 copias de la Guía Aérea?",
-      "porque": "El agente no hace copias.",
-      "instruccion": "Entregue todo completo; si falta una copia, el chofer pierde turno.",
-      "alerta_condicional": { "si": "faltan_copias", "accion": "Completar documentos", "tipo": "documental" }
-    },
-    {
-      "id": 14,
-      "fase": "Documentación",
-      "pregunta": "¿El Zip Code del destinatario es correcto y completo?",
-      "porque": "El sistema de Avianca bloquea guías con códigos incompletos.",
-      "instruccion": "Verifique dígito por dígito antes de enviar.",
-      "alerta_condicional": { "si": "zip_incompleto", "accion": "Corregir código postal", "tipo": "documental" }
-    },
-    {
-      "id": 15,
-      "fase": "Llegada y Cutoff",
-      "pregunta": "¿A qué hora estima la llegada al counter?",
-      "porque": "Llegar después del Cut-off genera cargos de almacenamiento y pérdida de vuelo.",
-      "instruccion": "Llegue al menos 4-6 horas antes de la salida del vuelo.",
-      "alerta_condicional": { "si": "llegada_tarde", "accion": "Advertir al usuario y registrar alerta", "tipo": "crítica" }
-    },
-    {
-      "id": 16,
-      "fase": "Embalaje y Seguridad",
-      "pregunta": "¿La carga está asegurada con flejes (straps) de alta resistencia?",
-      "porque": "La carga que se mueve es riesgo. Evita accidentes.",
-      "instruccion": "No usar solo shrink wrap para piezas pesadas o motores.",
-      "alerta_condicional": { "si": "solo_plastico", "accion": "Colocar flejes metálicos", "tipo": "seguridad" }
-    },
-    {
-      "id": 17,
-      "fase": "Embalaje y Seguridad",
-      "pregunta": "¿Existen cajas rotas o con humedad/manchas de aceite?",
-      "porque": "Causa alertas de DGR y rechazo de seguro.",
-      "instruccion": "Reempaque o drene motores antes de llegar al warehouse.",
-      "alerta_condicional": { "si": "caja_danada", "accion": "Reempaque o drene motores", "tipo": "crítica" }
-    },
-    {
-      "id": 18,
-      "fase": "Embalaje y Seguridad",
-      "pregunta": "¿La carga sobresale de la base de la estiba (Overhang)?",
-      "porque": "Si sobresale, no encaja en avión.",
-      "instruccion": "Alinee carga con los bordes del pallet (máximo 125x88 pulgadas).",
-      "alerta_condicional": { "si": "sobresale", "accion": "Alinear con pallet", "tipo": "crítica" }
-    },
-    {
-      "id": 19,
-      "fase": "Identificación",
-      "pregunta": "¿Escribió el número de AWB con marcador en el pallet/caja?",
-      "porque": "Identificación física si se desprende la etiqueta.",
-      "instruccion": "Marque número de AWB en pallet/caja además de etiqueta adhesiva.",
-      "alerta_condicional": { "si": "no_marcado", "accion": "Marcar AWB físicamente", "tipo": "seguridad" }
-    },
-    {
-      "id": 20,
-      "fase": "Documentación Crítica",
-      "pregunta": "¿Desea declarar valor para transporte o marcar NVD?",
-      "porque": "Avianca cobra cargos extra de valuación si no se declara NVD.",
-      "instruccion": "Marque NVD si tiene seguro privado para evitar cargos ad valorem.",
-      "alerta_condicional": { "si": "valor_no_declarado", "accion": "Marcar NVD o declarar valor", "tipo": "crítica" }
-    },
-    {
-      "id": 21,
-      "fase": "Documentación Crítica",
-      "pregunta": "¿Ha verificado que no existan aerosoles o pegamentos ocultos?",
-      "porque": "Seguridad aérea. Contrabando técnico es penalizable.",
-      "instruccion": "Revise interior de cajas. Declarar correctamente.",
-      "alerta_condicional": { "si": "sospecha_pegamento", "accion": "Revisar y declarar", "tipo": "crítica" }
-    },
-    {
-      "id": 22,
-      "fase": "Transferencias",
-      "pregunta": "¿Su carga transfiere a otra aerolínea en el destino?",
-      "porque": "Sin Transfer Manifest, la carga se estanca en tránsito.",
-      "instruccion": "Grapa Transfer Manifest fuera del sobre de documentos.",
-      "alerta_condicional": { "si": "transfer_sin_manifest", "accion": "Adjuntar Transfer Manifest", "tipo": "documental" }
-    },
-    {
-      "id": 23,
-      "fase": "Documentación",
-      "pregunta": "¿Verificó si hay un 'Embargo' activo para su destino?",
-      "porque": "Evita rechazo por saturación o clima.",
-      "instruccion": "Consulte estado de red de Avianca antes de enviar.",
-      "alerta_condicional": { "si": "embargo_activo", "accion": "No despachar hasta resolución", "tipo": "crítica" }
-    },
-    {
-      "id": 24,
-      "fase": "Documentación",
-      "pregunta": "¿Su producto es de origen animal, vegetal o médico?",
-      "porque": "Avianca no puede liberar carga retenida por agencias gubernamentales.",
-      "instruccion": "Presente certificado fitosanitario o Prior Notice de FDA original.",
-      "alerta_condicional": { "si": "certificado_faltante", "accion": "Adjuntar certificado", "tipo": "crítica" }
+    "AKE": {
+      "type": "Container",
+      "max_weight_kg": 1500
     }
-  ]
+  },
+
+  "screening_methods": [
+    "xray",
+    "physical",
+    "etd",
+    "manual"
+  ],
+
+  "tsa_rules": {
+    "known_shipper_required": true,
+    "screening_required_if_unknown": true
+  },
+
+  "usda_rules": {
+    "wood_packaging_requires_ISPM15": true,
+    "agriculture_requires_phytosanitary": true
+  },
+
+  "fda_rules": {
+    "food_requires_prior_notice": true
+  },
+
+  "iata_dgr": {
+    "requires_shipper_declaration": true,
+    "requires_msds": true,
+    "requires_un_number"
+: true
+  },
+
+  "document_quality": [
+    "no_tachaduras",
+    "no_borrones",
+    "letra_legible",
+    "version_valida"
+  ],
+
+  "cutoff_rules": {
+    "standard_cutoff_hours": 4,
+    "dangerous_goods_cutoff_hours": 6
+  },
+
+  "country_specific": {
+    "USA": [
+      "EEI_AES_export",
+      "FDA_prior_notice_if_food",
+      "USDA_permits_if_agri",
+      "TSA_known_shipper_compliance"
+    ],
+    "COL": [
+      "DIAN_export_declaration",
+      "ICA_sanitary_permit_if_applicable"
+    ],
+    "MEX": [
+      "Pedimento_EXPORT",
+      "SAGARPA_permit_if_agri"
+    ],
+    "PER": [
+      "SUNAT_export_declaration",
+      "DIGESA_if_food"
+    ],
+    "BRA": [
+      "RADAR_export",
+      "MAPA_phytosanitary"
+    ],
+    "ARG": [
+      "AFIP_export_doc",
+      "SENASA_if_animal"
+    ],
+    "ESP": [
+      "EU_export_declaration",
+      "sanitary_permit_EU"
+    ],
+    "FRA": [
+      "EU_export_declaration",
+      "sanitary_permit_EU"
+    ],
+    "GBR": [
+      "UK_export_declaration",
+      "sanitary_permit_UK"
+    ],
+    "CAN": [
+      "CFIA_phytosanitary",
+      "CCPC_permits"
+    ],
+    "CRI": ["MAG_sanitary"],
+    "PAN": ["AUPSA_permits"],
+    "ECU": ["AGRO_export_permit"],
+    "VEN": ["SENIAT_export_doc"]
+  }
 }
