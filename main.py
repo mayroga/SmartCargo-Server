@@ -1,113 +1,69 @@
-from fastapi import FastAPI, Request
+import os
+import json
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import json
-import os
 
-app = FastAPI(title="SMARTGOSERVER Backend")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Permitir CORS para pruebas con app.html
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Cambiar a dominios de producción
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+CARGO_QUESTIONS_FILE = os.path.join(BASE_DIR, "static", "cargo_questions.json")
+CARGO_RULES_FILE = os.path.join(BASE_DIR, "static", "cargo_rules.json")
+AVIANCA_RULES_FILE = os.path.join(BASE_DIR, "static", "avianca_rules.json")
 
-# Rutas de JSON
-BASE_DIR = "static"
-CARGO_QUESTIONS_FILE = os.path.join(BASE_DIR, "cargo_questions.json")
-CARGO_RULES_FILE = os.path.join(BASE_DIR, "cargo_rules.json")
-AVIANCA_RULES_FILE = os.path.join(BASE_DIR, "avianca_rules.json")
-
-
-# Cargar JSON al iniciar
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+app = FastAPI()
+
+# Permitir que app.js acceda
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 cargo_questions = load_json(CARGO_QUESTIONS_FILE)
 cargo_rules = load_json(CARGO_RULES_FILE)
 avianca_rules = load_json(AVIANCA_RULES_FILE)
 
+@app.get("/questions")
+def get_questions():
+    return JSONResponse(cargo_questions)
 
-# Ruta principal para probar
-@app.get("/")
-async def root():
-    return {"message": "SMARTGOSERVER Backend en línea"}
+@app.get("/cargo_rules")
+def get_cargo_rules():
+    return JSONResponse(cargo_rules)
 
+@app.get("/avianca_rules")
+def get_avianca_rules():
+    return JSONResponse(avianca_rules)
 
-# Obtener preguntas
-@app.get("/api/questions")
-async def get_questions():
-    return cargo_questions
-
-
-# Obtener reglas
-@app.get("/api/rules")
-async def get_rules():
-    return {
-        "cargo_rules": cargo_rules,
-        "avianca_rules": avianca_rules
-    }
-
-
-# Recibir respuestas y evaluar RFC
-@app.post("/api/validate")
-async def validate_rfc(request: Request):
+@app.post("/validate")
+def validate_cargo(respuestas: dict):
     """
-    Recibe respuestas en formato JSON:
-    {
-        "answers": [
-            {"pregunta": "...", "respuesta": "..."},
-            ...
-        ]
-    }
+    Aquí va la lógica que combina:
+    - cargo_questions
+    - cargo_rules
+    - avianca_rules
+    para determinar si la carga es RFC o hay alertas críticas.
     """
-    data = await request.json()
-    answers = data.get("answers", [])
-    bloqueos = []
-    observaciones = []
+    resultado = {"RFC": True, "alertas": []}
 
-    # Validaciones críticas según tus 24 preguntas
-    for ans in answers:
-        pregunta = ans.get("pregunta", "")
-        respuesta = ans.get("respuesta", "")
+    # Ejemplo de validación simple
+    for q in cargo_questions["preguntas"]:
+        alerta = q.get("alerta_condicional")
+        if alerta:
+            # Si la condición se cumple en las respuestas, bloquea RFC
+            condicion = alerta.get("si")
+            # Para demo, evaluamos si la clave existe en respuestas
+            if condicion in respuestas and respuestas[condicion]:
+                resultado["RFC"] = False
+                resultado["alertas"].append({
+                    "pregunta": q["pregunta"],
+                    "accion": alerta["accion"],
+                    "tipo": alerta["tipo"]
+                })
 
-        if "valor de su mercancía" in pregunta and respuesta == "Sí":
-            bloqueos.append("Falta ITN para mercancía >$2,500 USD.")
-        if "estibas de madera" in pregunta and respuesta == "No":
-            bloqueos.append("Falta sello NIMF-15, cambio a pallet de plástico.")
-        if "flejes" in pregunta and respuesta == "No":
-            bloqueos.append("Falta flejes, riesgo de movimiento en vuelo.")
-        if "altura del bulto" in pregunta and respuesta != "":
-            try:
-                h = float(respuesta)
-                if h > avianca_rules["Avion"]["MaxPasajeroCm"]:
-                    observaciones.append("Altura >63 pulgadas: reservar en Carguero")
-                if h > avianca_rules["Avion"]["MaxCargueroCm"]:
-                    bloqueos.append("Altura >96 pulgadas: no puede volar en ningún avión")
-            except ValueError:
-                bloqueos.append("Altura inválida: revisar dato")
-
-        if "pieza pesa más de 150" in pregunta and respuesta == "Sí":
-            observaciones.append("Usar base de madera (shoring) para distribuir peso")
-
-        if "peso volumétrico" in pregunta and respuesta == "":
-            observaciones.append("Calcular peso volumétrico antes del despacho")
-
-        if "baterías de litio" in pregunta and respuesta == "Sí":
-            bloqueos.append("Declarar UN3480/3481 y presentar 2 originales Shipper's Declaration")
-
-        if "Zip Code" in pregunta and respuesta == "":
-            bloqueos.append("Código postal incorrecto o incompleto")
-
-    rfc_status = "SÍ" if not bloqueos else "NO"
-
-    return JSONResponse({
-        "RFC": rfc_status,
-        "bloqueos": bloqueos,
-        "observaciones": observaciones,
-        "answers": answers
-    })
+    return JSONResponse(resultado)
