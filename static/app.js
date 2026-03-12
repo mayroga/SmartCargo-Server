@@ -1,137 +1,201 @@
-ACTUALIZA Y ESCRIBE COMPLETO A static/app.js:<!DOCTYPE html> 
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body { font-family: Arial, sans-serif; background: #f4f6f8; color: #111; margin:0; padding:20px;}
-h1 { text-align:center; color:#0a3d62;}
-.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-label { display:block; margin:8px 0 4px;}
-input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc;}
-.alert { color:red; font-weight:bold; margin:5px 0;}
-.success { color:green; font-weight:bold; margin:5px 0;}
-.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px;}
-</style>
-<script>
+// ===============================
+// SMARTGOSERVER PRE-CHECK ENGINE
+// ===============================
+
+async function validarCarga() {
+
+    let largo = parseFloat(document.getElementById('largo').value) || 0
+    let ancho = parseFloat(document.getElementById('ancho').value) || 0
+    let alto = parseFloat(document.getElementById('alto').value) || 0
+    let peso = parseFloat(document.getElementById('peso').value) || 0
+
+    let tipo = document.getElementById('tipoCarga').value
+    let destino = document.getElementById('destino').value
+    let rol = document.getElementById('rol').value
+
+    let data = {
+
+        role: rol,
+
+        cargo_type: tipo || "GENERAL",
+
+        pieces: 1,
+
+        units: "cm",
+
+        longest_piece: largo,
+
+        widest_piece: ancho,
+
+        tallest_piece: alto,
+
+        heaviest_piece: peso,
+
+        gross_weight: peso,
+
+        uld_type: "PMC",
+
+        documents: [
+            "air_waybill",
+            "commercial_invoice",
+            "packing_list"
+        ],
+
+        security: {
+            known_shipper: true,
+            regulated_agent: true,
+            screening: "xray"
+        }
+    }
+
+    let response = await fetch("/validate_shipment", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+
+    let result = await response.json()
+
+    mostrarResultado(result)
+}
+
+
+// ===============================
+// RESULTADO PRECHECK
+// ===============================
+
+function mostrarResultado(result) {
+
+    let container = document.getElementById("resultado")
+
+    if (!container) {
+
+        container = document.createElement("div")
+        container.id = "resultado"
+        container.className = "section"
+        document.body.appendChild(container)
+
+    }
+
+    let estado = ""
+    let mensaje = ""
+
+    if (result.status === "GREEN") {
+
+        estado = "🟢 READY FOR COUNTER"
+        mensaje = "La carga puede presentarse en el counter."
+
+    } else {
+
+        let bloqueante = false
+
+        result.errors.forEach(e => {
+
+            if (
+                e.includes("No puede volar") ||
+                e.includes("demasiado larga") ||
+                e.includes("sobresale")
+            ) {
+                bloqueante = true
+            }
+
+        })
+
+        if (bloqueante) {
+
+            estado = "🔴 NO FLY TODAY"
+            mensaje = "Existe un error crítico. La carga no puede volar hoy."
+
+        } else {
+
+            estado = "🟡 FIX BEFORE COUNTER"
+            mensaje = "Debe corregir estos puntos antes de ir al counter."
+
+        }
+
+    }
+
+    let erroresHTML = ""
+
+    result.errors.forEach(e => {
+
+        erroresHTML += `<li style="color:red">${e}</li>`
+
+    })
+
+    let correccionesHTML = ""
+
+    result.corrections.forEach(c => {
+
+        correccionesHTML += `<li>${c}</li>`
+
+    })
+
+    container.innerHTML = `
+
+        <h2>RESULTADO PRE-CHECK</h2>
+
+        <h3>${estado}</h3>
+
+        <p>${mensaje}</p>
+
+        <h3>Errores Detectados</h3>
+        <ul>${erroresHTML}</ul>
+
+        <h3>Correcciones</h3>
+        <ul>${correccionesHTML}</ul>
+
+        <hr>
+
+        <b>Volumen calculado:</b> ${result.volume_m3} m³<br>
+        <b>ULD:</b> ${result.cargo_type_fullname}<br>
+        <b>Fecha:</b> ${result.timestamp}
+
+    `
+}
+
+
+// ===============================
+// CALCULO DE VOLUMEN EN FRONT
+// ===============================
+
 function calcularVolumen() {
-    let largo = parseFloat(document.getElementById('largo').value) || 0;
-    let ancho = parseFloat(document.getElementById('ancho').value) || 0;
-    let alto = parseFloat(document.getElementById('alto').value) || 0;
-    let volumen = (largo * ancho * alto)/1000000; // cm³ a m³
-    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
-    // Validación automática
-    if(alto > 244) {
-        document.getElementById('alertAltura').innerText = "ALERTA: Altura excede límite de Carguero (244 cm)";
-    } else if(alto > 160) {
-        document.getElementById('alertAltura').innerText = "ADVERTENCIA: Altura excede límite de pasajero (160 cm)";
+
+    let largo = parseFloat(document.getElementById('largo').value) || 0
+    let ancho = parseFloat(document.getElementById('ancho').value) || 0
+    let alto = parseFloat(document.getElementById('alto').value) || 0
+
+    let volumen = (largo * ancho * alto) / 1000000
+
+    document.getElementById('volumen').value = volumen.toFixed(3) + " m³"
+
+    if (alto > 244) {
+
+        document.getElementById('alertAltura').innerText =
+            "ALERTA: Altura excede límite carguero (96in / 244cm)"
+
+    } else if (alto > 160) {
+
+        document.getElementById('alertAltura').innerText =
+            "ADVERTENCIA: Solo puede volar en carguero"
+
     } else {
-        document.getElementById('alertAltura').innerText = "";
+
+        document.getElementById('alertAltura').innerText = ""
+
     }
-    if(largo > 318 || ancho > 244) {
-        document.getElementById('alertDim').innerText = "ALERTA: Dimensiones exceden máximo permitido (Largo 318 cm, Ancho 244 cm)";
+
+    if (largo > 318 || ancho > 244) {
+
+        document.getElementById('alertDim').innerText =
+            "ALERTA: Dimensión excede pallet estándar"
+
     } else {
-        document.getElementById('alertDim').innerText = "";
+
+        document.getElementById('alertDim').innerText = ""
+
     }
-    let peso = parseFloat(document.getElementById('peso').value) || 0;
-    if(peso > 6800) {
-        document.getElementById('alertPeso').innerText = "ALERTA: Peso excede máximo permitido del pallet (6800 kg)";
-    } else {
-        document.getElementById('alertPeso').innerText = "";
-    }
+
 }
-
-// Mostrar documentos según tipo de carga
-function mostrarDocumentos() {
-    let tipo = document.getElementById('tipoCarga').value;
-    let docs = {
-        "HUM": "Air Waybill, Death Certificate, Funeral Certificate, Embalming Certificate, Known Shipper / Screening / Regulated Agent",
-        "PER": "Air Waybill, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening / Regulated Agent",
-        "DGR": "Air Waybill, Shipper’s Declaration x2, Certificado Fitosanitario si aplica, Known Shipper / Screening / Regulated Agent",
-        "GEN": "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent"
-    };
-    document.getElementById('documentos').innerText = docs[tipo] || "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent";
-}
-
-// Mostrar rol dinámico
-function actualizarRol() {
-    let rol = document.getElementById('rol').value;
-    let opciones = "";
-    if(rol === "Chofer" || rol === "Camionero") opciones = "Forwarder, Dueño, Counter";
-    if(rol === "Forwarder") opciones = "Chofer, Dueño, Counter";
-    document.getElementById('rolAlternativo').innerText = opciones;
-}
-
-function validarCarga() {
-    alert("Validación ejecutada al momento. Revise alertas visibles en pantalla.");
-}
-</script>
-</head>
-<body>
-
-<h1>SMARTGOSERVER - Asesoría Técnica de Carga</h1>
-
-<div class="section">
-<h2>I. Identificación y Tipo de Envío</h2>
-<label for="clienteID">ID de Cliente / Código SCAC:</label>
-<input type="text" id="clienteID" placeholder="Ingrese su ID o SCAC">
-
-<label for="tipoCarga">Tipo de Carga:</label>
-<select id="tipoCarga" onchange="mostrarDocumentos()">
-    <option value="">Seleccione</option>
-    <option value="HUM">HUM (Human Remains)</option>
-    <option value="PER">PER (Perishable Goods)</option>
-    <option value="DGR">DGR (Dangerous Goods)</option>
-    <option value="GEN">GEN (General Cargo)</option>
-</select>
-
-<label for="destino">Destino:</label>
-<input type="text" id="destino" placeholder="Ciudad / País">
-
-<label for="rol">Rol del Usuario:</label>
-<select id="rol" onchange="actualizarRol()">
-    <option value="">Seleccione</option>
-    <option value="Chofer">Chofer</option>
-    <option value="Camionero">Camionero</option>
-    <option value="Forwarder">Forwarder</option>
-</select>
-<p id="rolAlternativo" style="font-style:italic;"></p>
-
-</div>
-
-<div class="section">
-<h2>II. Dimensiones y Peso</h2>
-<label for="largo">Largo (cm):</label>
-<input type="number" id="largo" oninput="calcularVolumen()">
-
-<label for="ancho">Ancho (cm):</label>
-<input type="number" id="ancho" oninput="calcularVolumen()">
-
-<label for="alto">Alto (cm):</label>
-<input type="number" id="alto" oninput="calcularVolumen()">
-
-<label for="peso">Peso (kg):</label>
-<input type="number" id="peso" oninput="calcularVolumen()">
-
-<label for="volumen">Volumen (m³):</label>
-<input type="text" id="volumen" readonly>
-
-<p id="alertAltura" class="alert"></p>
-<p id="alertDim" class="alert"></p>
-<p id="alertPeso" class="alert"></p>
-</div>
-
-<div class="section">
-<h2>III. Documentos Obligatorios</h2>
-<div id="documentos" class="docs">Seleccione un tipo de carga para ver documentos.</div>
-</div>
-
-<div class="section">
-<h2>IV. Validación Final</h2>
-<button onclick="validarCarga()">Validar Carga</button>
-<p class="success">Respuesta al momento: Todos los campos críticos deben revisarse antes de generar AWB.</p>
-</div>
-
-</body>
-</html>
