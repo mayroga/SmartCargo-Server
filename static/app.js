@@ -10,21 +10,18 @@ let aviancaRules = {};
 
 
 // =============================
-// CARGAR DATOS DEL SERVER
+// LOAD DATA
 // =============================
 
 async function loadData() {
 
-    // preguntas desde FastAPI
     const qResp = await fetch('/questions');
     const qData = await qResp.json();
     questions = qData.preguntas;
 
-    // reglas cargo
     const cargoResp = await fetch('/cargo_rules');
     cargoRules = await cargoResp.json();
 
-    // reglas avianca
     const aviancaResp = await fetch('/avianca_rules');
     aviancaRules = await aviancaResp.json();
 
@@ -33,7 +30,7 @@ async function loadData() {
 
 
 // =============================
-// MOSTRAR PREGUNTA
+// RENDER
 // =============================
 
 function renderQuestion() {
@@ -52,8 +49,6 @@ function renderQuestion() {
     block.className = 'question-block';
 
 
-    // texto pregunta
-
     const questionText = document.createElement('div');
     questionText.className = 'question-text';
     questionText.textContent =
@@ -62,28 +57,30 @@ function renderQuestion() {
     block.appendChild(questionText);
 
 
-    // porque
+    if (q.porque) {
 
-    const whyBox = document.createElement('div');
-    whyBox.className = 'why';
-    whyBox.textContent = q.porque || "";
-    block.appendChild(whyBox);
+        const why = document.createElement('div');
+        why.className = 'why';
+        why.textContent = q.porque;
+        block.appendChild(why);
 
-
-    // instruccion
-
-    const instructionBox = document.createElement('div');
-    instructionBox.className = 'instruction';
-    instructionBox.textContent = q.instruccion || "";
-    block.appendChild(instructionBox);
+    }
 
 
-    // input
+    if (q.instruccion) {
 
-    const inputEl = document.createElement('input');
-    inputEl.type = 'text';
-    inputEl.placeholder = "Escriba respuesta";
-    block.appendChild(inputEl);
+        const inst = document.createElement('div');
+        inst.className = 'instruction';
+        inst.textContent = q.instruccion;
+        block.appendChild(inst);
+
+    }
+
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = "Respuesta";
+    block.appendChild(input);
 
 
     container.appendChild(block);
@@ -92,31 +89,25 @@ function renderQuestion() {
 
 
 // =============================
-// BOTON NEXT
+// NEXT
 // =============================
 
 document.getElementById('next-btn').addEventListener('click', () => {
 
     const container = document.getElementById('question-container');
 
-    const inputEl = container.querySelector('input');
+    const input = container.querySelector('input');
 
-    if (!inputEl.value) {
-        alert("Responda antes de continuar");
+    if (!input.value) {
+        alert("Debe responder");
         return;
     }
 
     const q = questions[currentIndex];
 
-    // guardar respuesta por clave
+    // guardar por id
 
-    if (q.alerta_condicional && q.alerta_condicional.si) {
-
-        answers[q.alerta_condicional.si] = true;
-
-    }
-
-    answers["respuesta_" + q.id] = inputEl.value;
+    answers[q.id] = input.value;
 
     currentIndex++;
 
@@ -126,40 +117,44 @@ document.getElementById('next-btn').addEventListener('click', () => {
 
 
 // =============================
-// FINALIZAR
+// FINAL
 // =============================
 
 async function finalizeCheck() {
 
     document.getElementById('question-container').innerHTML = "";
-
     document.getElementById('next-btn').style.display = "none";
 
 
-    // enviar al server
-
     const resp = await fetch('/validate', {
+
         method: 'POST',
+
         headers: {
             'Content-Type': 'application/json'
         },
+
         body: JSON.stringify(answers)
+
     });
+
 
     const result = await resp.json();
 
 
     let html = "<h2>Reporte RFC</h2>";
 
+
     if (result.alertas.length > 0) {
 
-        html += "<h3>Alertas:</h3><ul>";
+        html += "<ul>";
 
         result.alertas.forEach(a => {
 
-            html += "<li>"
-                + a.accion +
-                " (" + a.tipo + ")</li>";
+            html += "<li>" +
+                a.accion +
+                " (" + a.tipo + ")" +
+                "</li>";
 
         });
 
@@ -180,14 +175,9 @@ async function finalizeCheck() {
 
 
     document.getElementById('summary').innerHTML = html;
-
     document.getElementById('summary').style.display = "block";
 
 }
 
-
-// =============================
-// INIT
-// =============================
 
 loadData();
