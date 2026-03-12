@@ -38,9 +38,8 @@ async def api_evaluar_carga(data: dict):
     known = data.get("knownShipper", "")
     horaCamion = data.get("horaCamion", "")
     cutoff = data.get("cutoff", "18:00")
-    tipoPallet = data.get("tipoPallet", "")
 
-    # Checklist
+    # Checklist usuario
     dryIce = data.get("chkDryIce", False)
     dgr = data.get("chkDGR", False)
     animales = data.get("chkAnimales", False)
@@ -48,8 +47,9 @@ async def api_evaluar_carga(data: dict):
     embalaje = data.get("chkEmbalaje", False)
     etiquetas = data.get("chkEtiquetas", False)
     fleje = data.get("chkFleje", False)
+    orientacion = data.get("chkOrientacion", False)
 
-    # Validaciones generales
+    # Validaciones básicas
     if not rol: errores.append("Seleccione rol del usuario.")
     if not re.match(r"^\d{3}-\d{8}$", awb):
         errores.append("Formato AWB inválido (XXX-12345675).")
@@ -58,25 +58,41 @@ async def api_evaluar_carga(data: dict):
     if not codigo: errores.append("Seleccione tipo de carga.")
     if not known: errores.append("Indique si es Known Shipper.")
     if alto > 244: errores.append("Alto excede límite carguero (244cm).")
-    elif 160 < alto <= 244: errores.append("Solo puede ir en Main Deck (carguero).")
+    if 160 < alto <= 244: errores.append("Solo puede ir en Main Deck (carguero).")
     if pesoTotal > 6800: errores.append("Peso excede límite pallet 6800kg.")
     if pesoVol > pesoTotal: errores.append("Peso volumétrico mayor que peso real.")
     if horaCamion and horaCamion > cutoff: errores.append("Camión llega después de cutoff.")
 
-    # Validaciones por tipo de carga
-    if codigo == "DGR" and not dgr: errores.append("Mercancía peligrosa sin declaración y MSDS.")
-    if codigo == "PER" and not perecederos: errores.append("Perecedero sin embalaje y refrigeración adecuados.")
-    if codigo == "AVI" and not animales: errores.append("Animales vivos sin certificados o embalaje seguro.")
-    if codigo == "PER" and not dryIce: errores.append("Dry Ice necesario para perecederos no declarado.")
+    # Validaciones checklist inteligentes por tipo de carga
+    tipo_checklist_obligatorio = {
+        "GEN": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+        "PER": {"DryIce": True, "DGR": False, "Animales": False, "Perecederos": True, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+        "HUM": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+        "VAL": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+        "AVI": {"DryIce": False, "DGR": False, "Animales": True, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+        "DGR": {"DryIce": False, "DGR": True, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
+    }
 
-    # Validación de embalaje y etiquetas
-    if not embalaje: errores.append("Embalaje no cumple normas IATA.")
-    if not etiquetas: errores.append("Falta etiquetado correcto (FRÁGIL, DGR, perecedero, UPSIDE, Dry Ice).")
-    if not fleje: errores.append("Carga no asegurada con fleje adecuado.")
+    checklist_usuario = {
+        "DryIce": dryIce,
+        "DGR": dgr,
+        "Animales": animales,
+        "Perecederos": perecederos,
+        "Embalaje": embalaje,
+        "Etiquetas": etiquetas,
+        "Fleje": fleje,
+        "Orientacion": orientacion
+    }
 
-    # Validación de orientación según pallet
-    if tipoPallet in ["Loose", "PMC", "PAG", "Contenedor"] and not etiquetas:
-        errores.append(f"Verifique orientación de la carga en {tipoPallet}: labels deben estar visibles y correctos.")
+    # Validación proactiva
+    for item, requerido in tipo_checklist_obligatorio.get(codigo, {}).items():
+        marcado = checklist_usuario.get(item, False)
+        if requerido and not marcado:
+            errores.append(f"Falta {item} obligatorio para tipo de carga {codigo}.")
+            soluciones.append(f"Marcar {item} correctamente según normativas.")
+        elif not requerido and marcado:
+            errores.append(f"{item} no aplica para tipo de carga {codigo}, remover selección.")
+            soluciones.append(f"Desmarcar {item} para cumplir reglas del tipo de carga.")
 
     # Estado final
     status = "READY" if not errores else "RECHAZADO"
