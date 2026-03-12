@@ -17,16 +17,16 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
 .active, .collapsible:hover { background-color:#062c47; }
 .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-line; }
-.tip { font-size:13px; color:#444; margin-bottom:5px; font-style:italic; }
+.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-wrap; }
+.tip { font-size:14px; color:#555; font-style:italic; margin-bottom:5px; }
 </style>
 </head>
 <body>
 
 <h1>SMARTGOSERVER - ¿Carga apta para volar HOY?</h1>
 
-<!-- FASE I: Identificación y Tipo de Usuario -->
-<button class="collapsible">I. Identificación y Tipo de Usuario</button>
+<!-- FASE I: Universal -->
+<button class="collapsible">I. Identificación y Tipo de Envío</button>
 <div class="content" id="faseUniversal">
     <label for="rolUsuario">Rol del Usuario:</label>
     <select id="rolUsuario" onchange="updateRolFields()">
@@ -41,25 +41,22 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 
     <label for="awb">Número de Guía Aérea (AWB):</label>
     <input type="text" id="awb" placeholder="XXX-12345675">
-    <p class="tip">Tip: Formato correcto: 3 dígitos del carrier + '-' + 8 dígitos de guía.</p>
+    <p class="tip">Ej: 123-12345675. Formato obligatorio para seguimiento y reserva.</p>
 
     <label for="forwarder">Forwarder / Agente de Carga:</label>
     <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
-    <p class="tip">Tip: Indique la empresa que envía la carga.</p>
+    <p class="tip">Importante para coordinación de transporte y documentación.</p>
 
     <label for="origen">Origen:</label>
     <input type="text" id="origen" placeholder="Ej: MIA">
-    <p class="tip">Tip: Código IATA del aeropuerto de origen.</p>
-
     <label for="destino">Destino:</label>
     <input type="text" id="destino" placeholder="Ej: BOG, MDE, LIM, SJO">
-    <p class="tip">Tip: Código IATA del aeropuerto de destino.</p>
 </div>
 
 <!-- FASE II: Tipo de Carga -->
 <button class="collapsible">II. Tipo de Carga</button>
 <div class="content" id="faseTipoCarga">
-    <label for="codigoCarga">Código IATA de la carga:</label>
+    <label for="codigoCarga">Código IATA:</label>
     <select id="codigoCarga" onchange="mostrarDocumentos()">
         <option value="">Seleccione</option>
         <option value="GEN">GEN - General cargo</option>
@@ -69,8 +66,7 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
         <option value="AVI">AVI - Animales</option>
         <option value="DGR">DGR - Mercancía peligrosa</option>
     </select>
-    <div id="documentosObligatorios" class="docs">Seleccione un tipo de carga para ver documentos.</div>
-    <p class="tip">Tip: Haga click en cada documento para ver ejemplo o cómo completarlo.</p>
+    <div id="documentosObligatorios" class="docs tip">Seleccione un tipo de carga para ver documentos.</div>
 </div>
 
 <!-- FASE III: Dimensiones y Peso -->
@@ -78,25 +74,22 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 <div class="content" id="faseDimensiones">
     <label for="piezas">Número de piezas:</label>
     <input type="number" id="piezas" min="1" value="1">
+    <p class="tip">Cantidad total de bultos o pallets.</p>
 
     <label for="pesoTotal">Peso Total (kg):</label>
     <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
-
     <label for="pesoPieza">Peso por Pieza (kg):</label>
     <input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
 
     <label for="largo">Largo (cm):</label>
     <input type="number" id="largo" min="0" oninput="calcularVolumen()">
-
     <label for="ancho">Ancho (cm):</label>
     <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
-
     <label for="alto">Alto (cm):</label>
     <input type="number" id="alto" min="0" oninput="calcularVolumen()">
 
     <label for="volumen">Volumen (m³):</label>
     <input type="text" id="volumen" readonly>
-
     <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
     <input type="text" id="pesoVolumetrico" readonly>
 
@@ -110,7 +103,6 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
     </select>
 
     <p id="alertDimensiones" class="alert"></p>
-    <p class="tip">Tip: Verifique que dimensiones y peso respeten límites de avión y pallet.</p>
 </div>
 
 <!-- FASE IV: Seguridad TSA y Cutoff -->
@@ -122,15 +114,13 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
         <option value="Sí">Sí</option>
         <option value="No">No</option>
     </select>
-    <p class="tip">Tip: Known Shipper significa que el remitente está preaprobado por TSA.</p>
+    <p class="tip">Asegura que el remitente está certificado para carga aérea.</p>
 
     <label for="horaCamion">Hora estimada de llegada del camión:</label>
     <input type="time" id="horaCamion">
 
     <label for="cutoff">Hora de cutoff del vuelo:</label>
     <input type="time" id="cutoff" value="18:00">
-    <p class="tip">Tip: Si el camión llega después del cutoff, la carga NO puede volar hoy.</p>
-
     <p id="alertCutoff" class="alert"></p>
 </div>
 
@@ -141,6 +131,95 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
     <p id="resultadoFinal" class="result"></p>
 </div>
 
-<script src="static/app.js"></script>
+<script>
+// Collapsibles
+document.addEventListener("DOMContentLoaded", function() {
+    var coll = document.getElementsByClassName("collapsible");
+    for (let i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            content.style.display = (content.style.display === "block") ? "none" : "block";
+        });
+    }
+});
+
+// Mostrar documentos según tipo de carga
+function mostrarDocumentos() {
+    const tipo = document.getElementById('codigoCarga').value;
+    const docs = {
+        "GEN": "AWB, Packing List, Invoice, Known Shipper / Screening",
+        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening",
+        "HUM": "AWB, Death Certificate, Embalming Certificate, Funeral Letter, Known Shipper / Screening",
+        "VAL": "AWB, Invoice, Seguro / Declaración de valor",
+        "AVI": "AWB, Certificado sanitario animal, Known Shipper / Screening",
+        "DGR": "AWB, Shipper Declaration x2, MSDS, Known Shipper / Screening"
+    };
+    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga";
+}
+
+// Calcular volumen y peso volumétrico
+function calcularVolumen() {
+    const L = parseFloat(document.getElementById('largo').value) || 0;
+    const W = parseFloat(document.getElementById('ancho').value) || 0;
+    const H = parseFloat(document.getElementById('alto').value) || 0;
+    const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
+
+    const volumen = (L*W*H)/1000000;
+    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
+    const pesoVol = volumen * 167;
+    document.getElementById('pesoVolumetrico').value = pesoVol.toFixed(2);
+
+    let alertMsg = "";
+    if(H>244) alertMsg += "⚠ Alto excede carguero (244cm). ";
+    else if(H>160) alertMsg += "⚠ Solo puede ir en Main Deck. ";
+    if(L>318 || W>244) alertMsg += "⚠ Dimensiones exceden límites. ";
+    if(pesoTotal>6800) alertMsg += "⚠ Peso excede límite pallet 6800kg.";
+    document.getElementById('alertDimensiones').innerText = alertMsg;
+}
+
+// Evaluar carga y generar resultado final
+function evaluarCarga() {
+    const errores = [];
+    const rol = document.getElementById('rolUsuario').value;
+    const awb = document.getElementById('awb').value.trim();
+    const codigo = document.getElementById('codigoCarga').value;
+    const piezas = parseInt(document.getElementById('piezas').value) || 0;
+    const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
+    const alto = parseFloat(document.getElementById('alto').value) || 0;
+    const pesoVol = parseFloat(document.getElementById('pesoVolumetrico').value) || 0;
+    const known = document.getElementById('knownShipper').value;
+    const horaCamion = document.getElementById('horaCamion').value;
+    const cutoff = document.getElementById('cutoff').value;
+
+    // Validaciones esenciales
+    if(!rol) errores.push("Seleccione rol del usuario.");
+    if(!awb.match(/^\d{3}-\d{8}$/)) errores.push("Formato AWB inválido XXX-12345675.");
+    if(!codigo) errores.push("Seleccione tipo de carga.");
+    if(piezas < 1) errores.push("Número de piezas inválido.");
+    if(!known) errores.push("Indique si es Known Shipper.");
+    if(alto > 244) errores.push("Alto excede límite carguero.");
+    if(alto > 160 && alto <=244) errores.push("Solo vuela en carguero, no en pasajero.");
+    if(pesoTotal > 6800) errores.push("Peso excede límite pallet.");
+    if(pesoVol > pesoTotal) errores.push("Peso volumétrico mayor que peso real, ajuste reserva.");
+    if(horaCamion && cutoff && horaCamion > cutoff) errores.push("Camión llega después de cutoff, NO VUELA HOY.");
+
+    let resultado = "";
+    if(errores.length === 0) resultado = "🟢 ACEPTADO - Carga apta para vuelo hoy.\nConsejo: Todo en orden, puede proceder al counter.";
+    else if(errores.length <= 2) resultado = "🟡 ACEPTADO CON ALERTA:\n" + errores.join("\n");
+    else resultado = "🔴 RECHAZADO:\n" + errores.join("\n");
+
+    document.getElementById('resultadoFinal').innerText = resultado;
+}
+
+// Opciones de rol dinámicas
+function updateRolFields() {
+    const rol = document.getElementById('rolUsuario').value;
+    document.getElementById('avisoRol').innerText =
+        rol==="Chofer" || rol==="AgenteWarehouse" ? "Tip: Revise sellos y manifiestos antes de entregar." :
+        rol==="Forwarder" ? "Tip: Validar documentación y AWB antes de enviar." : "";
+}
+</script>
+
 </body>
 </html>
