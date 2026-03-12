@@ -111,7 +111,7 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 </div>
 
 <!-- FASE IV: Seguridad, Dry Ice, DGR -->
-<button class="collapsible">IV. Seguridad, Dry Ice y DGR</button>
+<button class="collapsible">IV. Seguridad, Dry Ice, DGR y Checklist</button>
 <div class="content" id="faseSeguridad">
 <label for="knownShipper">Known Shipper:</label>
 <select id="knownShipper">
@@ -126,7 +126,7 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <label for="cutoff">Hora de cutoff del vuelo:</label>
 <input type="time" id="cutoff" value="18:00">
 
-<h3>Checklist de Seguridad y Embalaje</h3>
+<h3>Checklist de Seguridad, Embalaje y Orientación</h3>
 <div class="checklist">
 <label><input type="checkbox" id="chkDryIce"> Dry Ice correctamente declarado</label>
 <label><input type="checkbox" id="chkDGR"> Mercancía peligrosa DGR</label>
@@ -135,6 +135,7 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <label><input type="checkbox" id="chkEmbalaje"> Embalaje adecuado</label>
 <label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles (FRÁGIL, DGR, Dry Ice, UPSIDE)</label>
 <label><input type="checkbox" id="chkFleje"> Mercancía con fleje seguro</label>
+<label><input type="checkbox" id="chkOrientacion"> Orientación correcta de la carga</label>
 </div>
 </div>
 
@@ -157,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// Mostrar documentos
+// Mostrar documentos según tipo de carga
 function mostrarDocumentos(){
     const tipo = document.getElementById('codigoCarga').value;
     const docs = {
@@ -171,7 +172,7 @@ function mostrarDocumentos(){
     document.getElementById('documentosObligatorios').innerText = docs[tipo]||"Seleccione un tipo de carga";
 }
 
-// Mostrar embalaje y labels según tipo de pallet
+// Mostrar embalaje, labels y orientación
 function mostrarEmbalaje(){
     const tipo=document.getElementById('tipoPallet').value;
     let info="";
@@ -186,7 +187,7 @@ function mostrarEmbalaje(){
             info="Palet PAG: Similar a PMC, revisar DRUMS, BOXES, SKIPS, etiquetas, fleje y orientación.";
             break;
         case "Contenedor":
-            info="Contenedor: Distribuir carga uniforme, DRUMS, BOXES, CRATE, labels visibles, DGR, Dry Ice, Fragile, UPSIDE, fleje seguro.";
+            info="Contenedor: Distribuir carga uniforme, DRUMS, BOXES, CRATE, labels visibles, DGR, Dry Ice, Fragile, UPSIDE, fleje seguro, orientación correcta.";
             break;
         default:
             info="Seleccione un tipo de pallet para ver detalles de embalaje.";
@@ -194,7 +195,7 @@ function mostrarEmbalaje(){
     document.getElementById('infoEmbalaje').innerText=info;
 }
 
-// Calcular volumen
+// Calcular volumen y peso volumétrico
 function calcularVolumen(){
     const L=+document.getElementById('largo').value||0;
     const W=+document.getElementById('ancho').value||0;
@@ -232,7 +233,8 @@ async function evaluarCarga(){
         chkPerecederos:document.getElementById('chkPerecederos').checked,
         chkEmbalaje:document.getElementById('chkEmbalaje').checked,
         chkEtiquetas:document.getElementById('chkEtiquetas').checked,
-        chkFleje:document.getElementById('chkFleje').checked
+        chkFleje:document.getElementById('chkFleje').checked,
+        chkOrientacion:document.getElementById('chkOrientacion').checked
     };
     try{
         const res=await fetch('/api/evaluar',{
