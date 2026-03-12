@@ -27,62 +27,65 @@ function calcularVolumen() {
 
     let alertMsg = "";
     if(alto > 244) alertMsg += "ALTO excede carguero (244cm). ";
-    else if(alto > 160) alertMsg += "ALTO excede pasajero (160cm). ";
+    else if(alto > 160) alertMsg += "Solo vuela en carguero. ";
     if(largo > 318 || ancho > 244) alertMsg += "Dimensiones exceden límites. ";
     if(pesoTotal > 6800) alertMsg += "Peso excede límite pallet 6800kg.";
     document.getElementById('alertDimensiones').innerText = alertMsg;
 }
 
-// Evaluar carga y generar resultado final
-function evaluarCarga() {
-    const errores = [];
-    const rol = document.getElementById('rolUsuario').value;
-    const awb = document.getElementById('awb').value.trim();
-    const codigo = document.getElementById('codigoCarga').value;
-    const piezas = parseInt(document.getElementById('piezas').value) || 0;
-    const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
-    const alto = parseFloat(document.getElementById('alto').value) || 0;
-    const pesoVol = parseFloat(document.getElementById('pesoVolumetrico').value) || 0;
-    const known = document.getElementById('knownShipper').value;
-    const horaCamion = document.getElementById('horaCamion').value;
-    const cutoff = document.getElementById('cutoff').value;
+// Enviar datos al backend
+async function evaluarCarga() {
+    const data = {
+        rol: document.getElementById('rolUsuario').value,
+        awb: document.getElementById('awb').value.trim(),
+        codigo: document.getElementById('codigoCarga').value,
+        piezas: parseInt(document.getElementById('piezas').value) || 0,
+        pesoTotal: parseFloat(document.getElementById('pesoTotal').value) || 0,
+        pesoPieza: parseFloat(document.getElementById('pesoPieza').value) || 0,
+        largo: parseFloat(document.getElementById('largo').value) || 0,
+        ancho: parseFloat(document.getElementById('ancho').value) || 0,
+        alto: parseFloat(document.getElementById('alto').value) || 0,
+        knownShipper: document.getElementById('knownShipper').value,
+        horaCamion: document.getElementById('horaCamion').value,
+        cutoff: document.getElementById('cutoff').value,
+        description: document.getElementById('codigoCarga').value.toLowerCase(),
+        destination: document.getElementById('destino').value,
+        shipper_type: document.getElementById('rolUsuario').value
+    };
 
-    // Fase I: Validaciones esenciales
-    if(!rol) errores.push("Seleccione rol del usuario.");
-    if(!awb.match(/^\d{3}-\d{8}$/)) errores.push("Formato AWB inválido XXX-12345675.");
-    if(!codigo) errores.push("Seleccione tipo de carga.");
-    if(piezas < 1) errores.push("Número de piezas inválido.");
-    if(!known) errores.push("Indique si es Known Shipper.");
-
-    // Fase II/III: Dimensiones y peso
-    if(alto > 244) errores.push("Alto excede límite carguero.");
-    if(alto > 160 && alto <=244) errores.push("Solo vuela en carguero, no en pasajero.");
-    if(pesoTotal > 6800) errores.push("Peso excede límite pallet.");
-    if(pesoVol > pesoTotal) errores.push("Peso volumétrico mayor que peso real, ajuste reserva.");
-
-    // Fase IV: Cutoff
-    if(horaCamion && cutoff && horaCamion > cutoff) errores.push("Camión llega después de cutoff, NO VUELA HOY.");
-
-    // Resultado final
-    let resultado = "";
-    if(errores.length === 0) resultado = "🟢 ACEPTADO - Carga apta para vuelo hoy.";
-    else if(errores.length <= 2) resultado = "🟡 ACEPTADO CON ALERTA: " + errores.join(" | ");
-    else resultado = "🔴 RECHAZADO: " + errores.join(" | ");
-
-    document.getElementById('resultadoFinal').innerText = resultado;
+    const response = await fetch("/validate_shipment", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    document.getElementById('resultadoFinal').innerText =
+        `${result.status}\nErrores: ${result.errors.join(" | ")}\nAdvertencias: ${result.warnings.join(" | ")}\nRiesgos: ${result.risks.join(" | ")}\nAircraft: ${result.aircraft_recommendation}`;
 }
 
 // Opciones de rol dinámicas
 function updateRolFields() {
     const rol = document.getElementById('rolUsuario').value;
-    const aviso = document.getElementById('avisoRol') || null;
-    if(!aviso) {
-        const p = document.createElement("p");
-        p.id = "avisoRol";
-        p.style.fontStyle = "italic";
-        document.getElementById('faseUniversal').appendChild(p);
+    let aviso = document.getElementById('avisoRol');
+    if(!aviso){
+        aviso = document.createElement("p");
+        aviso.id = "avisoRol";
+        aviso.style.fontStyle = "italic";
+        document.getElementById('faseUniversal').appendChild(aviso);
     }
-    document.getElementById('avisoRol').innerText =
+    aviso.innerText =
         rol==="Chofer" || rol==="AgenteWarehouse" ? "Recuerde: Revise sellos y manifiestos." :
         rol==="Forwarder" ? "Recuerde: Validar documentación y AWB." : "";
 }
+
+// Cortinas inteligentes
+document.addEventListener("DOMContentLoaded", ()=>{
+    var coll = document.getElementsByClassName("collapsible");
+    for (let i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            content.style.display = (content.style.display === "block") ? "none" : "block";
+        });
+    }
+});
