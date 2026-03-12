@@ -74,28 +74,39 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <div class="content" id="faseDimensiones">
 <label for="piezas">Número de piezas:</label>
 <input type="number" id="piezas" min="1" value="1">
+
 <label for="pesoTotal">Peso Total (kg):</label>
 <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
+
 <label for="pesoPieza">Peso por Pieza (kg):</label>
 <input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
+
 <label for="largo">Largo (cm):</label>
 <input type="number" id="largo" min="0" oninput="calcularVolumen()">
+
 <label for="ancho">Ancho (cm):</label>
 <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
+
 <label for="alto">Alto (cm):</label>
 <input type="number" id="alto" min="0" oninput="calcularVolumen()">
+
 <label for="volumen">Volumen (m³):</label>
 <input type="text" id="volumen" readonly>
+
 <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
 <input type="text" id="pesoVolumetrico" readonly>
+
 <label for="tipoPallet">Tipo de Pallet / ULD:</label>
-<select id="tipoPallet">
+<select id="tipoPallet" onchange="mostrarEmbalaje()">
 <option value="">Seleccione</option>
 <option value="Loose">Loose Cargo</option>
 <option value="PMC">PMC Pallet</option>
 <option value="PAG">PAG Pallet</option>
 <option value="Contenedor">Contenedor</option>
 </select>
+
+<div id="infoEmbalaje" class="tip">Seleccione un tipo de pallet para ver detalles de embalaje, labels y orientación.</div>
+
 <p id="alertDimensiones" class="alert"></p>
 </div>
 
@@ -108,8 +119,10 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <option value="Sí">Sí</option>
 <option value="No">No</option>
 </select>
+
 <label for="horaCamion">Hora estimada de llegada del camión:</label>
 <input type="time" id="horaCamion">
+
 <label for="cutoff">Hora de cutoff del vuelo:</label>
 <input type="time" id="cutoff" value="18:00">
 
@@ -120,7 +133,8 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <label><input type="checkbox" id="chkAnimales"> Animales vivos certificados</label>
 <label><input type="checkbox" id="chkPerecederos"> Perecederos embalados y refrigerados</label>
 <label><input type="checkbox" id="chkEmbalaje"> Embalaje adecuado</label>
-<label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles</label>
+<label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles (FRÁGIL, DGR, Dry Ice, UPSIDE)</label>
+<label><input type="checkbox" id="chkFleje"> Mercancía con fleje seguro</label>
 </div>
 </div>
 
@@ -155,6 +169,29 @@ function mostrarDocumentos(){
         "DGR":"AWB, Shipper Declaration x2, MSDS, Known Shipper"
     };
     document.getElementById('documentosObligatorios').innerText = docs[tipo]||"Seleccione un tipo de carga";
+}
+
+// Mostrar embalaje y labels según tipo de pallet
+function mostrarEmbalaje(){
+    const tipo=document.getElementById('tipoPallet').value;
+    let info="";
+    switch(tipo){
+        case "Loose":
+            info="Cargue en: DRUMS, BOXES, SKIPS, ENGINE, CRATE, OTROS. Verifique fleje, etiquetas visibles, Fragile, DGR, Dry Ice, Upside.";
+            break;
+        case "PMC":
+            info="Palet PMC: Usar fleje, DRUMS y SKIPS asegurados, labels visibles, orientación correcta, Fragile y DGR hacia afuera.";
+            break;
+        case "PAG":
+            info="Palet PAG: Similar a PMC, revisar DRUMS, BOXES, SKIPS, etiquetas, fleje y orientación.";
+            break;
+        case "Contenedor":
+            info="Contenedor: Distribuir carga uniforme, DRUMS, BOXES, CRATE, labels visibles, DGR, Dry Ice, Fragile, UPSIDE, fleje seguro.";
+            break;
+        default:
+            info="Seleccione un tipo de pallet para ver detalles de embalaje.";
+    }
+    document.getElementById('infoEmbalaje').innerText=info;
 }
 
 // Calcular volumen
@@ -194,7 +231,8 @@ async function evaluarCarga(){
         chkAnimales:document.getElementById('chkAnimales').checked,
         chkPerecederos:document.getElementById('chkPerecederos').checked,
         chkEmbalaje:document.getElementById('chkEmbalaje').checked,
-        chkEtiquetas:document.getElementById('chkEtiquetas').checked
+        chkEtiquetas:document.getElementById('chkEtiquetas').checked,
+        chkFleje:document.getElementById('chkFleje').checked
     };
     try{
         const res=await fetch('/api/evaluar',{
