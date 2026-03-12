@@ -1,113 +1,140 @@
-// =============================
-// VARIABLES
-// =============================
+let phase = 1;
 
 let currentIndex = 0;
-let answers = {};
+
 let questions = [];
-let cargoRules = {};
-let aviancaRules = {};
+
+let answers = {};
+
+let aviancaQuestions = [];
+
+let cargoQuestions = [];
 
 
-// =============================
-// LOAD DATA
-// =============================
+// =======================
+// LOAD
+// =======================
 
 async function loadData() {
 
-    const qResp = await fetch('/questions');
-    const qData = await qResp.json();
-    questions = qData.preguntas;
+    const a = await fetch('/questions');
+    const aData = await a.json();
 
-    const cargoResp = await fetch('/cargo_rules');
-    cargoRules = await cargoResp.json();
+    aviancaQuestions = aData.preguntas;
 
-    const aviancaResp = await fetch('/avianca_rules');
-    aviancaRules = await aviancaResp.json();
+
+    const c = await fetch('/cargo_rules');
+    const cData = await c.json();
+
+    cargoQuestions = [];
+
+    cData.FASES.forEach(f => {
+
+        f.Preguntas.forEach(p => {
+
+            cargoQuestions.push({
+                pregunta: p.Pregunta,
+                instruccion: p.Instruccion
+            });
+
+        });
+
+    });
+
+
+    questions = aviancaQuestions;
 
     renderQuestion();
+
 }
 
 
-// =============================
+// =======================
 // RENDER
-// =============================
+// =======================
 
 function renderQuestion() {
 
-    const container = document.getElementById('question-container');
-    container.innerHTML = '';
+    const container =
+        document.getElementById('question-container');
+
+    container.innerHTML = "";
+
 
     if (currentIndex >= questions.length) {
+
+        if (phase === 1) {
+
+            phase = 2;
+
+            questions = cargoQuestions;
+
+            currentIndex = 0;
+
+            renderQuestion();
+
+            return;
+
+        }
+
         finalizeCheck();
+
         return;
+
     }
+
 
     const q = questions[currentIndex];
 
-    const block = document.createElement('div');
-    block.className = 'question-block';
+
+    const div = document.createElement("div");
+
+    div.innerHTML =
+
+        "<b>" +
+        (currentIndex + 1) +
+        ". " +
+        q.pregunta +
+        "</b><br><br>" +
+
+        (q.instruccion || "") +
+
+        "<br><br>" +
+
+        "<input id='ans'>";
 
 
-    const questionText = document.createElement('div');
-    questionText.className = 'question-text';
-    questionText.textContent =
-        (currentIndex + 1) + ". " + q.pregunta;
-
-    block.appendChild(questionText);
-
-
-    if (q.porque) {
-
-        const why = document.createElement('div');
-        why.className = 'why';
-        why.textContent = q.porque;
-        block.appendChild(why);
-
-    }
-
-
-    if (q.instruccion) {
-
-        const inst = document.createElement('div');
-        inst.className = 'instruction';
-        inst.textContent = q.instruccion;
-        block.appendChild(inst);
-
-    }
-
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = "Respuesta";
-    block.appendChild(input);
-
-
-    container.appendChild(block);
+    container.appendChild(div);
 
 }
 
 
-// =============================
+// =======================
 // NEXT
-// =============================
+// =======================
 
-document.getElementById('next-btn').addEventListener('click', () => {
+document
+.getElementById("next-btn")
+.addEventListener("click", () => {
 
-    const container = document.getElementById('question-container');
-
-    const input = container.querySelector('input');
+    const input =
+        document.getElementById("ans");
 
     if (!input.value) {
-        alert("Debe responder");
+
+        alert("Responda");
+
         return;
+
     }
 
-    const q = questions[currentIndex];
+    answers[
+        "p" +
+        phase +
+        "_" +
+        currentIndex
+    ] = input.value;
 
-    // guardar por id
-
-    answers[q.id] = input.value;
 
     currentIndex++;
 
@@ -116,36 +143,29 @@ document.getElementById('next-btn').addEventListener('click', () => {
 });
 
 
-// =============================
+// =======================
 // FINAL
-// =============================
+// =======================
 
 async function finalizeCheck() {
 
-    document.getElementById('question-container').innerHTML = "";
-    document.getElementById('next-btn').style.display = "none";
+    const r = await fetch(
+        "/validate",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+            body: JSON.stringify(answers)
+        }
+    );
 
+    const result = await r.json();
 
-    const resp = await fetch('/validate', {
+    let html = "<h2>Resultado</h2>";
 
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'application/json'
-        },
-
-        body: JSON.stringify(answers)
-
-    });
-
-
-    const result = await resp.json();
-
-
-    let html = "<h2>Reporte RFC</h2>";
-
-
-    if (result.alertas.length > 0) {
+    if (result.alertas.length) {
 
         html += "<ul>";
 
@@ -153,7 +173,6 @@ async function finalizeCheck() {
 
             html += "<li>" +
                 a.accion +
-                " (" + a.tipo + ")" +
                 "</li>";
 
         });
@@ -165,19 +184,19 @@ async function finalizeCheck() {
 
     if (result.RFC) {
 
-        html += "<p style='color:green;font-weight:bold'>RFC = SI</p>";
+        html +=
+            "<h3 style='color:green'>RFC = SI</h3>";
 
     } else {
 
-        html += "<p style='color:red;font-weight:bold'>RFC = NO</p>";
+        html +=
+            "<h3 style='color:red'>RFC = NO</h3>";
 
     }
 
 
-    document.getElementById('summary').innerHTML = html;
-    document.getElementById('summary').style.display = "block";
+    document
+        .getElementById("question-container")
+        .innerHTML = html;
 
 }
-
-
-loadData();
