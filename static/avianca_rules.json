@@ -1,117 +1,33 @@
 {
-  "aircraft_limits": {
-    "max_height_belly_in": 63,
-    "max_height_freighter_in": 96,
-    "max_piece_weight_kg": 150,
-    "max_pallet_weight_kg": 6800
+  "Identificacion": {
+    "roles": ["Dueño", "Forwarder", "Chofer / Camionero", "Agente Warehouse", "Counter Agent"],
+    "campos": ["AWB", "Forwarder", "Origen", "Destino"]
   },
-
-  "uld_types": {
-    "PMC": {
-      "type": "Pallet",
-      "size_in": "96x125",
-      "max_weight_kg": 6800
-    },
-    "PAG": {
-      "type": "Container",
-      "max_weight_kg": 4600
-    },
-    "PAJ": {
-      "type": "Container",
-      "max_weight_kg": 4600
-    },
-    "AKE": {
-      "type": "Container",
-      "max_weight_kg": 1500
-    }
+  "TipoCarga": {
+    "GEN": "General cargo",
+    "PER": "Perecedero",
+    "HUM": "Human remains",
+    "VAL": "Valores",
+    "AVI": "Animales",
+    "DGR": "Mercancía peligrosa"
   },
-
-  "screening_methods": [
-    "xray",
-    "physical",
-    "etd",
-    "manual"
-  ],
-
-  "tsa_rules": {
-    "known_shipper_required": true,
-    "screening_required_if_unknown": true
+  "Dimensiones": {
+    "campos_obligatorios": ["Número de piezas","Peso total","Peso por pieza","Largo","Ancho","Alto"],
+    "calculos": ["Volumen=L*W*H","Peso volumétrico=Volumen*167"]
   },
-
-  "usda_rules": {
-    "wood_packaging_requires_ISPM15": true,
-    "agriculture_requires_phytosanitary": true
+  "Pallets": ["Loose cargo","PMC pallet","PAG pallet","Contenedor"],
+  "Avion": {
+    "MaxPasajeroCm": 160,
+    "MaxCargueroCm": 244,
+    "MaxPesoPalletKg": 6800
   },
-
-  "fda_rules": {
-    "food_requires_prior_notice": true
+  "TSA": {
+    "KnownShipper": ["Sí", "No"]
   },
-
-  "iata_dgr": {
-    "requires_shipper_declaration": true,
-    "requires_msds": true,
-    "requires_un_number"
-: true
+  "Documentos": {
+    "HUM": ["Air Waybill","Death certificate","Embalming certificate","Funeral letter"],
+    "PER": ["AWB","Packing list","Certificado fitosanitario","FDA Prior Notice"],
+    "DGR": ["AWB","Shipper Declaration","MSDS"]
   },
-
-  "document_quality": [
-    "no_tachaduras",
-    "no_borrones",
-    "letra_legible",
-    "version_valida"
-  ],
-
-  "cutoff_rules": {
-    "standard_cutoff_hours": 4,
-    "dangerous_goods_cutoff_hours": 6
-  },
-
-  "country_specific": {
-    "USA": [
-      "EEI_AES_export",
-      "FDA_prior_notice_if_food",
-      "USDA_permits_if_agri",
-      "TSA_known_shipper_compliance"
-    ],
-    "COL": [
-      "DIAN_export_declaration",
-      "ICA_sanitary_permit_if_applicable"
-    ],
-    "MEX": [
-      "Pedimento_EXPORT",
-      "SAGARPA_permit_if_agri"
-    ],
-    "PER": [
-      "SUNAT_export_declaration",
-      "DIGESA_if_food"
-    ],
-    "BRA": [
-      "RADAR_export",
-      "MAPA_phytosanitary"
-    ],
-    "ARG": [
-      "AFIP_export_doc",
-      "SENASA_if_animal"
-    ],
-    "ESP": [
-      "EU_export_declaration",
-      "sanitary_permit_EU"
-    ],
-    "FRA": [
-      "EU_export_declaration",
-      "sanitary_permit_EU"
-    ],
-    "GBR": [
-      "UK_export_declaration",
-      "sanitary_permit_UK"
-    ],
-    "CAN": [
-      "CFIA_phytosanitary",
-      "CCPC_permits"
-    ],
-    "CRI": ["MAG_sanitary"],
-    "PAN": ["AUPSA_permits"],
-    "ECU": ["AGRO_export_permit"],
-    "VEN": ["SENIAT_export_doc"]
-  }
+  "Cutoff": "18:00"
 }
