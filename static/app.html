@@ -2,146 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
+<title>SMARTGOSERVER</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-h1 { text-align:center; color:#0a3d62; }
-.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-label { display:block; margin:8px 0 4px; font-weight:500; }
-input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
-.alert { color:red; font-weight:bold; margin:5px 0; }
-.success { color:green; font-weight:bold; margin:5px 0; }
-.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
-.collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
-.active, .collapsible:hover { background-color:#062c47; }
-.content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; }
-</style>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-
-<h1>SMARTGOSERVER - ¿Carga apta para volar HOY?</h1>
-
-<!-- FASE I: Universal -->
-<button class="collapsible">I. Identificación y Tipo de Envío</button>
-<div class="content" id="faseUniversal">
-    <label for="rolUsuario">Rol del Usuario:</label>
-    <select id="rolUsuario" onchange="updateRolFields()">
-        <option value="">Seleccione</option>
-        <option value="Dueño">Dueño</option>
-        <option value="Forwarder">Forwarder</option>
-        <option value="Chofer">Chofer / Camionero</option>
-        <option value="AgenteWarehouse">Agente Warehouse</option>
-        <option value="CounterAgent">Counter Agent</option>
-    </select>
-
-    <label for="awb">Número de Guía Aérea (AWB):</label>
-    <input type="text" id="awb" placeholder="XXX-12345675">
-
-    <label for="forwarder">Forwarder / Agente de Carga:</label>
-    <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
-
-    <label for="origen">Origen:</label>
-    <input type="text" id="origen" placeholder="Ej: MIA">
-
-    <label for="destino">Destino:</label>
-    <input type="text" id="destino" placeholder="Ej: BOG, MDE, LIM, SJO">
+<div id="app">
+  <h1>SMARTGOSERVER</h1>
+  <div id="pregunta-container"></div>
+  <div id="resultado"></div>
 </div>
-
-<!-- FASE II: Tipo de Carga -->
-<button class="collapsible">II. Tipo de Carga</button>
-<div class="content" id="faseTipoCarga">
-    <label for="codigoCarga">Código IATA:</label>
-    <select id="codigoCarga" onchange="mostrarDocumentos()">
-        <option value="">Seleccione</option>
-        <option value="GEN">GEN - General cargo</option>
-        <option value="PER">PER - Perecedero</option>
-        <option value="HUM">HUM - Human remains</option>
-        <option value="VAL">VAL - Valores</option>
-        <option value="AVI">AVI - Animales</option>
-        <option value="DGR">DGR - Mercancía peligrosa</option>
-    </select>
-    <div id="documentosObligatorios" class="docs">Seleccione un tipo de carga para ver documentos.</div>
-</div>
-
-<!-- FASE III: Dimensiones y Peso -->
-<button class="collapsible">III. Dimensiones y Peso</button>
-<div class="content" id="faseDimensiones">
-    <label for="piezas">Número de piezas:</label>
-    <input type="number" id="piezas" min="1" value="1">
-
-    <label for="pesoTotal">Peso Total (kg):</label>
-    <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
-
-    <label for="pesoPieza">Peso por Pieza (kg):</label>
-    <input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
-
-    <label for="largo">Largo (cm):</label>
-    <input type="number" id="largo" min="0" oninput="calcularVolumen()">
-
-    <label for="ancho">Ancho (cm):</label>
-    <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
-
-    <label for="alto">Alto (cm):</label>
-    <input type="number" id="alto" min="0" oninput="calcularVolumen()">
-
-    <label for="volumen">Volumen (m³):</label>
-    <input type="text" id="volumen" readonly>
-
-    <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
-    <input type="text" id="pesoVolumetrico" readonly>
-
-    <label for="tipoPallet">Tipo de Pallet / ULD:</label>
-    <select id="tipoPallet">
-        <option value="">Seleccione</option>
-        <option value="Loose">Loose Cargo</option>
-        <option value="PMC">PMC Pallet</option>
-        <option value="PAG">PAG Pallet</option>
-        <option value="Contenedor">Contenedor</option>
-    </select>
-
-    <p id="alertDimensiones" class="alert"></p>
-</div>
-
-<!-- FASE IV: Seguridad TSA y Cutoff -->
-<button class="collapsible">IV. Seguridad y Cutoff</button>
-<div class="content" id="faseSeguridad">
-    <label for="knownShipper">Known Shipper:</label>
-    <select id="knownShipper">
-        <option value="">Seleccione</option>
-        <option value="Sí">Sí</option>
-        <option value="No">No</option>
-    </select>
-
-    <label for="horaCamion">Hora estimada de llegada del camión:</label>
-    <input type="time" id="horaCamion">
-
-    <label for="cutoff">Hora de cutoff del vuelo:</label>
-    <input type="time" id="cutoff" value="18:00">
-
-    <p id="alertCutoff" class="alert"></p>
-</div>
-
-<!-- FASE V: Validación Final -->
-<button class="collapsible">V. Validación Final y Resultado</button>
-<div class="content" id="faseFinal">
-    <button onclick="evaluarCarga()">Evaluar Carga</button>
-    <p id="resultadoFinal" class="result"></p>
-</div>
-
-<script src="static/app.js"></script>
-<script>
-// Cortinas inteligentes
-var coll = document.getElementsByClassName("collapsible");
-for (let i = 0; i < coll.length; i++) {
-    coll[i].addEventListener("click", function() {
-        this.classList.toggle("active");
-        var content = this.nextElementSibling;
-        content.style.display = (content.style.display === "block") ? "none" : "block";
-    });
-}
-</script>
+<script src="app.js"></script>
 </body>
 </html>
