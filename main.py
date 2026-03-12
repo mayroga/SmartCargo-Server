@@ -46,8 +46,7 @@ avianca_rules = load_json(AVIANCA_RULES_FILE)
 
 @app.get("/")
 def root():
-    return {"status": "SmartCargo Server OK"}
-
+    return FileResponse(os.path.join(STATIC_DIR, "app.html"))
 
 # =========================
 # APP HTML
