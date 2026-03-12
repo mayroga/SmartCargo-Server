@@ -1,105 +1,110 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px;}
-h1 { text-align:center; color:#0a3d62;}
-.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-label { display:block; margin:8px 0 4px;}
-input, select, button { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc;}
-button { background:#0a3d62; color:#fff; cursor:pointer; border:none; }
-button:hover { background:#064172; }
-.alert { color:red; font-weight:bold; margin:5px 0;}
-.success { color:green; font-weight:bold; margin:5px 0;}
-.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px;}
-.curtain { display:none; margin-top:10px;}
-</style>
-</head>
-<body>
+let pieceCount = 0;
+const maxPieces = 5;
 
-<h1>SMARTGOSERVER - Asesoría Técnica de Carga</h1>
+function toggleCurtain(id) {
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+}
 
-<!-- PANTALLA 1: IDENTIFICACIÓN -->
-<div class="section">
-  <h2 onclick="toggleCurtain('curtainIdent')">I. Identificación y Tipo de Envío ▼</h2>
-  <div id="curtainIdent" class="curtain">
-    <label for="clienteID">ID de Cliente / Código SCAC:</label>
-    <input type="text" id="clienteID" placeholder="Ingrese su ID o SCAC">
+// ====================== Piezas y Dimensiones ======================
+function addPiece() {
+  if (pieceCount >= maxPieces) return alert("Máximo 5 piezas.");
+  pieceCount++;
+  const container = document.getElementById("piecesContainer");
+  const div = document.createElement("div");
+  div.id = `piece${pieceCount}`;
+  div.innerHTML = `
+    <h4>Pieza ${pieceCount}</h4>
+    <label>Largo (cm):</label><input type="number" class="largo" oninput="calcularVolumen()">
+    <label>Ancho (cm):</label><input type="number" class="ancho" oninput="calcularVolumen()">
+    <label>Alto (cm):</label><input type="number" class="alto" oninput="calcularVolumen()">
+    <label>Peso (kg):</label><input type="number" class="peso" oninput="calcularVolumen()">
+    <label>Volumen:</label><input type="text" class="volumen" readonly>
+    <p class="alert"></p>
+  `;
+  container.appendChild(div);
+  calcularVolumen();
+}
 
-    <label for="rol">Rol del Usuario:</label>
-    <select id="rol" onchange="actualizarRol()">
-      <option value="">Seleccione</option>
-      <option value="Chofer">Chofer</option>
-      <option value="Camionero">Camionero</option>
-      <option value="Forwarder">Forwarder</option>
-      <option value="Dueño">Dueño</option>
-      <option value="Counter">Counter</option>
-    </select>
-    <p id="rolAlternativo" style="font-style:italic;"></p>
+function calcularVolumen() {
+  let alerts = [];
+  let totalVolume = 0;
+  let tallest = 0, widest = 0, longest = 0, heaviest = 0;
 
-    <label for="destino">Destino:</label>
-    <input type="text" id="destino" placeholder="Ciudad / País">
+  for (let i=1;i<=pieceCount;i++){
+    const div = document.getElementById(`piece${i}`);
+    if(!div) continue;
+    const L = parseFloat(div.querySelector(".largo").value) || 0;
+    const W = parseFloat(div.querySelector(".ancho").value) || 0;
+    const H = parseFloat(div.querySelector(".alto").value) || 0;
+    const P = parseFloat(div.querySelector(".peso").value) || 0;
 
-    <label for="tipoCarga">Tipo de Carga:</label>
-    <select id="tipoCarga" onchange="mostrarDocumentos()">
-      <option value="">Seleccione</option>
-      <option value="HUM">HUM (Restos Humanos)</option>
-      <option value="PER">PER (Perecederos)</option>
-      <option value="DGR">DGR (Mercancía Peligrosa)</option>
-      <option value="GEN">GEN (Carga General)</option>
-      <option value="VAL">VAL (Valiosa)</option>
-      <option value="PHR">PHR (Farmacéutica)</option>
-      <option value="FSH">FSH (Pescado Fresco)</option>
-      <option value="BAT">BAT (Baterías)</option>
-      <option value="MED">MED (Dispositivos Médicos)</option>
-      <option value="AVI">AVI (Animales Vivos)</option>
-      <option value="REF">REF (Refrigerada)</option>
-      <option value="FTZ">FTZ (Zona Franca)</option>
-      <option value="PRT">PRT (Partes Aeronáuticas)</option>
-      <option value="CMM">CMM (Muestras Comerciales)</option>
-      <option value="PAX">PAX (Equipaje)</option>
-      <option value="CTR">CTR (Courier)</option>
-      <option value="TMP">TMP (Control de Temperatura)</option>
-      <option value="HAZ">HAZ (Material Peligroso no clasificado)</option>
-    </select>
-  </div>
-</div>
+    const volumeM3 = (L*W*H)/1000000;
+    div.querySelector(".volumen").value = `${volumeM3.toFixed(3)} m³ (${(volumeM3*35.3147).toFixed(2)} ft³)`;
+    totalVolume += volumeM3;
 
-<!-- PANTALLA 2: DIMENSIONES -->
-<div class="section">
-  <h2 onclick="toggleCurtain('curtainDim')">II. Dimensiones y Peso ▼</h2>
-  <div id="curtainDim" class="curtain">
-    <p>Ingrese dimensiones y peso de hasta 5 piezas. Se calcula volumen automáticamente.</p>
-    <div id="piecesContainer"></div>
-    <button onclick="addPiece()">Agregar pieza</button>
-    <p class="alert" id="alertDimensiones"></p>
-    <p class="success" id="successDimensiones"></p>
-  </div>
-</div>
+    if(H>tallest) tallest=H;
+    if(W>widest) widest=W;
+    if(L>longest) longest=L;
+    if(P>heaviest) heaviest=P;
 
-<!-- PANTALLA 3: DOCUMENTOS -->
-<div class="section">
-  <h2 onclick="toggleCurtain('curtainDocs')">III. Documentos Obligatorios ▼</h2>
-  <div id="curtainDocs" class="curtain">
-    <div id="documentos" class="docs">Seleccione un tipo de carga para ver documentos obligatorios.</div>
-  </div>
-</div>
+    const alertEl = div.querySelector("p.alert");
+    let alertMsg = "";
+    if(H>244) alertMsg+="ALERTA: Altura excede carguero (244cm). ";
+    else if(H>160) alertMsg+="ADVERTENCIA: Altura excede pasajero (160cm). ";
+    if(L>318 || W>244) alertMsg+="ALERTA: Dimensiones exceden máximo permitido. ";
+    if(P>6800) alertMsg+="ALERTA: Peso excede pallet (6800kg).";
+    alertEl.innerText = alertMsg;
+  }
 
-<!-- PANTALLA 4: VALIDACIÓN FINAL -->
-<div class="section">
-  <h2 onclick="toggleCurtain('curtainValid')">IV. Validación Final ▼</h2>
-  <div id="curtainValid" class="curtain">
-    <button onclick="validarCarga()">Validar Carga</button>
-    <button onclick="simularVuelo()">Simular Vuelo</button>
-    <div id="resultadoValidacion" class="docs"></div>
-    <div id="resultadoVuelo" class="docs"></div>
-  </div>
-</div>
+  const alertDim = document.getElementById("alertDimensiones");
+  alertDim.innerText = tallest>0 ? `Volumen total: ${totalVolume.toFixed(3)} m³` : "";
+}
 
-<script src="app.js"></script>
-</body>
-</html>
+// ====================== Documentos ======================
+function mostrarDocumentos() {
+  const tipo = document.getElementById('tipoCarga').value;
+  fetch("/static/cargo_rules.json")
+  .then(r=>r.json())
+  .then(data=>{
+    const docs = data[tipo];
+    if(!docs){
+      document.getElementById("documentos").innerText = "Documentos no disponibles.";
+      return;
+    }
+    let html = `<strong>Documentos obligatorios:</strong> ${docs.documents.join(", ")}<br>
+                <strong>Copias dentro/afuera:</strong> ${docs.copies_inside}/${docs.copies_outside}<br>
+                <strong>Notas:</strong> ${docs.notes}`;
+    document.getElementById("documentos").innerHTML = html;
+  });
+}
+
+// ====================== Rol Alternativo ======================
+function actualizarRol() {
+  const rol = document.getElementById('rol').value;
+  let opciones = "";
+  if(rol==="Chofer" || rol==="Camionero") opciones="Forwarder, Dueño, Counter";
+  if(rol==="Forwarder") opciones="Chofer, Dueño, Counter";
+  document.getElementById("rolAlternativo").innerText = opciones;
+}
+
+// ====================== Validación y Simulación ======================
+function validarCarga() {
+  const resultDiv = document.getElementById("resultadoValidacion");
+  resultDiv.innerHTML = "<strong>Validación ejecutada:</strong> Revise alertas y documentos obligatorios.";
+}
+
+function simularVuelo() {
+  const resultDiv = document.getElementById("resultadoVuelo");
+  // Ejemplo: reemplazar con datos reales de backend
+  const vuelo = "AV11";
+  const salida = "21:45";
+  const cutoff = "18:00";
+  const capacidad = 3;
+  resultDiv.innerHTML = `<strong>Simulación de vuelo:</strong><br>
+                         Vuelo: ${vuelo}<br>
+                         Salida: ${salida}<br>
+                         Cutoff: ${cutoff}<br>
+                         Capacidad disponible: ${capacidad} pallets<br>
+                         <strong>Resultado:</strong> TU CARGA VUELA HOY.`;
+}
