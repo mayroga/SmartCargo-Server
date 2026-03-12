@@ -4,11 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import datetime
-import os
 
 app = FastAPI(title="SMARTGOSERVER")
 
-# CORS
+# Middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,22 +15,49 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Static
+# Carpeta estática
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# -------------------------------
-# CARGAR REGLAS DESDE JSON
-# -------------------------------
-def load_json(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+# Cargar reglas
+with open("static/cargo_rules.json","r",encoding="utf-8") as f:
+    cargo_rules = json.load(f)
 
-BASE_DIR = os.path.dirname(__file__)
-cargo_rules = load_json(os.path.join(BASE_DIR, "static/cargo_rules.json"))
-avianca_rules = load_json(os.path.join(BASE_DIR, "static/avianca_rules.json"))
+with open("static/avianca_rules.json","r",encoding="utf-8") as f:
+    avianca_rules = json.load(f)
+
+# DG base
+DG_UN_DATABASE = {
+    "UN3480": "Lithium Ion Batteries",
+    "UN3481": "Lithium Ion Batteries contained in equipment",
+    "UN3090": "Lithium Metal Batteries",
+    "UN3091": "Lithium Metal Batteries contained in equipment",
+    "UN1203": "Gasoline",
+    "UN1993": "Flammable Liquid",
+    "UN1845": "Dry Ice",
+    "UN2814": "Infectious substances",
+    "UN3373": "Biological Substance Category B"
+}
+
+# ULD types
+ULD_TYPES = {
+    "PMC": {"width":96,"length":125,"height":96,"max_weight":6804,"full_name":"PMC Pallet P6P"},
+    "PAG": {"width":88,"length":125,"height":96,"max_weight":4626,"full_name":"PAG Pallet P1P"},
+    "PAJ": {"width":88,"length":125,"height":63,"max_weight":4626,"full_name":"PAJ Low Profile"},
+    "PQA": {"width":96,"length":125,"height":96,"max_weight":11340,"full_name":"PQA Heavy Duty"}
+}
+
+# Home
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    with open("static/app.html","r",encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+@app.get("/health")
+async def health():
+    return {"status":"ok"}
 
 # -------------------------------
-# VALIDACIÓN DE VOLUMEN
+# Funciones auxiliares
 # -------------------------------
 def calculate_volume(data):
     L = data.get("longest_piece",0)
@@ -46,90 +72,68 @@ def calculate_volume(data):
         L *= 0.0254
         W *= 0.0254
         H *= 0.0254
-    volume = round(L*W*H,3)
-    return volume
+    return round(L*W*H,3)
 
-# -------------------------------
-# VALIDACIÓN AVIANA
-# -------------------------------
 def avianca_validation(data):
     errores = []
     advertencias = []
-
-    aircraft_limits = avianca_rules["aircraft_limits"]
-    max_height_freighter = aircraft_limits.get("max_height_freighter_in",96)*0.0254*100  # cm
-    max_height_belly = aircraft_limits.get("max_height_belly_in",63)*0.0254*100  # cm
-    max_pallet_weight = aircraft_limits.get("max_pallet_weight_kg",6800)
-
-    alto = data.get("tallest_piece",0)
-    largo = data.get("longest_piece",0)
-    ancho = data.get("widest_piece",0)
+    L = data.get("longest_piece",0)
+    W = data.get("widest_piece",0)
+    H = data.get("tallest_piece",0)
     peso = data.get("heaviest_piece",0)
 
-    if peso > max_pallet_weight:
-        errores.append(f"🔴 Excede peso máximo pallet ({max_pallet_weight}kg)")
-
-    if alto > max_height_freighter:
-        errores.append(f"🔴 Altura excede carguero ({max_height_freighter}cm)")
-    elif alto > max_height_belly:
-        advertencias.append(f"🟡 Solo puede ir en Main Deck / Freighter")
-
-    if largo + ancho + alto > 254:
-        advertencias.append("🟡 Oversize cargo. Verificar estiba.")
     if peso > 50:
-        advertencias.append("🟡 Carga pesada (>50kg). Verificar shoring.")
-
+        advertencias.append("Carga pesada (>50kg). Revise shoring.")
+    if L + W + H > 254:
+        advertencias.append("Oversize cargo. Requiere revisión de estiba.")
+    if H > 244:
+        errores.append("Altura excede límite carguero (244 cm).")
+    elif H > 160:
+        advertencias.append("Solo puede ir en Main Deck.")
+    if peso > 6804:
+        errores.append("Excede peso máximo pallet PMC (6804kg).")
+    if L > 358 or H > 256:
+        errores.append("No cabe por puerta de carga A330.")
     return errores, advertencias
 
-# -------------------------------
-# RECOMENDACIÓN AVIÓN
-# -------------------------------
 def aircraft_recommendation(data):
     alto = data.get("tallest_piece",0)
-    aircraft_limits = avianca_rules["aircraft_limits"]
-    max_height_belly = aircraft_limits.get("max_height_belly_in",63)*0.0254*100
-    max_height_freighter = aircraft_limits.get("max_height_freighter_in",96)*0.0254*100
-
-    if alto <= max_height_belly:
+    if alto <= 160:
         return "B787 Belly / A330 Lower Deck"
-    if alto <= max_height_freighter:
+    if alto <= 244:
         return "A330-200F Main Deck"
     return "NO AIRCRAFT AVAILABLE"
 
-# -------------------------------
-# MOTOR DE RIESGO
-# -------------------------------
 def risk_engine(data):
     riesgos = []
     probabilidad_hold = 0
-
     descripcion = data.get("description","").lower()
     destino = data.get("destination","")
     shipper = data.get("shipper_type","unknown")
 
     dgr_keywords = ["battery","lithium","aerosol","perfume","chemical","paint","fuel","gas"]
-    food_keywords = ["food","meat","fish","fruit","vegetable"]
-    plant_keywords = ["plant","seed","flower","wood","soil"]
-
     for w in dgr_keywords:
         if w in descripcion:
             riesgos.append("Posible DGR oculto")
             probabilidad_hold += 25
             break
 
-    if destino.upper() == "USA":
+    food_keywords = ["food","meat","fish","fruit","vegetable"]
+    if destino=="USA":
         for w in food_keywords:
             if w in descripcion:
                 riesgos.append("Posible inspección CBP")
                 probabilidad_hold += 20
                 break
-        for w in plant_keywords:
-            if w in descripcion:
-                riesgos.append("Posible inspección USDA")
-                probabilidad_hold += 20
-                break
 
-    if shipper == "unknown":
+    plant_keywords = ["plant","seed","flower","wood","soil"]
+    for w in plant_keywords:
+        if w in descripcion:
+            riesgos.append("Posible inspección USDA")
+            probabilidad_hold += 20
+            break
+
+    if shipper=="unknown":
         riesgos.append("Shipper desconocido")
         probabilidad_hold += 15
 
@@ -137,11 +141,12 @@ def risk_engine(data):
     return riesgos, probabilidad_hold, high_risk
 
 # -------------------------------
-# VALIDACIÓN PRINCIPAL
+# Validador completo
 # -------------------------------
 def validate_shipment(data):
     errores = []
     advertencias = []
+    recomendaciones = []
 
     volume = calculate_volume(data)
     e,a = avianca_validation(data)
@@ -151,13 +156,30 @@ def validate_shipment(data):
     aircraft = aircraft_recommendation(data)
     riesgos, probabilidad_hold, high_risk = risk_engine(data)
 
-    # ESTADO FINAL
-    if errores:
+    # Generar mensajes educativos paso a paso
+    instrucciones = []
+
+    # Estado general
+    if len(errores) > 0:
         status = "🔴 NO FLY"
-    elif advertencias:
+        instrucciones.append("Carga crítica. Revise cada campo y siga instrucciones para corregir problemas antes de presentarse en el counter.")
+    elif len(advertencias) > 0:
         status = "🟡 FIX BEFORE COUNTER"
+        instrucciones.append("Hay advertencias. Revise embalaje, peso y dimensiones antes de enviar.")
     else:
         status = "🟢 READY FOR COUNTER"
+        instrucciones.append("Carga correcta. Puede proceder al counter, mantenga documentos listos y embalaje seguro.")
+
+    # Mensajes educativos
+    if volume > 2:
+        instrucciones.append("El volumen es alto (>2 m³). Verifique estabilidad en pallets y equipo de carga.")
+
+    if high_risk:
+        instrucciones.append("Alto riesgo detectado. Revise mercancía peligrosa o desconocida.")
+
+    # Recomendaciones por riesgo
+    if "Posible DGR oculto" in riesgos:
+        instrucciones.append("Revise DGR: etiquetas, declaración de mercancía peligrosa y MSDS.")
 
     result = {
         "status": status,
@@ -168,21 +190,11 @@ def validate_shipment(data):
         "probabilidad_hold": probabilidad_hold,
         "aircraft_recommendation": aircraft,
         "volume_m3": volume,
-        "timestamp": datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        "timestamp": datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S"),
+        "instructions": instrucciones
     }
+
     return result
-
-# -------------------------------
-# ENDPOINTS
-# -------------------------------
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    with open("static/app.html","r",encoding="utf-8") as f:
-        return HTMLResponse(f.read())
-
-@app.get("/health")
-async def health():
-    return {"status":"ok"}
 
 @app.post("/validate_shipment")
 async def validate(data: dict):
