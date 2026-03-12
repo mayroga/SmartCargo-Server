@@ -46,7 +46,7 @@ avianca_rules = load_json(AVIANCA_RULES_FILE)
 
 @app.get("/")
 def root():
-    return {"status": "SMARTGOSERVER OK"}
+    return {"status": "SmartCargo Server OK"}
 
 
 # =========================
