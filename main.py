@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 
-app = FastAPI(title="SMARTCARGO-AIPA Backend")
+app = FastAPI(title="SMARTGOSERVER Backend")
 
 # Permitir CORS para pruebas con app.html
 app.add_middleware(
@@ -35,7 +35,7 @@ avianca_rules = load_json(AVIANCA_RULES_FILE)
 # Ruta principal para probar
 @app.get("/")
 async def root():
-    return {"message": "SMARTCARGO-AIPA Backend en línea"}
+    return {"message": "SMARTGOSERVER Backend en línea"}
 
 
 # Obtener preguntas
