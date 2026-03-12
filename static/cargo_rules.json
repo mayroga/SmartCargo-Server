@@ -1,267 +1,94 @@
 {
-  "GENERAL": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "special_handling_codes": [],
-    "notes": "Carga general estándar"
-  },
-
-  "DGR": {
-    "documents": [
-      "air_waybill",
-      "dangerous_goods_declaration",
-      "msds",
-      "commercial_invoice",
-      "packing_list",
-      "UN_number_list"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 2,
-    "special_handling_codes": ["DGR"],
-    "regulatory_agencies": ["IATA", "ICAO", "DOT"],
-    "notes": "Mercancía peligrosa IATA DGR"
-  },
-
-  "PER": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "health_certificate",
-      "temperature_log"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["PER"],
-    "temperature_range": "0C to 8C",
-    "notes": "Perecederos"
-  },
-
-  "AVI": {
-    "documents": [
-      "air_waybill",
-      "live_animals_certificate",
-      "veterinary_health_certificate",
-      "commercial_invoice",
-      "packing_list"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["AVI"],
-    "regulatory_agencies": ["IATA_LAR"],
-    "notes": "Animales vivos"
-  },
-
-  "HUM": {
-    "documents": [
-      "air_waybill",
-      "death_certificate",
-      "funeral_home_letter",
-      "embalming_certificate"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 2,
-    "special_handling_codes": ["HUM"],
-    "notes": "Restos humanos"
-  },
-
-  "VAL": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "value_declaration",
-      "insurance_certificate"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 2,
-    "special_handling_codes": ["VAL"],
-    "notes": "Carga valiosa"
-  },
-
-  "PHR": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "pharma_certificate",
-      "temperature_log"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["PHARMA"],
-    "temperature_range": "2C to 8C",
-    "notes": "Farmacéuticos"
-  },
-
-  "FSH": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "phytosanitary_certificate"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["FSH"],
-    "notes": "Pescado fresco"
-  },
-
-  "ELD": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "electronics_safety_cert"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "special_handling_codes": [],
-    "notes": "Electrónicos"
-  },
-
-  "BAT": {
-    "documents": [
-      "air_waybill",
-      "dangerous_goods_declaration",
-      "msds",
-      "battery_test_summary"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 2,
-    "special_handling_codes": ["BATTERY"],
-    "regulatory_agencies": ["IATA_DGR"],
-    "notes": "Baterías de litio"
-  },
-
-  "PRT": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "parts_certificate"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "special_handling_codes": [],
-    "notes": "Partes aeronáuticas"
-  },
-
-  "MED": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "medical_device_certificate"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["MEDICAL"],
-    "notes": "Dispositivos médicos"
-  },
-
-  "FTZ": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "free_trade_zone_permit"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "special_handling_codes": [],
-    "notes": "Zona franca"
-  },
-
-  "AGR": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "phytosanitary_certificate"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["AGRICULTURE"],
-    "regulatory_agencies": ["USDA"],
-    "notes": "Productos agrícolas"
-  },
-
-  "REF": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "temperature_log"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "special_handling_codes": ["COL"],
-    "temperature_range": "-20C to +5C",
-    "notes": "Carga refrigerada"
-  },
-
-  "CMM": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "sample_declaration"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "notes": "Muestras comerciales"
-  },
-
-  "PAX": {
-    "documents": [
-      "air_waybill",
-      "baggage_manifest",
-      "security_declaration"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "notes": "Equipaje transportado como carga"
-  },
-
-  "CTR": {
-    "documents": [
-      "air_waybill",
-      "courier_manifest",
-      "customs_declaration"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "notes": "Courier"
-  },
-
-  "TMP": {
-    "documents": [
-      "air_waybill",
-      "commercial_invoice",
-      "packing_list",
-      "temperature_log"
-    ],
-    "copies_inside": 2,
-    "copies_outside": 1,
-    "temperature_range": "variable",
-    "notes": "Carga control temperatura"
-  },
-
-  "HAZ": {
-    "documents": [
-      "air_waybill",
-      "hazardous_material_statement",
-      "commercial_invoice",
-      "packing_list"
-    ],
-    "copies_inside": 1,
-    "copies_outside": 1,
-    "notes": "Material peligroso no clasificado DG"
-  }
+  "FASES": [
+    {
+      "Fase": "Identificación y Seguridad",
+      "Preguntas": [
+        {
+          "Pregunta": "Ingrese su ID de Cliente o código SCAC de la empresa de transporte.",
+          "Instruccion": "Esto valida que usted es un Known Shipper. Si no lo es, su carga será inspeccionada 24-48h."
+        },
+        {
+          "Pregunta": "¿El valor de su mercancía por código arancelario supera los $2,500 USD?",
+          "Instruccion": "Si SÍ, ingrese el número de ITN (AES). Sin esto, multa federal $10,000 USD."
+        },
+        {
+          "Pregunta": "¿Su carga es para un solo destino o es un consolidado de varios clientes?",
+          "Instruccion": "Si es consolidado, active Manifiesto de Carga. Si directa, valide Guía Master única."
+        }
+      ]
+    },
+    {
+      "Fase": "Dimensiones y peso",
+      "Preguntas": [
+        {
+          "Pregunta": "¿Cuál es la altura del bulto más alto incluyendo la estiba?",
+          "Instruccion": "Si >63 pulgadas solo puede ir Carguero. Si >96 pulgadas, NO puede volar."
+        },
+        {
+          "Pregunta": "¿Alguna pieza pesa más de 150 kg (330 lbs)?",
+          "Instruccion": "Obligatorio base de madera (skids/shoring). Sin esto, rechazo por riesgo estructural."
+        },
+        {
+          "Pregunta": "¿Ya calculó el peso volumétrico?",
+          "Instruccion": "Avianca cobra el mayor entre peso real y volumétrico. Evite sorpresas en counter."
+        }
+      ]
+    },
+    {
+      "Fase": "Integridad y embalaje",
+      "Preguntas": [
+        {
+          "Pregunta": "¿Sus estibas de madera tienen sello NIMF-15 visible?",
+          "Instruccion": "Sin sello, USDA/CBP ordenará retorno inmediato. Use pallet certificado o plástico."
+        },
+        {
+          "Pregunta": "¿La carga tiene flejes o solo plástico?",
+          "Instruccion": "Piezas pesadas deben tener flejes metálicos. Si se mueve, counter NO recibe."
+        },
+        {
+          "Pregunta": "¿Borró etiquetas viejas de otros vuelos?",
+          "Instruccion": "Elimine marcas previas para evitar confusión de destino."
+        }
+      ]
+    },
+    {
+      "Fase": "Contenidos peligrosos",
+      "Preguntas": [
+        {
+          "Pregunta": "¿Su equipo contiene baterías de litio?",
+          "Instruccion": "Declare UN3480/3481 y presente 2 originales Shipper’s Declaration. Omitir = delito federal."
+        },
+        {
+          "Pregunta": "¿La carga es impenetrable para Rayos X?",
+          "Instruccion": "Si Rayos X no la atraviesa, se abrirá físicamente. Use embalaje que pueda volver a sellar."
+        },
+        {
+          "Pregunta": "¿La descripción en la guía es específica?",
+          "Instruccion": "No use términos genéricos como 'Said to Contain'. Genera alertas y retenciones."
+        }
+      ]
+    },
+    {
+      "Fase": "Documentación",
+      "Preguntas": [
+        {
+          "Pregunta": "¿Tiene listos los 3 originales y 6 copias de la Guía Aérea?",
+          "Instruccion": "El agente no hace copias. Si falta una, chofer pierde turno."
+        },
+        {
+          "Pregunta": "¿El Zip Code del destinatario es correcto?",
+          "Instruccion": "Verifique dígito por dígito. Sistema bloquea guías con códigos incompletos."
+        }
+      ]
+    },
+    {
+      "Fase": "Llegada y Cutoff",
+      "Preguntas": [
+        {
+          "Pregunta": "¿Hora estimada de llegada del camión?",
+          "Instruccion": "Si llega después del Cut-off, NO VUELA HOY y se aplican cargos Storage."
+        }
+      ]
+    }
+  ]
 }
