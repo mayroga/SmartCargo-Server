@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
@@ -38,6 +38,7 @@ async def api_evaluar_carga(data: dict):
     known = data.get("knownShipper", "")
     horaCamion = data.get("horaCamion", "")
     cutoff = data.get("cutoff", "18:00")
+    tipoPallet = data.get("tipoPallet", "")
 
     # Checklist
     dryIce = data.get("chkDryIce", False)
@@ -46,28 +47,36 @@ async def api_evaluar_carga(data: dict):
     perecederos = data.get("chkPerecederos", False)
     embalaje = data.get("chkEmbalaje", False)
     etiquetas = data.get("chkEtiquetas", False)
+    fleje = data.get("chkFleje", False)
 
-    # Validaciones
+    # Validaciones generales
     if not rol: errores.append("Seleccione rol del usuario.")
-    if not re.match(r"^\d{3}-\d{8}$", awb): 
+    if not re.match(r"^\d{3}-\d{8}$", awb):
         errores.append("Formato AWB inválido (XXX-12345675).")
         soluciones.append("Corregir la guía con 3 dígitos, guion y 8 números.")
     if piezas < 1: errores.append("Número de piezas inválido.")
     if not codigo: errores.append("Seleccione tipo de carga.")
     if not known: errores.append("Indique si es Known Shipper.")
     if alto > 244: errores.append("Alto excede límite carguero (244cm).")
-    if 160 < alto <= 244: errores.append("Solo puede ir en Main Deck (carguero).")
+    elif 160 < alto <= 244: errores.append("Solo puede ir en Main Deck (carguero).")
     if pesoTotal > 6800: errores.append("Peso excede límite pallet 6800kg.")
     if pesoVol > pesoTotal: errores.append("Peso volumétrico mayor que peso real.")
     if horaCamion and horaCamion > cutoff: errores.append("Camión llega después de cutoff.")
 
-    # Checklist obligatoria
+    # Validaciones por tipo de carga
     if codigo == "DGR" and not dgr: errores.append("Mercancía peligrosa sin declaración y MSDS.")
     if codigo == "PER" and not perecederos: errores.append("Perecedero sin embalaje y refrigeración adecuados.")
     if codigo == "AVI" and not animales: errores.append("Animales vivos sin certificados o embalaje seguro.")
-    if not embalaje: errores.append("Embalaje no cumple normas IATA.")
-    if not etiquetas: errores.append("Falta etiquetado correcto (FRÁGIL, DGR, perecedero).")
     if codigo == "PER" and not dryIce: errores.append("Dry Ice necesario para perecederos no declarado.")
+
+    # Validación de embalaje y etiquetas
+    if not embalaje: errores.append("Embalaje no cumple normas IATA.")
+    if not etiquetas: errores.append("Falta etiquetado correcto (FRÁGIL, DGR, perecedero, UPSIDE, Dry Ice).")
+    if not fleje: errores.append("Carga no asegurada con fleje adecuado.")
+
+    # Validación de orientación según pallet
+    if tipoPallet in ["Loose", "PMC", "PAG", "Contenedor"] and not etiquetas:
+        errores.append(f"Verifique orientación de la carga en {tipoPallet}: labels deben estar visibles y correctos.")
 
     # Estado final
     status = "READY" if not errores else "RECHAZADO"
