@@ -1,202 +1,60 @@
-let phase = 1;
-
-let currentIndex = 0;
-
-let questions = [];
-
-let answers = {};
-
-let aviancaQuestions = [];
-
-let cargoQuestions = [];
-
-
-// =======================
-// LOAD
-// =======================
-
-async function loadData() {
-
-    const a = await fetch('/questions');
-    const aData = await a.json();
-
-    aviancaQuestions = aData.preguntas;
-
-
-    const c = await fetch('/cargo_rules');
-    const cData = await c.json();
-
-    cargoQuestions = [];
-
-    cData.FASES.forEach(f => {
-
-        f.Preguntas.forEach(p => {
-
-            cargoQuestions.push({
-                pregunta: p.Pregunta,
-                instruccion: p.Instruccion
-            });
-
-        });
-
-    });
-
-
-    questions = aviancaQuestions;
-
-    renderQuestion();
-
-}
-
-
-// =======================
-// RENDER
-// =======================
-
-function renderQuestion() {
-
-    const container =
-        document.getElementById('question-container');
-
-    container.innerHTML = "";
-
-
-    if (currentIndex >= questions.length) {
-
-        if (phase === 1) {
-
-            phase = 2;
-
-            questions = cargoQuestions;
-
-            currentIndex = 0;
-
-            renderQuestion();
-
-            return;
-
-        }
-
-        finalizeCheck();
-
-        return;
-
-    }
-
-
-    const q = questions[currentIndex];
-
-
-    const div = document.createElement("div");
-
-    div.innerHTML =
-
-        "<b>" +
-        (currentIndex + 1) +
-        ". " +
-        q.pregunta +
-        "</b><br><br>" +
-
-        (q.instruccion || "") +
-
-        "<br><br>" +
-
-        "<input id='ans'>";
-
-
-    container.appendChild(div);
-
-}
-
-
-// =======================
-// NEXT
-// =======================
-
-document
-.getElementById("next-btn")
-.addEventListener("click", () => {
-
-    const input =
-        document.getElementById("ans");
-
-    if (!input.value) {
-
-        alert("Responda");
-
-        return;
-
-    }
-
-    answers[
-        "p" +
-        phase +
-        "_" +
-        currentIndex
-    ] = input.value;
-
-
-    currentIndex++;
-
-    renderQuestion();
-
-});
-
-
-// =======================
-// FINAL
-// =======================
-
-async function finalizeCheck() {
-
-    const r = await fetch(
-        "/validate",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-            body: JSON.stringify(answers)
-        }
-    );
-
-    const result = await r.json();
-
-    let html = "<h2>Resultado</h2>";
-
-    if (result.alertas.length) {
-
-        html += "<ul>";
-
-        result.alertas.forEach(a => {
-
-            html += "<li>" +
-                a.accion +
-                "</li>";
-
-        });
-
-        html += "</ul>";
-
-    }
-
-
-    if (result.RFC) {
-
-        html +=
-            "<h3 style='color:green'>RFC = SI</h3>";
-
+// Función calcular volumen y validar límites según Avianca
+function calcularVolumen() {
+    let largo = parseFloat(document.getElementById('largo').value) || 0;
+    let ancho = parseFloat(document.getElementById('ancho').value) || 0;
+    let alto = parseFloat(document.getElementById('alto').value) || 0;
+    let peso = parseFloat(document.getElementById('peso').value) || 0;
+
+    // Volumen en m³
+    let volumen = (largo * ancho * alto)/1000000;
+    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
+
+    // Validaciones de altura
+    if(alto > 244){
+        document.getElementById('alertAltura').innerText = "ALERTA: Altura excede límite de carguero (244 cm)";
+    } else if(alto > 160){
+        document.getElementById('alertAltura').innerText = "ADVERTENCIA: Altura excede límite pasajero (160 cm)";
     } else {
-
-        html +=
-            "<h3 style='color:red'>RFC = NO</h3>";
-
+        document.getElementById('alertAltura').innerText = "";
     }
 
+    // Validación de dimensiones
+    if(largo > 318 || ancho > 244){
+        document.getElementById('alertDim').innerText = "ALERTA: Largo/Ancho excede máximo permitido (318/244 cm)";
+    } else {
+        document.getElementById('alertDim').innerText = "";
+    }
 
-    document
-        .getElementById("question-container")
-        .innerHTML = html;
+    // Validación de peso
+    if(peso > 6800){
+        document.getElementById('alertPeso').innerText = "ALERTA: Peso excede máximo permitido del pallet (6800 kg)";
+    } else {
+        document.getElementById('alertPeso').innerText = "";
+    }
+}
 
+// Mostrar documentos según tipo de carga
+function mostrarDocumentos() {
+    let tipo = document.getElementById('tipoCarga').value;
+    let docs = {
+        "HUM": "Air Waybill, Death Certificate, Funeral Certificate, Embalming Certificate, Known Shipper / Screening / Regulated Agent",
+        "PER": "Air Waybill, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening / Regulated Agent",
+        "DGR": "Air Waybill, Shipper’s Declaration x2, Certificado Fitosanitario si aplica, Known Shipper / Screening / Regulated Agent",
+        "GEN": "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent"
+    };
+    document.getElementById('documentos').innerText = docs[tipo] || "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent";
+}
+
+// Actualizar rol alternativo
+function actualizarRol() {
+    let rol = document.getElementById('rol').value;
+    let opciones = "";
+    if(rol === "Chofer" || rol === "Camionero") opciones = "Forwarder, Dueño, Counter";
+    if(rol === "Forwarder") opciones = "Chofer, Dueño, Counter";
+    document.getElementById('rolAlternativo').innerText = opciones;
+}
+
+// Validación final simulada
+function validarCarga() {
+    alert("Validación ejecutada. Revise alertas visibles en pantalla.");
 }
