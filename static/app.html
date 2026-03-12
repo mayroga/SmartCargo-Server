@@ -2,31 +2,31 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
+<title>SMARTGOSERVER - Asesoría Completa de Carga</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-h1 { text-align:center; color:#0a3d62; }
-.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-label { display:block; margin:8px 0 4px; font-weight:500; }
-input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
-.alert { color:red; font-weight:bold; margin:5px 0; }
-.success { color:green; font-weight:bold; margin:5px 0; }
-.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
+h1 { text-align:center; color:#0a3d62; margin-bottom:20px; }
 .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
 .active, .collapsible:hover { background-color:#062c47; }
 .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
+label { display:block; margin:8px 0 4px; font-weight:500; }
+input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
+.docs, .tip, .checklist { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
+.tip { font-style:italic; color:#555; }
 .result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-wrap; }
-.tip { font-size:14px; color:#555; font-style:italic; margin-bottom:5px; }
+.alert { color:red; font-weight:bold; margin:5px 0; }
+img.example { max-width:100%; margin:5px 0; border-radius:5px; }
+.checklist input { margin-right:8px; }
 </style>
 </head>
 <body>
 
-<h1>SMARTGOSERVER - ¿Carga apta para volar HOY?</h1>
+<h1>SMARTGOSERVER - Asesoría Completa de Carga Aérea</h1>
 
-<!-- FASE I: Universal -->
-<button class="collapsible">I. Identificación y Tipo de Envío</button>
+<!-- FASE I: Identificación -->
+<button class="collapsible">I. Identificación y Rol</button>
 <div class="content" id="faseUniversal">
     <label for="rolUsuario">Rol del Usuario:</label>
     <select id="rolUsuario" onchange="updateRolFields()">
@@ -41,11 +41,11 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 
     <label for="awb">Número de Guía Aérea (AWB):</label>
     <input type="text" id="awb" placeholder="XXX-12345675">
-    <p class="tip">Ej: 123-12345675. Formato obligatorio para seguimiento y reserva.</p>
+    <p class="tip">Formato obligatorio para seguimiento y reserva. Ejemplo: 123-12345675</p>
 
     <label for="forwarder">Forwarder / Agente de Carga:</label>
     <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
-    <p class="tip">Importante para coordinación de transporte y documentación.</p>
+    <p class="tip">Importante para coordinación y documentación.</p>
 
     <label for="origen">Origen:</label>
     <input type="text" id="origen" placeholder="Ej: MIA">
@@ -54,7 +54,7 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 </div>
 
 <!-- FASE II: Tipo de Carga -->
-<button class="collapsible">II. Tipo de Carga</button>
+<button class="collapsible">II. Tipo de Carga y Documentos</button>
 <div class="content" id="faseTipoCarga">
     <label for="codigoCarga">Código IATA:</label>
     <select id="codigoCarga" onchange="mostrarDocumentos()">
@@ -70,7 +70,7 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 </div>
 
 <!-- FASE III: Dimensiones y Peso -->
-<button class="collapsible">III. Dimensiones y Peso</button>
+<button class="collapsible">III. Dimensiones, Peso y Pallets</button>
 <div class="content" id="faseDimensiones">
     <label for="piezas">Número de piezas:</label>
     <input type="number" id="piezas" min="1" value="1">
@@ -78,6 +78,7 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 
     <label for="pesoTotal">Peso Total (kg):</label>
     <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
+
     <label for="pesoPieza">Peso por Pieza (kg):</label>
     <input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
 
@@ -105,8 +106,8 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
     <p id="alertDimensiones" class="alert"></p>
 </div>
 
-<!-- FASE IV: Seguridad TSA y Cutoff -->
-<button class="collapsible">IV. Seguridad y Cutoff</button>
+<!-- FASE IV: Seguridad, Dry Ice, DGR -->
+<button class="collapsible">IV. Seguridad, Dry Ice y DGR</button>
 <div class="content" id="faseSeguridad">
     <label for="knownShipper">Known Shipper:</label>
     <select id="knownShipper">
@@ -121,7 +122,17 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 
     <label for="cutoff">Hora de cutoff del vuelo:</label>
     <input type="time" id="cutoff" value="18:00">
-    <p id="alertCutoff" class="alert"></p>
+
+    <h3>Checklist de Seguridad y Embalaje</h3>
+    <div class="checklist">
+        <label><input type="checkbox" id="chkDryIce"> Dry Ice (CO2 sólido) correctamente declarado y embalado</label>
+        <label><input type="checkbox" id="chkDGR"> Mercancía peligrosa DGR con Shipper Declaration y MSDS</label>
+        <label><input type="checkbox" id="chkAnimales"> Animales vivos con certificado sanitario y transporte seguro</label>
+        <label><input type="checkbox" id="chkPerecederos"> Perecederos embalados y refrigerados según normativa</label>
+        <label><input type="checkbox" id="chkEmbalaje"> Embalaje adecuado, palets nivelados, sin sobresalir bordes</label>
+        <label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles, FRÁGIL, DGR o perecedero según corresponda</label>
+    </div>
+    <p class="tip">Todos estos pasos son obligatorios para cumplir con seguridad y regulaciones IATA.</p>
 </div>
 
 <!-- FASE V: Validación Final -->
@@ -178,7 +189,7 @@ function calcularVolumen() {
     document.getElementById('alertDimensiones').innerText = alertMsg;
 }
 
-// Evaluar carga y generar resultado final
+// Evaluar carga final
 function evaluarCarga() {
     const errores = [];
     const rol = document.getElementById('rolUsuario').value;
@@ -192,7 +203,14 @@ function evaluarCarga() {
     const horaCamion = document.getElementById('horaCamion').value;
     const cutoff = document.getElementById('cutoff').value;
 
-    // Validaciones esenciales
+    // Checklist
+    const dryIce = document.getElementById('chkDryIce').checked;
+    const dgr = document.getElementById('chkDGR').checked;
+    const animales = document.getElementById('chkAnimales').checked;
+    const perecederos = document.getElementById('chkPerecederos').checked;
+    const embalaje = document.getElementById('chkEmbalaje').checked;
+    const etiquetas = document.getElementById('chkEtiquetas').checked;
+
     if(!rol) errores.push("Seleccione rol del usuario.");
     if(!awb.match(/^\d{3}-\d{8}$/)) errores.push("Formato AWB inválido XXX-12345675.");
     if(!codigo) errores.push("Seleccione tipo de carga.");
@@ -204,9 +222,18 @@ function evaluarCarga() {
     if(pesoVol > pesoTotal) errores.push("Peso volumétrico mayor que peso real, ajuste reserva.");
     if(horaCamion && cutoff && horaCamion > cutoff) errores.push("Camión llega después de cutoff, NO VUELA HOY.");
 
+    // Checklist validaciones
+    if(codigo==="DGR" && !dgr) errores.push("Mercancía peligrosa sin declaración y MSDS.");
+    if(codigo==="PER" && !perecederos) errores.push("Perecedero sin embalaje y refrigeración adecuados.");
+    if(codigo==="AVI" && !animales) errores.push("Animales vivos sin certificados o embalaje seguro.");
+    if(!embalaje) errores.push("Embalaje no cumple normas IATA.");
+    if(!etiquetas) errores.push("Falta etiquetado correcto: FRÁGIL, DGR o perecedero.");
+    if(codigo==="PER" && !dryIce) errores.push("Dry Ice necesario para perecederos no declarado.");
+
+    // Resultado
     let resultado = "";
-    if(errores.length === 0) resultado = "🟢 ACEPTADO - Carga apta para vuelo hoy.\nConsejo: Todo en orden, puede proceder al counter.";
-    else if(errores.length <= 2) resultado = "🟡 ACEPTADO CON ALERTA:\n" + errores.join("\n");
+    if(errores.length === 0) resultado = "🟢 ACEPTADO - Carga apta para vuelo hoy.\nChecklist completa, todo en orden, puede proceder al counter.";
+    else if(errores.length <= 3) resultado = "🟡 ACEPTADO CON ALERTA:\n" + errores.join("\n");
     else resultado = "🔴 RECHAZADO:\n" + errores.join("\n");
 
     document.getElementById('resultadoFinal').innerText = resultado;
