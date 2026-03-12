@@ -17,31 +17,21 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
 .active, .collapsible:hover { background-color:#062c47; }
 .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-line; }
+.result { font-size:16px; font-weight:bold; margin-top:15px; white-space:pre-wrap; }
 </style>
 </head>
 <body>
 
-<h1>SMARTGOSERVER - ¿Carga apta para volar HOY?</h1>
+<h1>SMARTGOSERVER - Asesoría completa de carga aérea</h1>
 
-<!-- FASE I: Universal -->
+<!-- FASE I: Usuario y Origen/Destino -->
 <button class="collapsible">I. Identificación y Tipo de Envío</button>
-<div class="content" id="faseUniversal">
+<div class="content">
     <label for="rolUsuario">Rol del Usuario:</label>
-    <select id="rolUsuario" onchange="updateRolFields()">
-        <option value="">Seleccione</option>
-        <option value="Dueño">Dueño</option>
-        <option value="Forwarder">Forwarder</option>
-        <option value="Chofer">Chofer / Camionero</option>
-        <option value="AgenteWarehouse">Agente Warehouse</option>
-        <option value="CounterAgent">Counter Agent</option>
-    </select>
+    <select id="rolUsuario"><option value="">Seleccione</option><option value="Dueño">Dueño</option><option value="Forwarder">Forwarder</option><option value="Chofer">Chofer / Camionero</option><option value="AgenteWarehouse">Agente Warehouse</option><option value="CounterAgent">Counter Agent</option></select>
 
     <label for="awb">Número de Guía Aérea (AWB):</label>
     <input type="text" id="awb" placeholder="XXX-12345675">
-
-    <label for="forwarder">Forwarder / Agente de Carga:</label>
-    <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
 
     <label for="origen">Origen:</label>
     <input type="text" id="origen" placeholder="Ej: MIA">
@@ -50,47 +40,43 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
     <input type="text" id="destino" placeholder="Ej: BOG, MDE, LIM, SJO">
 </div>
 
-<!-- FASE II: Tipo de Carga -->
+<!-- FASE II: Tipo de carga -->
 <button class="collapsible">II. Tipo de Carga</button>
-<div class="content" id="faseTipoCarga">
+<div class="content">
     <label for="codigoCarga">Código IATA:</label>
-    <select id="codigoCarga" onchange="mostrarDocumentos()">
-        <option value="">Seleccione</option>
-        <option value="GEN">GEN - General cargo</option>
-        <option value="PER">PER - Perecedero</option>
-        <option value="HUM">HUM - Human remains</option>
-        <option value="VAL">VAL - Valores</option>
-        <option value="AVI">AVI - Animales</option>
-        <option value="DGR">DGR - Mercancía peligrosa</option>
-    </select>
+    <select id="codigoCarga" onchange="mostrarDocumentos()"><option value="">Seleccione</option><option value="GEN">GEN</option><option value="PER">PER</option><option value="HUM">HUM</option><option value="VAL">VAL</option><option value="AVI">AVI</option><option value="DGR">DGR</option></select>
     <div id="documentosObligatorios" class="docs">Seleccione un tipo de carga para ver documentos.</div>
 </div>
 
 <!-- FASE III: Dimensiones y Peso -->
 <button class="collapsible">III. Dimensiones y Peso</button>
-<div class="content" id="faseDimensiones">
-    <label for="piezas">Número de piezas:</label>
-    <input type="number" id="piezas" min="1" value="1">
+<div class="content">
+    <label for="piezas">Número de piezas:</label><input type="number" id="piezas" min="1" value="1">
+    <label for="pesoTotal">Peso Total (kg):</label><input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
+    <label for="largo">Largo (cm):</label><input type="number" id="largo" min="0" oninput="calcularVolumen()">
+    <label for="ancho">Ancho (cm):</label><input type="number" id="ancho" min="0" oninput="calcularVolumen()">
+    <label for="alto">Alto (cm):</label><input type="number" id="alto" min="0" oninput="calcularVolumen()">
+    <label for="volumen">Volumen (m³):</label><input type="text" id="volumen" readonly>
+    <label for="pesoVolumetrico">Peso Volumétrico (kg):</label><input type="text" id="pesoVolumetrico" readonly>
+    <label for="tipoPallet">Tipo de Pallet / ULD:</label>
+    <select id="tipoPallet"><option value="">Seleccione</option><option value="Loose">Loose Cargo</option><option value="PMC">PMC Pallet</option><option value="PAG">PAG Pallet</option><option value="Contenedor">Contenedor</option></select>
+    <p id="alertDimensiones" class="alert"></p>
+</div>
 
-    <label for="pesoTotal">Peso Total (kg):</label>
-    <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
+<!-- FASE IV: Seguridad y Cutoff -->
+<button class="collapsible">IV. Seguridad y Cutoff</button>
+<div class="content">
+    <label for="knownShipper">Known Shipper:</label>
+    <select id="knownShipper"><option value="">Seleccione</option><option value="Sí">Sí</option><option value="No">No</option></select>
+    <label for="horaCamion">Hora estimada de llegada del camión:</label><input type="time" id="horaCamion">
+    <label for="cutoff">Hora de cutoff del vuelo:</label><input type="time" id="cutoff" value="18:00">
+</div>
 
-    <label for="pesoPieza">Peso por Pieza (kg):</label>
-    <input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
+<!-- FASE V: Validación Final -->
+<button class="collapsible">V. Validación Final y Resultado</button>
+<div class="content">
+    <button onclick="evaluarCarga()">Evaluar Carga</button>
+    <p id="resultadoFinal" class="result"></p>
+</div>
 
-    <label for="largo">Largo (cm):</label>
-    <input type="number" id="largo" min="0" oninput="calcularVolumen()">
-
-    <label for="ancho">Ancho (cm):</label>
-    <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
-
-    <label for="alto">Alto (cm):</label>
-    <input type="number" id="alto" min="0" oninput="calcularVolumen()">
-
-    <label for="volumen">Volumen (m³):</label>
-    <input type="text" id="volumen" readonly>
-
-    <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
-    <input type="text" id="pesoVolumetrico" readonly>
-
-    <label for="tipoPallet">
+<script
