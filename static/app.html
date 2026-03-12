@@ -17,7 +17,7 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
 .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
 .active, .collapsible:hover { background-color:#062c47; }
 .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; }
+.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-line; }
 </style>
 </head>
 <body>
@@ -93,55 +93,4 @@ input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; 
     <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
     <input type="text" id="pesoVolumetrico" readonly>
 
-    <label for="tipoPallet">Tipo de Pallet / ULD:</label>
-    <select id="tipoPallet">
-        <option value="">Seleccione</option>
-        <option value="Loose">Loose Cargo</option>
-        <option value="PMC">PMC Pallet</option>
-        <option value="PAG">PAG Pallet</option>
-        <option value="Contenedor">Contenedor</option>
-    </select>
-
-    <p id="alertDimensiones" class="alert"></p>
-</div>
-
-<!-- FASE IV: Seguridad TSA y Cutoff -->
-<button class="collapsible">IV. Seguridad y Cutoff</button>
-<div class="content" id="faseSeguridad">
-    <label for="knownShipper">Known Shipper:</label>
-    <select id="knownShipper">
-        <option value="">Seleccione</option>
-        <option value="Sí">Sí</option>
-        <option value="No">No</option>
-    </select>
-
-    <label for="horaCamion">Hora estimada de llegada del camión:</label>
-    <input type="time" id="horaCamion">
-
-    <label for="cutoff">Hora de cutoff del vuelo:</label>
-    <input type="time" id="cutoff" value="18:00">
-
-    <p id="alertCutoff" class="alert"></p>
-</div>
-
-<!-- FASE V: Validación Final -->
-<button class="collapsible">V. Validación Final y Resultado</button>
-<div class="content" id="faseFinal">
-    <button onclick="evaluarCarga()">Evaluar Carga</button>
-    <p id="resultadoFinal" class="result"></p>
-</div>
-
-<script src="static/app.js"></script>
-<script>
-// Cortinas inteligentes
-var coll = document.getElementsByClassName("collapsible");
-for (let i = 0; i < coll.length; i++) {
-    coll[i].addEventListener("click", function() {
-        this.classList.toggle("active");
-        var content = this.nextElementSibling;
-        content.style.display = (content.style.display === "block") ? "none" : "block";
-    });
-}
-</script>
-</body>
-</html>
+    <label for="tipoPallet">
