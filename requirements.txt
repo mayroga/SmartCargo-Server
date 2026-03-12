@@ -6,3 +6,4 @@ httpx
 python-dotenv
 python-multipart
 requests
+json5
