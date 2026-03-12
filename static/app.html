@@ -146,11 +146,18 @@ img.example { max-width:100%; margin:5px 0; border-radius:5px; }
 <p id="resultadoFinal" class="result"></p>
 </div>
 
+<!-- FASE VI: Desglose Técnico de Documentos -->
+<button class="collapsible">VI. Desglose Técnico de Documentos</button>
+<div class="content" id="faseDocumentos">
+  <button onclick="mostrarDocumentosDetallados()">Mostrar y Escuchar Desglose</button>
+  <div id="documentosDetallados" class="docs" style="display:none; margin-top:10px;"></div>
+</div>
+
 <script>
 // Collapsibles
 document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll(".collapsible").forEach(btn=>{
-        btn.addEventListener("click",()=>{ 
+        btn.addEventListener("click",()=>{
             btn.classList.toggle("active"); 
             let c = btn.nextElementSibling;
             c.style.display = (c.style.display==='block')?'none':'block';
@@ -264,6 +271,52 @@ function updateRolFields(){
     document.getElementById('avisoRol').innerText =
         (rol==="Chofer" || rol==="AgenteWarehouse") ? "Tip: Revise sellos y manifiestos." :
         (rol==="Forwarder") ? "Tip: Validar documentación y AWB." : "";
+}
+
+// FASE VI: Desglose Técnico de Documentos
+const textoDocumentos = `Aquí tienes el desglose técnico de todos los documentos obligatorios, desde lo más básico hasta lo más específico, que deben ser rectificados antes de llegar al aeropuerto:
+
+1. Documentación de Identidad y Acceso (El factor humano)
+- ID Original Vigente: El chofer o forwarder debe presentar licencia de conducir o pasaporte original. No se aceptan copias ni fotos en el celular.
+- Manifiesto de Carga Terrestre: Documento que vincula al camión con las piezas que entrega. Debe coincidir el número de placa con el vehículo físico.
+
+2. Documentos Base de la Carga (Universales)
+- Air Waybill (AWB) - Guía Aérea: Error común: Tachaduras o correcciones con corrector líquido. Rechazo automático.
+- Peso/Piezas: Debe coincidir exactamente con lo que se pesa en la báscula del counter. Una diferencia mayor al 2% puede detener el despacho.
+- Commercial Invoice (Factura Comercial): Debe detallar valor, descripción clara e Incoterms.
+- Packing List (Lista de Empaque): Debe especificar qué hay dentro de cada bulto. Si el bulto dice "1 de 5", el Packing List debe decir exactamente qué contiene ese bulto "1".
+
+3. Documentos de Seguridad (TSA / Estándar Internacional)
+- Known Shipper Verification: Si el remitente no está en la base de datos de "Embarcador Conocido", la carga debe ir a Screening obligatorio.
+- Security Declaration: Documento donde se declara que la carga no contiene artículos prohibidos y ha sido protegida de interferencias no autorizadas.
+
+4. Documentación Específica por Tipo de Carga (Los "Olvidados")
+- DGR: Shipper's Declaration (DGD) con borde rojo, firma original; MSDS actualizada.
+- PER: Certificado Fitosanitario válido y Prior Notice (FDA) con código de confirmación.
+- AVI: Certificado Veterinario dentro de los tiempos permitidos.
+- HUM: Certificado de Embalsamamiento + acta de defunción.
+
+5. Errores de "Forma" que causan Rechazo
+- Inconsistencia de Nombres, Descripción Vaga, Falta de Copias.
+
+Resolución Proactiva de SMARTGOSERVER:
+- Antes de salir hacia el aeropuerto, asegúrese de tener 3 copias físicas de la DGD con borde rojo visible. ¿Las tiene en mano? [SÍ] [NO]`;
+
+function mostrarDocumentosDetallados() {
+    const cont = document.getElementById('documentosDetallados');
+    cont.style.display = 'block';
+    cont.innerText = textoDocumentos;
+
+    // Leer en voz
+    const utterance = new SpeechSynthesisUtterance(textoDocumentos);
+    utterance.lang = 'es-ES';
+    speechSynthesis.cancel(); // Cancelar si ya hay lectura
+    speechSynthesis.speak(utterance);
+
+    // Desaparecer después de 45 segundos
+    setTimeout(() => {
+        cont.style.display = 'none';
+    }, 45000);
 }
 </script>
 
