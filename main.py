@@ -1,137 +1,296 @@
-import os
-import json
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import json
+import datetime
 
+app = FastAPI(title="SMARTGOSERVER")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-STATIC_DIR = os.path.join(BASE_DIR, "static")
-
-CARGO_RULES_FILE = os.path.join(STATIC_DIR, "cargo_rules.json")
-AVIANCA_RULES_FILE = os.path.join(STATIC_DIR, "avianca_rules.json")
-
-
-def load_json(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-app = FastAPI()
-
-
-# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ✅ SERVIR STATIC
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# -------------------------------
+# CARGAR REGLAS
+# -------------------------------
 
+with open("static/cargo_rules.json","r",encoding="utf-8") as f:
+    cargo_rules = json.load(f)
 
-# ✅ CARGAR JSON
-cargo_rules = load_json(CARGO_RULES_FILE)
-avianca_rules = load_json(AVIANCA_RULES_FILE)
+with open("static/avianca_rules.json","r",encoding="utf-8") as f:
+    avianca_rules = json.load(f)
 
+# -------------------------------
+# BASE DG
+# -------------------------------
 
-# =========================
-# ROOT
-# =========================
+DG_UN_DATABASE = {
+    "UN3480": "Lithium Ion Batteries",
+    "UN3481": "Lithium Ion Batteries contained in equipment",
+    "UN3090": "Lithium Metal Batteries",
+    "UN3091": "Lithium Metal Batteries contained in equipment",
+    "UN1203": "Gasoline",
+    "UN1993": "Flammable Liquid",
+    "UN1845": "Dry Ice",
+    "UN2814": "Infectious substances",
+    "UN3373": "Biological Substance Category B"
+}
 
-@app.get("/")
-def root():
-    return FileResponse(os.path.join(STATIC_DIR, "app.html"))
+# -------------------------------
+# ULD TYPES
+# -------------------------------
 
-# =========================
-# APP HTML
-# =========================
+ULD_TYPES = {
+    "PMC": {"width":96,"length":125,"height":96,"max_weight":6804,"full_name":"PMC Pallet P6P"},
+    "PAG": {"width":88,"length":125,"height":96,"max_weight":4626,"full_name":"PAG Pallet P1P"},
+    "PAJ": {"width":88,"length":125,"height":63,"max_weight":4626,"full_name":"PAJ Low Profile"},
+    "PQA": {"width":96,"length":125,"height":96,"max_weight":11340,"full_name":"PQA Heavy Duty"}
+}
 
-@app.get("/app")
-def app_page():
-    return FileResponse(os.path.join(STATIC_DIR, "app.html"))
+# -------------------------------
+# HOME
+# -------------------------------
 
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    with open("static/app.html","r",encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
-# =========================
-# QUESTIONS
-# =========================
+@app.get("/health")
+async def health():
+    return {"status":"ok"}
 
-@app.get("/questions")
-def get_questions():
+# -------------------------------
+# VOLUMEN
+# -------------------------------
 
-    return JSONResponse({
-        "preguntas": avianca_rules.get("preguntas", [])
-    })
+def calculate_volume(data):
 
+    L = data.get("longest_piece",0)
+    W = data.get("widest_piece",0)
+    H = data.get("tallest_piece",0)
 
-# =========================
-# RULES
-# =========================
+    units = data.get("units","cm")
 
-@app.get("/cargo_rules")
-def get_cargo_rules():
-    return JSONResponse(cargo_rules)
+    if units == "cm":
+        L = L/100
+        W = W/100
+        H = H/100
 
+    if units == "inches":
+        L = L*0.0254
+        W = W*0.0254
+        H = H*0.0254
 
-@app.get("/avianca_rules")
-def get_avianca_rules():
-    return JSONResponse(avianca_rules)
+    volume = round(L*W*H,3)
 
+    return volume
 
-# =========================
-# VALIDATE
-# =========================
+# -------------------------------
+# VALIDACIONES AVIANA
+# -------------------------------
 
-@app.post("/validate")
-def validate_cargo(respuestas: dict):
+def avianca_validation(data):
 
-    resultado = {
-        "RFC": True,
-        "alertas": []
+    errores = []
+    advertencias = []
+
+    largo = data.get("longest_piece",0)
+    ancho = data.get("widest_piece",0)
+    alto = data.get("tallest_piece",0)
+    peso = data.get("heaviest_piece",0)
+
+    if peso > 50:
+        advertencias.append(
+            "🟡 Carga pesada (>50kg). Verificar shoring."
+        )
+
+    if largo + ancho + alto > 254:
+        advertencias.append(
+            "🟡 Oversize cargo. Requiere revisión de estiba."
+        )
+
+    if alto > 244:
+        errores.append(
+            "🔴 Altura excede 244 cm. No puede volar en A330."
+        )
+
+    elif alto > 160:
+        advertencias.append(
+            "Solo puede ir en Main Deck."
+        )
+
+    if peso > 6804:
+        errores.append(
+            "🔴 Excede peso máximo pallet PMC (6804kg)"
+        )
+
+    if largo > 358 or alto > 256:
+        errores.append(
+            "🔴 No cabe por puerta de carga A330"
+        )
+
+    return errores, advertencias
+
+# -------------------------------
+# RECOMENDACION AVION
+# -------------------------------
+
+def aircraft_recommendation(data):
+
+    alto = data.get("tallest_piece",0)
+
+    if alto <= 160:
+        return "B787 Belly / A330 Lower Deck"
+
+    if alto <= 244:
+        return "A330-200F Main Deck"
+
+    return "NO AIRCRAFT AVAILABLE"
+
+# -------------------------------
+# MOTOR RIESGO
+# -------------------------------
+
+def risk_engine(data):
+
+    riesgos = []
+    probabilidad_hold = 0
+
+    descripcion = data.get("description","").lower()
+    destino = data.get("destination","")
+    shipper = data.get("shipper_type","unknown")
+
+# DGR oculto
+
+    dgr_keywords = [
+        "battery","lithium","aerosol","perfume",
+        "chemical","paint","fuel","gas"
+    ]
+
+    for w in dgr_keywords:
+        if w in descripcion:
+            riesgos.append("Posible DGR oculto")
+            probabilidad_hold += 25
+            break
+
+# CBP
+
+    food_keywords = [
+        "food","meat","fish","fruit","vegetable"
+    ]
+
+    if destino == "USA":
+        for w in food_keywords:
+            if w in descripcion:
+                riesgos.append("Posible inspección CBP")
+                probabilidad_hold += 20
+                break
+
+# USDA
+
+    plant_keywords = [
+        "plant","seed","flower","wood","soil"
+    ]
+
+    for w in plant_keywords:
+        if w in descripcion:
+            riesgos.append("Posible inspección USDA")
+            probabilidad_hold += 20
+            break
+
+# TSA
+
+    if shipper == "unknown":
+        riesgos.append("Shipper desconocido")
+        probabilidad_hold += 15
+
+    high_risk = probabilidad_hold >= 50
+
+    return riesgos, probabilidad_hold, high_risk
+
+# -------------------------------
+# VALIDADOR PRINCIPAL
+# -------------------------------
+
+def validate_shipment(data):
+
+    errores = []
+    advertencias = []
+    corrections = []
+
+# volumen
+
+    volume = calculate_volume(data)
+
+# reglas avianca
+
+    e,a = avianca_validation(data)
+
+    errores.extend(e)
+    advertencias.extend(a)
+
+# aircraft
+
+    aircraft = aircraft_recommendation(data)
+
+# riesgos
+
+    riesgos,probabilidad_hold,high_risk = risk_engine(data)
+
+# estado final
+
+    if len(errores) > 0:
+
+        status = "🔴 NO FLY"
+
+    elif len(advertencias) > 0:
+
+        status = "🟡 FIX BEFORE COUNTER"
+
+    else:
+
+        status = "🟢 READY FOR COUNTER"
+
+# resultado
+
+    result = {
+
+        "status": status,
+
+        "errors": errores,
+
+        "warnings": advertencias,
+
+        "risks": riesgos,
+
+        "high_risk": high_risk,
+
+        "probabilidad_hold": probabilidad_hold,
+
+        "aircraft_recommendation": aircraft,
+
+        "volume_m3": volume,
+
+        "timestamp": datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+
     }
 
-    preguntas = avianca_rules.get("preguntas", [])
+    return result
 
-    for q in preguntas:
+# -------------------------------
+# ENDPOINT
+# -------------------------------
 
-        alerta = q.get("alerta_condicional")
+@app.post("/validate_shipment")
+async def validate(data: dict):
 
-        if not alerta:
-            continue
+    result = validate_shipment(data)
 
-        condicion = alerta.get("si")
-
-        if condicion in respuestas and respuestas[condicion]:
-
-            resultado["RFC"] = False
-
-            resultado["alertas"].append({
-                "id": q.get("id"),
-                "pregunta": q.get("pregunta"),
-                "accion": alerta.get("accion"),
-                "tipo": alerta.get("tipo")
-            })
-
-    # ✅ validar altura
-
-    avion = avianca_rules.get("Avion", {})
-
-    alto = respuestas.get("alto")
-
-    if alto:
-
-        if alto > avion.get("MaxCargueroCm", 244):
-
-            resultado["RFC"] = False
-
-            resultado["alertas"].append({
-                "tipo": "critica",
-                "accion": "Altura excede carguero"
-            })
-
-    return JSONResponse(resultado)
+    return JSONResponse(result)
