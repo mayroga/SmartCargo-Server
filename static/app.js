@@ -1,110 +1,88 @@
-let pieceCount = 0;
-const maxPieces = 5;
-
-function toggleCurtain(id) {
-  const el = document.getElementById(id);
-  el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-}
-
-// ====================== Piezas y Dimensiones ======================
-function addPiece() {
-  if (pieceCount >= maxPieces) return alert("Máximo 5 piezas.");
-  pieceCount++;
-  const container = document.getElementById("piecesContainer");
-  const div = document.createElement("div");
-  div.id = `piece${pieceCount}`;
-  div.innerHTML = `
-    <h4>Pieza ${pieceCount}</h4>
-    <label>Largo (cm):</label><input type="number" class="largo" oninput="calcularVolumen()">
-    <label>Ancho (cm):</label><input type="number" class="ancho" oninput="calcularVolumen()">
-    <label>Alto (cm):</label><input type="number" class="alto" oninput="calcularVolumen()">
-    <label>Peso (kg):</label><input type="number" class="peso" oninput="calcularVolumen()">
-    <label>Volumen:</label><input type="text" class="volumen" readonly>
-    <p class="alert"></p>
-  `;
-  container.appendChild(div);
-  calcularVolumen();
-}
-
-function calcularVolumen() {
-  let alerts = [];
-  let totalVolume = 0;
-  let tallest = 0, widest = 0, longest = 0, heaviest = 0;
-
-  for (let i=1;i<=pieceCount;i++){
-    const div = document.getElementById(`piece${i}`);
-    if(!div) continue;
-    const L = parseFloat(div.querySelector(".largo").value) || 0;
-    const W = parseFloat(div.querySelector(".ancho").value) || 0;
-    const H = parseFloat(div.querySelector(".alto").value) || 0;
-    const P = parseFloat(div.querySelector(".peso").value) || 0;
-
-    const volumeM3 = (L*W*H)/1000000;
-    div.querySelector(".volumen").value = `${volumeM3.toFixed(3)} m³ (${(volumeM3*35.3147).toFixed(2)} ft³)`;
-    totalVolume += volumeM3;
-
-    if(H>tallest) tallest=H;
-    if(W>widest) widest=W;
-    if(L>longest) longest=L;
-    if(P>heaviest) heaviest=P;
-
-    const alertEl = div.querySelector("p.alert");
-    let alertMsg = "";
-    if(H>244) alertMsg+="ALERTA: Altura excede carguero (244cm). ";
-    else if(H>160) alertMsg+="ADVERTENCIA: Altura excede pasajero (160cm). ";
-    if(L>318 || W>244) alertMsg+="ALERTA: Dimensiones exceden máximo permitido. ";
-    if(P>6800) alertMsg+="ALERTA: Peso excede pallet (6800kg).";
-    alertEl.innerText = alertMsg;
-  }
-
-  const alertDim = document.getElementById("alertDimensiones");
-  alertDim.innerText = tallest>0 ? `Volumen total: ${totalVolume.toFixed(3)} m³` : "";
-}
-
-// ====================== Documentos ======================
+// Mostrar documentos según tipo de carga
 function mostrarDocumentos() {
-  const tipo = document.getElementById('tipoCarga').value;
-  fetch("/static/cargo_rules.json")
-  .then(r=>r.json())
-  .then(data=>{
-    const docs = data[tipo];
-    if(!docs){
-      document.getElementById("documentos").innerText = "Documentos no disponibles.";
-      return;
+    const tipo = document.getElementById('codigoCarga').value;
+    const docs = {
+        "GEN": "AWB, Packing List, Invoice, Known Shipper / Screening",
+        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening",
+        "HUM": "AWB, Death Certificate, Embalming Certificate, Funeral Letter, Known Shipper / Screening",
+        "VAL": "AWB, Invoice, Seguro / Declaración de valor",
+        "AVI": "AWB, Certificado sanitario animal, Known Shipper / Screening",
+        "DGR": "AWB, Shipper Declaration x2, MSDS, Known Shipper / Screening"
+    };
+    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga";
+}
+
+// Calcular volumen y peso volumétrico
+function calcularVolumen() {
+    const largo = parseFloat(document.getElementById('largo').value) || 0;
+    const ancho = parseFloat(document.getElementById('ancho').value) || 0;
+    const alto = parseFloat(document.getElementById('alto').value) || 0;
+    const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
+
+    const volumen = (largo * ancho * alto) / 1000000;
+    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
+
+    const pesoVol = volumen * 167;
+    document.getElementById('pesoVolumetrico').value = pesoVol.toFixed(2);
+
+    let alertMsg = "";
+    if(alto > 244) alertMsg += "ALTO excede carguero (244cm). ";
+    else if(alto > 160) alertMsg += "ALTO excede pasajero (160cm). ";
+    if(largo > 318 || ancho > 244) alertMsg += "Dimensiones exceden límites. ";
+    if(pesoTotal > 6800) alertMsg += "Peso excede límite pallet 6800kg.";
+    document.getElementById('alertDimensiones').innerText = alertMsg;
+}
+
+// Evaluar carga y generar resultado final
+function evaluarCarga() {
+    const errores = [];
+    const rol = document.getElementById('rolUsuario').value;
+    const awb = document.getElementById('awb').value.trim();
+    const codigo = document.getElementById('codigoCarga').value;
+    const piezas = parseInt(document.getElementById('piezas').value) || 0;
+    const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
+    const alto = parseFloat(document.getElementById('alto').value) || 0;
+    const pesoVol = parseFloat(document.getElementById('pesoVolumetrico').value) || 0;
+    const known = document.getElementById('knownShipper').value;
+    const horaCamion = document.getElementById('horaCamion').value;
+    const cutoff = document.getElementById('cutoff').value;
+
+    // Fase I: Validaciones esenciales
+    if(!rol) errores.push("Seleccione rol del usuario.");
+    if(!awb.match(/^\d{3}-\d{8}$/)) errores.push("Formato AWB inválido XXX-12345675.");
+    if(!codigo) errores.push("Seleccione tipo de carga.");
+    if(piezas < 1) errores.push("Número de piezas inválido.");
+    if(!known) errores.push("Indique si es Known Shipper.");
+
+    // Fase II/III: Dimensiones y peso
+    if(alto > 244) errores.push("Alto excede límite carguero.");
+    if(alto > 160 && alto <=244) errores.push("Solo vuela en carguero, no en pasajero.");
+    if(pesoTotal > 6800) errores.push("Peso excede límite pallet.");
+    if(pesoVol > pesoTotal) errores.push("Peso volumétrico mayor que peso real, ajuste reserva.");
+
+    // Fase IV: Cutoff
+    if(horaCamion && cutoff && horaCamion > cutoff) errores.push("Camión llega después de cutoff, NO VUELA HOY.");
+
+    // Resultado final
+    let resultado = "";
+    if(errores.length === 0) resultado = "🟢 ACEPTADO - Carga apta para vuelo hoy.";
+    else if(errores.length <= 2) resultado = "🟡 ACEPTADO CON ALERTA: " + errores.join(" | ");
+    else resultado = "🔴 RECHAZADO: " + errores.join(" | ");
+
+    document.getElementById('resultadoFinal').innerText = resultado;
+}
+
+// Opciones de rol dinámicas
+function updateRolFields() {
+    const rol = document.getElementById('rolUsuario').value;
+    const aviso = document.getElementById('avisoRol') || null;
+    if(!aviso) {
+        const p = document.createElement("p");
+        p.id = "avisoRol";
+        p.style.fontStyle = "italic";
+        document.getElementById('faseUniversal').appendChild(p);
     }
-    let html = `<strong>Documentos obligatorios:</strong> ${docs.documents.join(", ")}<br>
-                <strong>Copias dentro/afuera:</strong> ${docs.copies_inside}/${docs.copies_outside}<br>
-                <strong>Notas:</strong> ${docs.notes}`;
-    document.getElementById("documentos").innerHTML = html;
-  });
-}
-
-// ====================== Rol Alternativo ======================
-function actualizarRol() {
-  const rol = document.getElementById('rol').value;
-  let opciones = "";
-  if(rol==="Chofer" || rol==="Camionero") opciones="Forwarder, Dueño, Counter";
-  if(rol==="Forwarder") opciones="Chofer, Dueño, Counter";
-  document.getElementById("rolAlternativo").innerText = opciones;
-}
-
-// ====================== Validación y Simulación ======================
-function validarCarga() {
-  const resultDiv = document.getElementById("resultadoValidacion");
-  resultDiv.innerHTML = "<strong>Validación ejecutada:</strong> Revise alertas y documentos obligatorios.";
-}
-
-function simularVuelo() {
-  const resultDiv = document.getElementById("resultadoVuelo");
-  // Ejemplo: reemplazar con datos reales de backend
-  const vuelo = "AV11";
-  const salida = "21:45";
-  const cutoff = "18:00";
-  const capacidad = 3;
-  resultDiv.innerHTML = `<strong>Simulación de vuelo:</strong><br>
-                         Vuelo: ${vuelo}<br>
-                         Salida: ${salida}<br>
-                         Cutoff: ${cutoff}<br>
-                         Capacidad disponible: ${capacidad} pallets<br>
-                         <strong>Resultado:</strong> TU CARGA VUELA HOY.`;
+    document.getElementById('avisoRol').innerText = 
+        rol==="Chofer" || rol==="AgenteWarehouse" ? "Recuerde: Revise sellos y manifiestos." :
+        rol==="Forwarder" ? "Recuerde: Validar documentación y AWB." : "";
 }
