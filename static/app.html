@@ -4,86 +4,96 @@
 <meta charset="UTF-8">
 <title>SMARTGOSERVER - Asesoría Técnica de Carga</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body { font-family: Arial, sans-serif; background: #f4f6f8; color: #111; margin:0; padding:20px;}
-h1 { text-align:center; color:#0a3d62;}
-.section { background:#fff; padding:15px; margin:10px 0; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-label { display:block; margin:8px 0 4px;}
-input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc;}
-.alert { color:red; font-weight:bold; margin:5px 0;}
-.success { color:green; font-weight:bold; margin:5px 0;}
-.docs { background:#eef; padding:8px; margin:5px 0; border-radius:4px;}
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #111;
+    margin:0;
+    padding:20px;
+}
+
+h1 {
+    text-align:center;
+    color:#0a3d62;
+}
+
+.section {
+    background:#fff;
+    padding:15px;
+    margin:10px 0;
+    border-radius:8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+label {
+    display:block;
+    margin:8px 0 4px;
+}
+
+input, select {
+    padding:8px;
+    width:100%;
+    margin-bottom:10px;
+    border-radius:4px;
+    border:1px solid #ccc;
+}
+
+button{
+    padding:10px 20px;
+    background:#0a3d62;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#07406b;
+}
+
+.alert {
+    color:red;
+    font-weight:bold;
+    margin:5px 0;
+}
+
+.success {
+    color:green;
+    font-weight:bold;
+    margin:5px 0;
+}
+
+.docs {
+    background:#eef;
+    padding:8px;
+    margin:5px 0;
+    border-radius:4px;
+}
 </style>
-<script>
-function calcularVolumen() {
-    let largo = parseFloat(document.getElementById('largo').value) || 0;
-    let ancho = parseFloat(document.getElementById('ancho').value) || 0;
-    let alto = parseFloat(document.getElementById('alto').value) || 0;
-    let volumen = (largo * ancho * alto)/1000000; // cm³ a m³
-    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
-    // Validación automática
-    if(alto > 244) {
-        document.getElementById('alertAltura').innerText = "ALERTA: Altura excede límite de Carguero (244 cm)";
-    } else if(alto > 160) {
-        document.getElementById('alertAltura').innerText = "ADVERTENCIA: Altura excede límite de pasajero (160 cm)";
-    } else {
-        document.getElementById('alertAltura').innerText = "";
-    }
-    if(largo > 318 || ancho > 244) {
-        document.getElementById('alertDim').innerText = "ALERTA: Dimensiones exceden máximo permitido (Largo 318 cm, Ancho 244 cm)";
-    } else {
-        document.getElementById('alertDim').innerText = "";
-    }
-    let peso = parseFloat(document.getElementById('peso').value) || 0;
-    if(peso > 6800) {
-        document.getElementById('alertPeso').innerText = "ALERTA: Peso excede máximo permitido del pallet (6800 kg)";
-    } else {
-        document.getElementById('alertPeso').innerText = "";
-    }
-}
 
-// Mostrar documentos según tipo de carga
-function mostrarDocumentos() {
-    let tipo = document.getElementById('tipoCarga').value;
-    let docs = {
-        "HUM": "Air Waybill, Death Certificate, Funeral Certificate, Embalming Certificate, Known Shipper / Screening / Regulated Agent",
-        "PER": "Air Waybill, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening / Regulated Agent",
-        "DGR": "Air Waybill, Shipper’s Declaration x2, Certificado Fitosanitario si aplica, Known Shipper / Screening / Regulated Agent",
-        "GEN": "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent"
-    };
-    document.getElementById('documentos').innerText = docs[tipo] || "Air Waybill, Packing List, Invoice, Known Shipper / Screening / Regulated Agent";
-}
-
-// Mostrar rol dinámico
-function actualizarRol() {
-    let rol = document.getElementById('rol').value;
-    let opciones = "";
-    if(rol === "Chofer" || rol === "Camionero") opciones = "Forwarder, Dueño, Counter";
-    if(rol === "Forwarder") opciones = "Chofer, Dueño, Counter";
-    document.getElementById('rolAlternativo').innerText = opciones;
-}
-
-function validarCarga() {
-    alert("Validación ejecutada al momento. Revise alertas visibles en pantalla.");
-}
-</script>
 </head>
+
 <body>
 
 <h1>SMARTGOSERVER - Asesoría Técnica de Carga</h1>
 
 <div class="section">
+
 <h2>I. Identificación y Tipo de Envío</h2>
+
 <label for="clienteID">ID de Cliente / Código SCAC:</label>
 <input type="text" id="clienteID" placeholder="Ingrese su ID o SCAC">
 
 <label for="tipoCarga">Tipo de Carga:</label>
 <select id="tipoCarga" onchange="mostrarDocumentos()">
-    <option value="">Seleccione</option>
-    <option value="HUM">HUM (Human Remains)</option>
-    <option value="PER">PER (Perishable Goods)</option>
-    <option value="DGR">DGR (Dangerous Goods)</option>
-    <option value="GEN">GEN (General Cargo)</option>
+<option value="">Seleccione</option>
+<option value="HUM">HUM (Human Remains)</option>
+<option value="PER">PER (Perishable Goods)</option>
+<option value="DGR">DGR (Dangerous Goods)</option>
+<option value="GEN">GEN (General Cargo)</option>
 </select>
 
 <label for="destino">Destino:</label>
@@ -91,17 +101,20 @@ function validarCarga() {
 
 <label for="rol">Rol del Usuario:</label>
 <select id="rol" onchange="actualizarRol()">
-    <option value="">Seleccione</option>
-    <option value="Chofer">Chofer</option>
-    <option value="Camionero">Camionero</option>
-    <option value="Forwarder">Forwarder</option>
+<option value="">Seleccione</option>
+<option value="Chofer">Chofer</option>
+<option value="Camionero">Camionero</option>
+<option value="Forwarder">Forwarder</option>
 </select>
+
 <p id="rolAlternativo" style="font-style:italic;"></p>
 
 </div>
 
 <div class="section">
+
 <h2>II. Dimensiones y Peso</h2>
+
 <label for="largo">Largo (cm):</label>
 <input type="number" id="largo" oninput="calcularVolumen()">
 
@@ -120,18 +133,32 @@ function validarCarga() {
 <p id="alertAltura" class="alert"></p>
 <p id="alertDim" class="alert"></p>
 <p id="alertPeso" class="alert"></p>
+
 </div>
 
 <div class="section">
+
 <h2>III. Documentos Obligatorios</h2>
-<div id="documentos" class="docs">Seleccione un tipo de carga para ver documentos.</div>
+
+<div id="documentos" class="docs">
+Seleccione un tipo de carga para ver documentos.
+</div>
+
 </div>
 
 <div class="section">
+
 <h2>IV. Validación Final</h2>
+
 <button onclick="validarCarga()">Validar Carga</button>
-<p class="success">Respuesta al momento: Todos los campos críticos deben revisarse antes de generar AWB.</p>
+
+<p class="success">
+Respuesta al momento: Todos los campos críticos deben revisarse antes de generar AWB.
+</p>
+
 </div>
+
+<script src="/static/app.js"></script>
 
 </body>
 </html>
