@@ -1,91 +1,69 @@
-// Mostrar documentos según tipo de carga
+// Mostrar documentos según tipo de carga y guía paso a paso
 function mostrarDocumentos() {
     const tipo = document.getElementById('codigoCarga').value;
     const docs = {
-        "GEN": "AWB, Packing List, Invoice, Known Shipper / Screening",
-        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper / Screening",
-        "HUM": "AWB, Death Certificate, Embalming Certificate, Funeral Letter, Known Shipper / Screening",
-        "VAL": "AWB, Invoice, Seguro / Declaración de valor",
-        "AVI": "AWB, Certificado sanitario animal, Known Shipper / Screening",
-        "DGR": "AWB, Shipper Declaration x2, MSDS, Known Shipper / Screening"
+        "GEN": "AWB, Packing List, Invoice, Known Shipper / Screening. Todo debe estar legible y con copia interna y externa.",
+        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA Prior Notice, Known Shipper. Revise temperatura 0C-8C.",
+        "HUM": "AWB, Death Certificate, Embalming Certificate, Funeral Letter. Revise embalaje seguro y etiqueta Human Remains.",
+        "VAL": "AWB, Invoice, Seguro / Declaración de valor. Revise embalaje reforzado.",
+        "AVI": "AWB, Certificado sanitario animal, Known Shipper. Animales vivos, asegure ventilación y protección.",
+        "DGR": "AWB, Shipper Declaration x2, MSDS. Revise etiquetas, embalaje, pallets y protecciones especiales."
     };
-    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga";
+    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga para ver documentos.";
 }
 
-// Calcular volumen y peso volumétrico
+// Calcular volumen y peso volumétrico y dar tips
 function calcularVolumen() {
-    const largo = parseFloat(document.getElementById('largo').value) || 0;
-    const ancho = parseFloat(document.getElementById('ancho').value) || 0;
-    const alto = parseFloat(document.getElementById('alto').value) || 0;
+    const L = parseFloat(document.getElementById('largo').value) || 0;
+    const W = parseFloat(document.getElementById('ancho').value) || 0;
+    const H = parseFloat(document.getElementById('alto').value) || 0;
     const pesoTotal = parseFloat(document.getElementById('pesoTotal').value) || 0;
 
-    const volumen = (largo * ancho * alto) / 1000000;
-    document.getElementById('volumen').value = volumen.toFixed(3) + ' m³';
-
+    const volumen = (L*W*H)/1000000;
+    document.getElementById('volumen').value = volumen.toFixed(3)+' m³';
     const pesoVol = volumen * 167;
     document.getElementById('pesoVolumetrico').value = pesoVol.toFixed(2);
 
     let alertMsg = "";
-    if(alto > 244) alertMsg += "ALTO excede carguero (244cm). ";
-    else if(alto > 160) alertMsg += "Solo vuela en carguero. ";
-    if(largo > 318 || ancho > 244) alertMsg += "Dimensiones exceden límites. ";
-    if(pesoTotal > 6800) alertMsg += "Peso excede límite pallet 6800kg.";
+    if(H>244) alertMsg += "Alto excede carguero (244cm). ";
+    else if(H>160) alertMsg += "Solo vuela en Main Deck. ";
+    if(L>318 || W>244) alertMsg += "Dimensiones exceden límites. ";
+    if(pesoTotal>6800) alertMsg += "Peso excede límite pallet 6800kg.";
     document.getElementById('alertDimensiones').innerText = alertMsg;
 }
 
-// Enviar datos al backend
+// Evaluar carga y mostrar instrucciones educativas
 async function evaluarCarga() {
     const data = {
-        rol: document.getElementById('rolUsuario').value,
-        awb: document.getElementById('awb').value.trim(),
-        codigo: document.getElementById('codigoCarga').value,
-        piezas: parseInt(document.getElementById('piezas').value) || 0,
-        pesoTotal: parseFloat(document.getElementById('pesoTotal').value) || 0,
-        pesoPieza: parseFloat(document.getElementById('pesoPieza').value) || 0,
-        largo: parseFloat(document.getElementById('largo').value) || 0,
-        ancho: parseFloat(document.getElementById('ancho').value) || 0,
-        alto: parseFloat(document.getElementById('alto').value) || 0,
-        knownShipper: document.getElementById('knownShipper').value,
-        horaCamion: document.getElementById('horaCamion').value,
-        cutoff: document.getElementById('cutoff').value,
-        description: document.getElementById('codigoCarga').value.toLowerCase(),
+        longest_piece: parseFloat(document.getElementById('alto').value)||0,
+        widest_piece: parseFloat(document.getElementById('ancho').value)||0,
+        tallest_piece: parseFloat(document.getElementById('alto').value)||0,
+        heaviest_piece: parseFloat(document.getElementById('pesoTotal').value)||0,
+        description: document.getElementById('codigoCarga').value,
         destination: document.getElementById('destino').value,
-        shipper_type: document.getElementById('rolUsuario').value
+        shipper_type: document.getElementById('rolUsuario').value,
+        units: "cm"
     };
 
-    const response = await fetch("/validate_shipment", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
+    const response = await fetch("/validate_shipment",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
         body: JSON.stringify(data)
     });
+
     const result = await response.json();
-    document.getElementById('resultadoFinal').innerText =
-        `${result.status}\nErrores: ${result.errors.join(" | ")}\nAdvertencias: ${result.warnings.join(" | ")}\nRiesgos: ${result.risks.join(" | ")}\nAircraft: ${result.aircraft_recommendation}`;
-}
 
-// Opciones de rol dinámicas
-function updateRolFields() {
-    const rol = document.getElementById('rolUsuario').value;
-    let aviso = document.getElementById('avisoRol');
-    if(!aviso){
-        aviso = document.createElement("p");
-        aviso.id = "avisoRol";
-        aviso.style.fontStyle = "italic";
-        document.getElementById('faseUniversal').appendChild(aviso);
-    }
-    aviso.innerText =
-        rol==="Chofer" || rol==="AgenteWarehouse" ? "Recuerde: Revise sellos y manifiestos." :
-        rol==="Forwarder" ? "Recuerde: Validar documentación y AWB." : "";
-}
+    let output = result.status + "\n\nInstrucciones:\n";
+    result.instructions.forEach((ins,i)=>{
+        output += (i+1)+". "+ins+"\n";
+    });
 
-// Cortinas inteligentes
-document.addEventListener("DOMContentLoaded", ()=>{
-    var coll = document.getElementsByClassName("collapsible");
-    for (let i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            var content = this.nextElementSibling;
-            content.style.display = (content.style.display === "block") ? "none" : "block";
-        });
+    if(result.errors.length>0){
+        output += "\nErrores:\n"+result.errors.join("\n");
     }
-});
+    if(result.warnings.length>0){
+        output += "\nAdvertencias:\n"+result.warnings.join("\n");
+    }
+
+    document.getElementById('resultadoFinal').innerText = output;
+}
