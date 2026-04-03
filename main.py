@@ -4,21 +4,17 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 
-app = FastAPI(title="AL CIELO - PRE-CHECK ADVISORY")
+app = FastAPI(title="AL CIELO - ENGINE V3")
 
 if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Reglas basadas en estándares Avianca/IATA
+# Parámetros Técnicos de Carga Aérea (MIA/VCP/BOG)
 REGLAS = {
-    "PREFIJO": "729", # Basado en la foto de Tampa Cargo / Avianca
-    "FACTOR_VOL": 6000, # Factor estándar internacional para KG
-    "MAX_H": 63.0, # Límite para aviones de pasajeros
-    "DOCS_REQ": {
-        "GENERAL": ["AWB Original", "Commercial Invoice", "Packing List"],
-        "PHARMA": ["AWB", "Factura", "Temp Log", "Health Cert"],
-        "DGR": ["AWB", "Shipper's Declaration", "MSDS", "UN Packing"],
-    }
+    "PREFIJOS_OK": ["045", "729"],
+    "FACTOR_VOL": 6000, 
+    "LIMITE_H_PAX": 63.0,
+    "CRITICOS": ["DAÑO", "ROTO", "OLOR", "FUGA", "MOJADO", "SIN SELLO", "ABIERTO"]
 }
 
 @app.get("/", response_class=HTMLResponse)
@@ -32,14 +28,14 @@ async def validar_precheck(data: dict):
     explicaciones = []
     riesgos = []
     
-    # Validar AWB
+    # Validación de Prefijo (Seguridad Documental)
     awb = data.get("awb", "")
-    if not awb.startswith("729") and not awb.startswith("045"):
-        alertas.append("PREFIJO NO RECONOCIDO")
-        explicaciones.append("El AWB no parece ser de Avianca/Tampa (045/729).")
-        riesgos.append("Rechazo en counter por aerolínea incorrecta.")
+    if not any(awb.startswith(p) for p in REGLAS["PREFIJOS_OK"]):
+        alertas.append("PREFIJO NO AUTORIZADO")
+        explicaciones.append("El AWB no inicia con 045 o 729 (Avianca/Tampa).")
+        riesgos.append("Rechazo inmediato en el counter de recepción.")
 
-    # Validar Piezas
+    # Auditoría Física de Piezas
     piezas = data.get("piezas", [])
     total_real = 0
     total_vol = 0
@@ -49,29 +45,30 @@ async def validar_precheck(data: dict):
             l, w, h, cant = float(p['l']), float(p['w']), float(p['h']), int(p['cant'])
             peso_u = float(p['peso'])
             
-            p_real = peso_u * cant
-            # Cálculo de Volumen (L*W*H / 6000) * Cantidad
-            p_vol = ((l * w * h) / REGLAS["FACTOR_VOL"]) * cant
+            total_real += (peso_u * cant)
+            # Cálculo automático de volumen
+            vol_calc = ((l * w * h) / REGLAS["FACTOR_VOL"]) * cant
+            total_vol += vol_calc
             
-            total_real += p_real
-            total_vol += p_vol
-            
-            if h > REGLAS["MAX_H"]:
-                alertas.append(f"PIEZA {i+1} DEMASIADO ALTA")
-                explicaciones.append(f"Altura de {h}in excede el límite de bodega PAX.")
-                riesgos.append("Vire de carga o costo extra por carguero (CAO).")
+            if h > REGLAS["LIMITE_H_PAX"]:
+                alertas.append(f"ALTURA EXCEDIDA - PIEZA {i+1}")
+                explicaciones.append(f"Altura de {h}in supera la capacidad de Bellies (Avión PAX).")
+                riesgos.append("La carga será 'vire' (offload) o requerirá freighter (CAO).")
         except: continue
 
-    # Reporte de daños
+    # Evaluación de Riesgo por Observaciones
     obs = data.get("observaciones", "").upper()
-    if any(x in obs for x in ["ROTO", "DAÑADO", "OLOR", "MOJADO"]):
-        alertas.append("DAÑO FÍSICO DETECTADO")
-        explicaciones.append("El reporte técnico indica mal estado del embalaje.")
-        riesgos.append("La bodega rechazará la carga o exigirá carta de responsabilidad.")
+    for palabra in REGLAS["CRITICOS"]:
+        if palabra in obs:
+            alertas.append(f"ANOMALÍA DETECTADA: {palabra}")
+            explicaciones.append(f"El reporte indica presencia de {palabra.lower()} en el embalaje.")
+            riesgos.append("Responsabilidad legal y posible rechazo por seguridad TSA/CBP.")
 
+    status = "STOP - RECHAZADO" if alertas else "READY TO FLY"
+    
     return {
-        "status": "STOP - REVISAR" if alertas else "READY TO FLY",
-        "peso_cobrable": round(max(total_real, total_vol), 2),
+        "status": status,
+        "p_cobrable": round(max(total_real, total_vol), 2),
         "alertas": alertas,
         "explicaciones": explicaciones,
         "riesgos": riesgos
