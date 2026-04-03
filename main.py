@@ -5,9 +5,9 @@ import uvicorn
 import os
 import re
 
-app = FastAPI(title="AL CIELO - SmartCargo Advisory by May Roga")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory")
 
-# Configuración de carpetas estáticas para la interfaz
+# Configuración de carpetas estáticas
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -22,79 +22,66 @@ async def home():
 
 @app.post("/api/evaluar")
 async def api_evaluar_carga(data: dict):
-    # Diccionario de respuesta
     errores = []
     soluciones = []
     lang = data.get("lang", "es")
     
-    # 1. Extracción de datos del formulario y análisis
-    texto_analisis = data.get("analisisTexto", "").upper()
+    # Extracción de datos
+    texto = data.get("analisisTexto", "").upper()
     codigo = data.get("codigoCarga", "")
     awb = data.get("awb", "").strip()
-    piezas = int(data.get("piezas") or 0)
-    peso = float(data.get("pesoTotal") or 0)
     alto = float(data.get("alto") or 0)
+    peso = float(data.get("pesoTotal") or 0)
     
-    # Checkboxes de seguridad y counter
-    chk_seguridad = data.get("chkSeguridad", False) # TSA Screening
-    chk_sobres = data.get("chkSobres", False)       # Envelopes
-    chk_manifiesto = data.get("chkManifiesto", False) # Ground Manifest
-    chk_wood = data.get("chkWood", False)           # NIMF-15
-    chk_dgr = data.get("chkDGR", False)             # DGD Present
-    
-    # 2. LÓGICA DE ASESORÍA Y RESOLUCIÓN (Protocolo Avianca/IATA/CBP)
+    # Checkboxes de seguridad
+    chk_wood = data.get("chkWood", False)
+    chk_seguridad = data.get("chkSeguridad", False)
+    chk_sobres = data.get("chkSobres", False)
 
-    # Situación: Identificación AWB
+    # --- LÓGICA DE ASESORÍA Y RESOLUCIÓN ---
+
+    # 1. Validación de AWB (IATA)
     if not re.match(r"^\d{3}-\d{8}$", awb):
-        errores.append("AWB con formato incorrecto o ausente." if lang=="es" else "Invalid or missing AWB.")
-        soluciones.append("📞 Sugerencia: Contactar al Forwarder para rectificar la guía física. No se puede procesar en sistema sin 11 dígitos válidos.")
+        errores.append("AWB fuera de formato estándar (11 dígitos)." if lang=="es" else "Invalid AWB format.")
+        soluciones.append("📞 Acción: Contactar al Forwarder para corregir Guía Aérea. Si es Avianca, debe iniciar con 045.")
 
-    # Situación: Dimensiones en Bellies (PAX) vs Carguero
-    if alto > 160 and alto <= 244:
-        # Altura de carguero
-        errores.append("Carga excede altura para aviones de pasajeros (Bellies)." if lang=="es" else "Height exceeds passenger aircraft limit.")
-        soluciones.append("✈️ Acción: Verificar disponibilidad en B767F (Carguero). Si el vuelo es PAX, se sugiere re-estibar la carga o cambiar a pallet PMC para Main Deck.")
-    elif alto > 244:
-        # Exceso total
-        errores.append("Altura fuera de rango operativo (Excede 244cm)." if lang=="es" else "Height out of operational range.")
-        soluciones.append("🛠️ Solución técnica: Realizar 'Breakdown' inmediato. Desarmar el pallet y re-estibar en unidades más pequeñas para cumplir con el contorno del avión.")
+    # 2. Altura y Equipo (Bellies vs Main Deck)
+    if alto > 160 and alto <= 243:
+        errores.append("Carga para Main Deck (Carguero)." if lang=="es" else "Main Deck cargo only.")
+        soluciones.append("✈️ Solución: Esta carga no entra en aviones de pasajeros (PAX). Coordinar transferencia a vuelo carguero B767F.")
+    elif alto > 243:
+        errores.append("Exceso de altura crítico (Out of Gauge)." if lang=="es" else "Critical over-height.")
+        soluciones.append("🛠️ Acción directa: El chofer debe desarmar el pallet (breakdown) y re-estibar a máximo 160cm para cumplir contornos.")
 
-    # Situación: Seguridad TSA / Screening
-    if not chk_seguridad:
-        errores.append("Falta validación de Known Shipper / TSA Screening." if lang=="es" else "Missing TSA Screening / Known Shipper validation.")
-        soluciones.append("🛡️ Acción: Mover carga al área de inspección (Rayos X / ETD) antes de ingresar a zona estéril. Cumplir con norma TSA.")
-
-    # Situación: Madera y Aduana (CBP)
+    # 3. Protocolo Aduana (CBP / NIMF-15)
     if not chk_wood:
-        errores.append("Madera sin sello NIMF-15 detectada." if lang=="es" else "Non-treated wood (ISPM-15) detected.")
-        soluciones.append("🪵 Acción preventiva: Para evitar multas de CBP, se sugiere cambiar por pallet de plástico o llevar a fumigación certificada antes del despacho.")
+        errores.append("Madera sin sello NIMF-15 (Peligro de multa)." if lang=="es" else "Untreated wood detected (CBP Risk).")
+        soluciones.append("🪵 Acción: Cambiar el pallet por uno de plástico o llevar a fumigación inmediata. No ingresar a zona estéril así.")
 
-    # Situación: Mercancía Peligrosa (DGR) - MSDS y DGD
-    if codigo == "DGR" or "DRY ICE" in texto_analisis or "LITHIUM" in texto_analisis:
-        if not chk_dgr:
-            errores.append("Alerta DGR: Falta Declaración de Mercancías Peligrosas (DGD)." if lang=="es" else "DGR Alert: Missing Shipper's Declaration.")
-            soluciones.append("🚨 Resolución: No recibir carga. Solicitar al Shipper 3 copias originales con borde rojo y verificar que el UN Number coincida con el MSDS.")
+    # 4. Seguridad TSA (Screening)
+    if not chk_seguridad:
+        errores.append("Falta validación TSA / Screening." if lang=="es" else "Missing TSA Screening.")
+        soluciones.append("🛡️ Protocolo: Llevar carga al área de inspección (Rayos X / ETD) inmediatamente.")
 
-    # Situación: Consolidado y Manejo de Sobres (Avianca Standard)
-    if "CONSOL" in texto_analisis or "CONSOLIDADO" in texto_analisis:
-        if not chk_sobres:
-            errores.append("Inconsistencia en documentos de consolidado." if lang=="es" else "Consolidated documentation inconsistency.")
-            soluciones.append("📂 Instrucción: Organizar sobres. HAWBs originales dentro del sobre de Avianca; copias pegadas al pallet en sobre canguro visible.")
+    # 5. Mercancía Peligrosa (DGR / Lithium / Dry Ice)
+    if codigo == "DGR" or any(x in texto for x in ["LITHIUM", "BATTERY", "DRY ICE", "UN3481"]):
+        errores.append("Alerta: Mercancía Peligrosa detectada." if lang=="es" else "DGR Alert: Dangerous Goods.")
+        soluciones.append("🚨 Resolución: Verificar 3 copias de DGD con borde rojo original. Comprobar etiquetas de ventilación si lleva Hielo Seco.")
 
-    # Situación: Peso de Pallet
+    # 6. Consolidados y Sobres (Avianca Standard)
+    if "CONSOL" in texto or not chk_sobres:
+        errores.append("Sobres de documentos incompletos." if lang=="es" else "Incomplete document envelopes.")
+        soluciones.append("📂 Instrucción: HAWBs originales dentro del sobre de Avianca; copias pegadas al pallet en sobre canguro.")
+
+    # 7. Peso de Pallet (IAAT)
     if peso > 6800:
-        errores.append("Peso excede la capacidad máxima estructural del pallet (6800kg)." if lang=="es" else "Weight exceeds pallet structural capacity.")
-        soluciones.append("⚖️ Sugerencia: Dividir la carga en dos unidades (Pallets PMC/PAG) para no comprometer la seguridad del vuelo.")
+        errores.append("Peso excede límite estructural del pallet." if lang=="es" else "Pallet structural weight limit exceeded.")
+        soluciones.append("⚖️ Sugerencia: Dividir la carga en dos unidades (PMC/PAG) para seguridad del vuelo.")
 
-    # Situación: INTERLINES / TRANSFER / COMAT (Detección por texto)
-    if any(x in texto_analisis for x in ["INTERLINE", "TRANSFER", "COMAT"]):
-        soluciones.append("🔄 Nota de Asesoría: Verificar que la transferencia tenga el sello de 'Transfer' y el manifiesto de conexión actualizado.")
-
-    # 3. Estado Final de la Asesoría
-    if not errores:
-        status = "VUELO AUTORIZADO (FLY READY)" if lang=="es" else "FLIGHT AUTHORIZED (FLY READY)"
-    else:
-        status = "CARGA EN RETENCIÓN (ON HOLD)" if lang=="es" else "CARGO ON HOLD"
+    # Estado Final
+    status = "VUELO AUTORIZADO (FLY READY)" if not errores else "CARGA EN RETENCIÓN (ON HOLD)"
+    if lang == "en":
+        status = "FLY READY" if not errores else "CARGO ON HOLD"
 
     return {
         "status": status,
@@ -103,6 +90,4 @@ async def api_evaluar_carga(data: dict):
     }
 
 if __name__ == "__main__":
-    # Puerto configurado para despliegue
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=10000)
