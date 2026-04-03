@@ -1,72 +1,79 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+import uvicorn
 import os
 
-app = FastAPI()
+app = FastAPI(title="AURA SMARTCARGO ADVISORY")
 
-# --- CONFIGURACIÓN TÉCNICA MIA-OPERA ---
-OPERACIONES = {
-    "AIRLINE_045": "AVIANCA",
-    "AIRLINE_729": "TAMPA CARGO",
-    "EQUIPOS": {
-        "PAX": {"max_h": 63, "desc": "Belly (Pasajeros)"},
-        "CAO": {"max_h": 96, "desc": "Freighter (Carguero)"}
-    },
-    "TARIFA_MIN_MIA": 50.00,
-    "RATIO": 166
-}
+# Crear carpeta static si no existe y montar para archivos CSS/JS/IMG
+if not os.path.exists("static"): 
+    os.makedirs("static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# --- PROTOCOLO DE ASESORÍA MIA-AVIANCA ---
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 @app.post("/api/asesorar")
 async def asesorar(data: dict):
-    # Extracción de datos del Agente
-    awb = data.get("awb", "")
-    tipo_vuelo = data.get("tipo_vuelo", "PAX")
+    # 1. Extracción de datos enviados por el HTML
+    awb = data.get("awb", "").strip()
     naturaleza = data.get("naturaleza", "GEN")
+    tipo_vuelo = data.get("tipo_vuelo", "PAX")
     piezas = data.get("piezas", [])
-    pouch = data.get("pouch", []) # Documentos físicos confirmados
+    pouch = data.get("pouch", [])
     
     soluciones = []
     acciones = []
     
-    # 1. ASESORÍA DE IDENTIDAD (045/729)
+    # 2. Validación de Prefijo (045 Avianca / 729 Tampa)
     prefix = awb[:3]
     if prefix not in ["045", "729"]:
-        soluciones.append(f"PREFIJO {prefix} NO RECONOCIDO EN COUNTER MIA.")
-        acciones.append("ACCIÓN: Validar si es una INTERLINE o COMAT. Si es carga propia, re-emitir bajo 045.")
-    
-    # 2. ASESORÍA FÍSICA Y SEGURIDAD
+        soluciones.append(f"PREFIJO {prefix} AJENO A RED AVIANCA.")
+        acciones.append("ASESORÍA: Verificar si es carga INTERLINE o COMAT. De lo contrario, solicitar re-emisión de AWB.")
+
+    # 3. Validación de Dimensiones y Equipo (Belly vs CAO)
     total_real = 0
     total_vol = 0
     max_h = 0
     
     for i, p in enumerate(piezas):
-        l, w, h, c = float(p['l'] or 0), float(p['w'] or 0), float(p['h'] or 0), int(p['cant'] or 1)
-        peso = float(p['p_real'] or 0)
-        total_real += peso * c
-        total_vol += (l * w * h * c) / OPERACIONES["RATIO"]
-        if h > max_h: max_h = h
-        
-        # Validación de Equipo vs Altura
-        if h > OPERACIONES["EQUIPOS"]["PAX"]["max_h"] and tipo_vuelo == "PAX":
-            soluciones.append(f"PIEZA {i+1} EXCEDE ALTURA BELLY ({h} in).")
-            acciones.append("SOLUCIÓN: Solicitar cambio a equipo CAO (Carguero) o re-dimensionar estiba si es posible.")
+        try:
+            l, w, h = float(p['l']), float(p['w']), float(p['h'])
+            c = int(p['cant'])
+            p_r = float(p['p_real'])
+            
+            total_real += p_r * c
+            total_vol += (l * w * h * c) / 166
+            if h > max_h: max_h = h
+            
+            if h > 63 and tipo_vuelo == "PAX":
+                soluciones.append(f"PIEZA {i+1} CON ALTURA DE {h}in EXCEDE LIMITE PAX.")
+                acciones.append("SOLUCIÓN: La carga no cabe en avión de pasajeros. Solicitar reserva en CARGUERO (CAO).")
+        except: continue
 
-    # 3. ASESORÍA DOCUMENTAL (EL POUCH)
-    docs_requeridos = {
+    # 4. Validación de Papelería (Pouch)
+    docs_minimos = {
         "DGR": ["DGD", "MSDS", "CHECKLIST"],
-        "PER": ["PHITO", "SANITARY", "TEMP LOG"],
+        "PER": ["PHITO", "SANITARY"],
         "GEN": ["INVOICE", "PACKING LIST"]
     }
     
-    faltantes = [d for d in docs_requeridos.get(naturaleza, []) if d not in pouch]
+    faltantes = [d for d in docs_minimos.get(naturaleza, []) if d not in pouch]
     if faltantes:
-        soluciones.append(f"POUCH INCOMPLETO PARA {naturaleza}.")
-        acciones.append(f"ACCIÓN: Faltan {', '.join(faltantes)}. Solicitar al Forwarder antes de que el Driver llegue al muelle.")
+        soluciones.append(f"FALTAN DOCUMENTOS CRÍTICOS EN POUCH.")
+        acciones.append(f"ACCIÓN: Solicitar urgentemente: {', '.join(faltantes)} para evitar retención en Aduana.")
 
     return {
-        "status": "REVISIÓN PROFESIONAL COMPLETADA",
+        "status": "PLAN DE VUELO GENERADO",
         "p_cobrable": round(max(total_real, total_vol), 2),
-        "equipo_sugerido": "CAO" if max_h > 63 else "PAX/CAO",
+        "equipo": "CAO" if max_h > 63 else "PAX/CAO OK",
         "soluciones": soluciones,
         "acciones": acciones
     }
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=10000)
