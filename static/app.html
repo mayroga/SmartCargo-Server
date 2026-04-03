@@ -4,274 +4,188 @@
     <meta charset="UTF-8">
     <title>AL CIELO - SmartCargo Advisory</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0a3d62; --danger: #eb4d4b; --success: #27ae60; --light: #f4f6f8; --avianca: #e11a22; }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:20px; color: #333; }
-        .container { max-width: 850px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        :root { --red: #e11a22; --blue: #0a3d62; --gray: #f1f5f9; --green: #27ae60; }
+        body { font-family: -apple-system, sans-serif; background: var(--gray); padding: 15px; margin: 0; }
+        .card { max-width: 900px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--blue); color: white; padding: 20px; text-align: center; font-weight: bold; border-bottom: 4px solid var(--red); }
+        .content { padding: 20px; }
+        .section-h { background: #f8f9fa; padding: 12px; font-weight: bold; color: var(--blue); margin: 20px 0 15px 0; border-left: 5px solid var(--red); text-transform: uppercase; font-size: 14px; }
         
-        h1 { color: var(--primary); text-align: center; font-size: 24px; border-bottom: 4px solid var(--avianca); padding-bottom: 10px; text-transform: uppercase; margin-top: 0; }
+        textarea { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: #fffdf5; }
+        .btn-voice { background: #5856d6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; }
         
-        .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
-        .lang-btn { cursor: pointer; border: 2px solid var(--primary); padding: 6px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; transition: 0.3s; }
-        .selected-lang { background: var(--primary); color: white; }
+        .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #fafafa; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .check-item { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
 
-        .section { margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-        .header { background: #f8f9fa; color: var(--primary); padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
-        .header:hover { background: #edf2f7; }
-        .body { padding: 20px; display: none; background: #fff; }
-        .active .body { display: block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #eee; font-size: 11px; padding: 10px; border: 1px solid #ddd; color: var(--blue); }
+        td { border: 1px solid #ddd; padding: 5px; }
+        input[type="number"] { width: 100%; border: none; padding: 8px; text-align: center; font-size: 14px; box-sizing: border-box; }
 
-        label { display: block; font-weight: 600; margin-top: 15px; font-size: 13px; color: var(--primary); }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px; }
+        .btn-diagnose { background: var(--red); color: white; width: 100%; padding: 20px; font-size: 18px; font-weight: bold; border: none; cursor: pointer; margin-top: 25px; border-radius: 8px; transition: 0.3s; }
+        .btn-diagnose:hover { background: #b3151b; transform: translateY(-2px); }
+
+        .report-box { display: none; margin-top: 30px; padding: 25px; border: 3px solid var(--blue); border-radius: 12px; background: white; }
+        .error-tag { color: var(--red); font-weight: bold; margin-bottom: 2px; display: block; }
+        .photo-strip { display: flex; gap: 10px; overflow-x: auto; margin-top: 20px; padding-bottom: 10px; }
+        .photo-strip img { width: 120px; height: 120px; object-fit: cover; border: 2px solid #ddd; border-radius: 8px; }
         
-        .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; background: #f1f5f9; padding: 15px; border-radius: 8px; }
-        .check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th { background: var(--primary); color: white; padding: 10px; border: 1px solid #ddd; }
-        td { padding: 5px; border: 1px solid #ddd; text-align: center; }
-        
-        .btn { padding: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.2s; font-size: 14px; text-transform: uppercase; }
-        .btn-main { background: var(--avianca); color: white; font-size: 16px; box-shadow: 0 4px 6px rgba(225, 26, 34, 0.2); }
-        .btn-main:hover { background: #b3151b; transform: translateY(-1px); }
-        .btn-voice { background: #4b6cb7; color: white; width: auto; padding: 8px 15px; font-size: 12px; margin-top: 8px; }
-        .btn-add { background: var(--success); color: white; margin-top: 10px; width: auto; padding: 10px 20px; }
-        
-        .result-box { margin-top: 25px; padding: 20px; border-radius: 10px; border: 2px solid var(--primary); background: #fff; display: none; }
-        .alert-card { background: #fff5f5; border-left: 5px solid var(--danger); padding: 15px; margin-top: 15px; border-radius: 4px; }
-        .solucion-card { background: #f0fdf4; border-left: 5px solid var(--success); padding: 15px; margin-top: 10px; border-radius: 4px; font-size: 14px; }
-
-        .photo-preview { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .photo-preview img { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; }
-
-        @media print {
-            .btn, .lang-bar, .btn-add, input[type="file"], .header span:last-child { display: none !important; }
-            .body { display: block !important; border: none; }
-            .container { box-shadow: none; border: none; max-width: 100%; }
-            .section { border: 1px solid #eee; break-inside: avoid; }
-            h1 { font-size: 28px; }
-        }
+        @media print { .no-print { display: none !important; } .report-box { display: block !important; border: none; padding: 0; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="lang-bar">
-        <div id="btn-es" class="lang-btn selected-lang" onclick="changeLang('es')">ESPAÑOL</div>
-        <div id="btn-en" class="lang-btn" onclick="changeLang('en')">ENGLISH</div>
-    </div>
+<div class="card no-print">
+    <div class="header">AL CIELO - CONTROL DE ACEPTACIÓN COUNTER</div>
+    
+    <div class="content">
+        <div class="section-h">I. ANÁLISIS DE CARGA (DICTADO / PACKING LIST)</div>
+        <textarea id="textoCarga" rows="5" placeholder="Dicte detalles de la carga o pegue información del Packing List..."></textarea>
+        <button class="btn-voice" onclick="startVoice()">🎤 INICIAR DICTADO POR VOZ</button>
 
-    <h1 id="txt-title">AL CIELO - SmartCargo Advisory</h1>
-
-    <div class="section active">
-        <div class="header" onclick="toggle(this)">I. <span id="txt-sec1">IDENTIFICACIÓN Y DICTADO</span> <span>▼</span></div>
-        <div class="body">
-            <label id="lbl-awb">Número de Guía (AWB):</label>
-            <input type="text" id="awb" placeholder="045-XXXXXXXX">
-            
-            <label id="lbl-obs">Dictado de Voz / Texto de Documentos (Packing List/Email):</label>
-            <textarea id="dictado" rows="5" placeholder="Pegue el texto o dicte los detalles de la carga..."></textarea>
-            <button class="btn btn-voice" onclick="startVoice()">🎤 <span id="txt-voice">Dictar por Voz</span></button>
+        <div class="section-h">II. FISCALIZACIÓN DOCUMENTAL (OBLIGATORIO)</div>
+        <div class="check-grid">
+            <div class="check-item"><input type="checkbox" id="c-man"> Manifiesto HAWB (Consol)</div>
+            <div class="check-item"><input type="checkbox" id="c-msds"> MSDS / DGD (Peligrosos)</div>
+            <div class="check-item"><input type="checkbox" id="c-inv"> Factura Original</div>
+            <div class="check-item"><input type="checkbox" id="c-pk"> Packing List Físico</div>
+            <div class="check-item"><input type="checkbox" id="c-orig"> Sobre: Originales Fuera</div>
+            <div class="check-item"><input type="checkbox" id="c-id"> ID / Pasaporte Shipper</div>
         </div>
+
+        <div class="section-h">III. MEDIDAS Y EVIDENCIA FOTOGRÁFICA</div>
+        <table>
+            <thead>
+                <tr><th>Pzas</th><th>L(cm)</th><th>W(cm)</th><th>H(cm)</th><th>Kg/u</th><th>Captura</th></tr>
+            </thead>
+            <tbody id="bultosBody">
+                <tr>
+                    <td><input type="number" class="v-cant" value="1"></td>
+                    <td><input type="number" class="v-l" placeholder="0"></td>
+                    <td><input type="number" class="v-w" placeholder="0"></td>
+                    <td><input type="number" class="v-h" placeholder="0"></td>
+                    <td><input type="number" class="v-p" placeholder="0"></td>
+                    <td><input type="file" class="v-foto" accept="image/*" capture="environment"></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="addRow()" style="margin-top:10px; padding:8px 15px; cursor:pointer; border-radius:5px; border:1px solid #ccc;">+ AÑADIR PARTIDA</button>
+
+        <div class="section-h">IV. EMBALAJE Y SEGURIDAD</div>
+        <select id="tipoP" style="padding:12px; width:100%; border-radius:8px; border:2px solid #ddd;">
+            <option value="Wood">Pallet Madera (Sello NIMF-15 Requerido)</option>
+            <option value="Plastic">Pallet Plástico (Aprobado)</option>
+            <option value="PMC">PMC Pallet (Main Deck Only)</option>
+            <option value="Crate">Crate / Huacal Cerrado</option>
+        </select>
+
+        <button class="btn-diagnose" onclick="diagnosticar()">DIAGNOSTICAR ACEPTACIÓN</button>
     </div>
-
-    <div class="section">
-        <div class="header" onclick="toggle(this)">II. <span id="txt-sec2">FISCALIZACIÓN DOCUMENTAL</span> <span>▼</span></div>
-        <div class="body">
-            <p id="txt-chk-desc" style="font-size: 12px; color: #666; margin-bottom: 10px;">Verifique la presencia física de los siguientes documentos:</p>
-            <div class="check-grid">
-                <div class="check-item"><input type="checkbox" id="d-man"> <span id="t-man">Manifiesto (Consolidados)</span></div>
-                <div class="check-item"><input type="checkbox" id="d-inv"> <span id="t-inv">Factura Comercial</span></div>
-                <div class="check-item"><input type="checkbox" id="d-pk"> <span id="t-pk">Packing List</span></div>
-                <div class="check-item"><input type="checkbox" id="d-msds"> <span id="t-msds">MSDS / DGD (Peligrosos)</span></div>
-                <div class="check-item"><input type="checkbox" id="d-id"> <span id="t-id">ID / Pasaporte Shipper</span></div>
-                <div class="check-item"><input type="checkbox" id="d-orig"> <span id="t-orig">Sobres (Original/Copia)</span></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="header" onclick="toggle(this)">III. <span id="txt-sec3">MEDIDAS Y EVIDENCIA</span> <span>▼</span></div>
-        <div class="body">
-            <table id="tablaBultos">
-                <thead>
-                    <tr>
-                        <th id="th-cant">Cant.</th>
-                        <th>L(cm)</th>
-                        <th>W(cm)</th>
-                        <th>H(cm)</th>
-                        <th>Kg/u</th>
-                        <th id="th-foto">Foto</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyBultos">
-                    <tr>
-                        <td><input type="number" class="p-cant" value="1"></td>
-                        <td><input type="number" class="p-l" placeholder="0"></td>
-                        <td><input type="number" class="p-w" placeholder="0"></td>
-                        <td><input type="number" class="p-h" placeholder="0"></td>
-                        <td><input type="number" class="p-p" placeholder="0"></td>
-                        <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn btn-add" onclick="addRow()">+ <span id="txt-add">Añadir Partida</span></button>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="header" onclick="toggle(this)">IV. <span id="txt-sec4">EMBALAJE Y SELLOS</span> <span>▼</span></div>
-        <div class="body">
-            <label id="lbl-pallet">Tipo de Contenedor/Estiba:</label>
-            <select id="tipoPallet">
-                <option value="Wood">Pallet Madera (NIMF-15)</option>
-                <option value="Plastic">Pallet Plástico</option>
-                <option value="PMC">PMC (Main Deck)</option>
-                <option value="Crate">Crate (Huacal)</option>
-            </select>
-            <div style="margin-top:15px;">
-                <label><input type="checkbox" id="chkFumigado"> <span id="txt-chk-fumi">Sello de fumigación visible (Madera)</span></label>
-            </div>
-        </div>
-    </div>
-
-    <button class="btn btn-main" id="btn-eval" onclick="evaluar()">DIAGNOSTICAR: ¿VUELA?</button>
-    <button class="btn" style="background:#64748b; color:white;" id="btn-clear" onclick="limpiarTodo()">BORRAR DATOS</button>
-
-    <div id="resultado" class="result-box"></div>
 </div>
 
+<div id="reporte" class="report-box"></div>
+
 <script>
-let currentLang = 'es';
-
-const translations = {
-    es: {
-        title: "AL CIELO - SmartCargo Advisory",
-        sec1: "IDENTIFICACIÓN Y DICTADO",
-        sec2: "FISCALIZACIÓN DOCUMENTAL",
-        sec3: "MEDIDAS Y EVIDENCIA",
-        sec4: "EMBALAJE Y SELLOS",
-        voice: "Dictar por Voz",
-        eval: "DIAGNOSTICAR: ¿VUELA?",
-        add: "Añadir Partida",
-        clear: "BORRAR DATOS",
-        loading: "Generando dictamen técnico de counter..."
-    },
-    en: {
-        title: "AL CIELO - SmartCargo Advisory",
-        sec1: "ID & DICTATION",
-        sec2: "DOCUMENTAL FISCALIZATION",
-        sec3: "MEASURES & EVIDENCE",
-        sec4: "PACKAGING & SEALS",
-        voice: "Voice Dictation",
-        eval: "DIAGNOSE: FLY?",
-        add: "Add Entry",
-        clear: "CLEAR DATA",
-        loading: "Generating technical counter report..."
-    }
-};
-
-function changeLang(l) {
-    currentLang = l;
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected-lang'));
-    document.getElementById(`btn-${l}`).classList.add('selected-lang');
-    document.getElementById('txt-title').innerText = translations[l].title;
-    document.getElementById('txt-sec1').innerText = translations[l].sec1;
-    document.getElementById('txt-sec2').innerText = translations[l].sec2;
-    document.getElementById('txt-sec3').innerText = translations[l].sec3;
-    document.getElementById('txt-sec4').innerText = translations[l].sec4;
-    document.getElementById('txt-voice').innerText = translations[l].voice;
-    document.getElementById('btn-eval').innerText = translations[l].eval;
-    document.getElementById('txt-add').innerText = translations[l].add;
-    document.getElementById('btn-clear').innerText = translations[l].clear;
-}
-
-function toggle(el) { el.parentElement.classList.toggle('active'); }
-
 function addRow() {
     const row = `<tr>
-        <td><input type="number" class="p-cant" value="1"></td>
-        <td><input type="number" class="p-l" placeholder="0"></td>
-        <td><input type="number" class="p-w" placeholder="0"></td>
-        <td><input type="number" class="p-h" placeholder="0"></td>
-        <td><input type="number" class="p-p" placeholder="0"></td>
-        <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
+        <td><input type="number" class="v-cant" value="1"></td>
+        <td><input type="number" class="v-l"></td>
+        <td><input type="number" class="v-w"></td>
+        <td><input type="number" class="v-h"></td>
+        <td><input type="number" class="v-p"></td>
+        <td><input type="file" class="v-foto" accept="image/*" capture="environment"></td>
     </tr>`;
-    document.getElementById('bodyBultos').insertAdjacentHTML('beforeend', row);
+    document.getElementById('bultosBody').insertAdjacentHTML('beforeend', row);
 }
 
 function startVoice() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Navegador no compatible.");
-    const recognition = new SpeechRecognition();
-    recognition.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
-    recognition.onresult = (e) => { document.getElementById('dictado').value += " " + e.results[0][0].transcript; };
-    recognition.start();
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'es-ES';
+    rec.onresult = e => { document.getElementById('textoCarga').value += " " + e.results[0][0].transcript; };
+    rec.start();
 }
 
-async function evaluar() {
-    const resDiv = document.getElementById('resultado');
-    resDiv.style.display = 'block';
-    resDiv.innerHTML = `<p style="text-align:center;">${translations[currentLang].loading}</p>`;
+async function diagnosticar() {
+    const rBox = document.getElementById('reporte');
+    rBox.style.display = "block";
+    rBox.innerHTML = "<h3 style='text-align:center;'>Consultando protocolos IATA / TSA / Avianca...</h3>";
+    rBox.scrollIntoView({behavior: 'smooth'});
 
-    const bultos = [];
     const formData = new FormData();
-    document.querySelectorAll('#bodyBultos tr').forEach(tr => {
-        bultos.push({
-            cant: tr.querySelector('.p-cant').value,
-            l: tr.querySelector('.p-l').value,
-            w: tr.querySelector('.p-w').value,
-            h: tr.querySelector('.p-h').value,
-            p: tr.querySelector('.p-p').value
-        });
-        const f = tr.querySelector('.p-foto').files[0];
-        if(f) formData.append("fotos", f);
+    const bultos = [];
+    document.querySelectorAll('#bultosBody tr').forEach(tr => {
+        const cant = tr.querySelector('.v-cant').value;
+        if(cant) {
+            bultos.push({
+                cant: cant,
+                l: tr.querySelector('.v-l').value || 0,
+                w: tr.querySelector('.v-w').value || 0,
+                h: tr.querySelector('.v-h').value || 0,
+                p: tr.querySelector('.v-p').value || 0
+            });
+            const f = tr.querySelector('.v-foto').files[0];
+            if(f) formData.append("fotos", f);
+        }
     });
 
     const payload = {
-        lang: currentLang,
-        awb: document.getElementById('awb').value,
-        dictado: document.getElementById('dictado').value,
-        tipo_pallet: document.getElementById('tipoPallet').value,
-        detalle_bultos: bultos,
+        dictado: document.getElementById('textoCarga').value,
         docs: {
-            manifiesto: document.getElementById('d-man').checked,
-            msds: document.getElementById('d-msds').checked
+            manifiesto: document.getElementById('c-man').checked,
+            msds: document.getElementById('c-msds').checked,
+            originales: document.getElementById('c-orig').checked
         },
-        chk: { fumigado: document.getElementById('chkFumigado').checked }
+        detalle_bultos: bultos
     };
 
     formData.append("data", JSON.stringify(payload));
-
+    
     try {
-        const response = await fetch('/api/evaluar', { method: 'POST', body: formData });
-        const result = await response.json();
+        const res = await fetch('/api/diagnostico', { method: 'POST', body: formData });
+        const data = await res.json();
 
-        let html = `<h2 style="text-align:center; color:${result.status.includes('RECHAZADO') ? 'var(--danger)' : 'var(--success)'}">${result.status}</h2>`;
-        html += result.tabla; 
+        let html = `<div style="text-align:center; border-bottom:2px solid #eee; margin-bottom:20px; padding-bottom:10px;">
+            <h1 style="color:var(--blue); margin:0;">AL CIELO - REPORTE TÉCNICO</h1>
+            <p style="font-size:12px; color:#666;">Asesoría de Carga / Protocolo de Aceptación</p>
+        </div>`;
         
-        if(result.alertas.length > 0) {
-            result.alertas.forEach((a, i) => {
-                html += `<div class="alert-card"><strong>ALERT:</strong> ${a}</div>`;
-                html += `<div class="solucion-card"><strong>SOLUTION:</strong> ${result.soluciones[i]}</div>`;
+        const colorStatus = data.status.includes('LISTO') ? '#27ae60' : '#e11a22';
+        html += `<h2 style="color:${colorStatus}; text-align:center; background:${colorStatus}10; padding:15px; border-radius:8px;">ESTADO: ${data.status}</h2>`;
+        
+        html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+            <div style="padding:10px; border:1px solid #ddd; border-radius:5px;"><strong>VUELO ASIGNADO:</strong><br>${data.vuelo}</div>
+            <div style="padding:10px; border:1px solid #ddd; border-radius:5px;"><strong>CARGA TOTAL:</strong><br>${data.resumen.peso} kg / ${data.resumen.vol} m³</div>
+        </div>`;
+        
+        if(data.alertas.length > 0) {
+            html += `<div style="background:#fff5f5; padding:15px; border-radius:8px; border:1px solid #feb2b2;">`;
+            data.alertas.forEach((a, i) => {
+                html += `<span class="error-tag">${a}</span>`;
+                html += `<p style="color:#333; margin: 0 0 15px 20px; font-size:14px;">${data.soluciones[i]}</p>`;
             });
+            html += `</div>`;
+        } else {
+            html += `<div style="background:#f0fff4; padding:15px; border-radius:8px; border:1px solid #9ae6b4; color:#22543d;">
+                <strong>✓ CUMPLIMIENTO TOTAL:</strong> No se detectaron discrepancias documentales ni técnicas.
+            </div>`;
         }
-        
-        if(result.fotos.length > 0) {
-            html += `<div class="photo-preview">${result.fotos.map(f => `<img src="${f}">`).join('')}</div>`;
-        }
-        
-        html += `<button class="btn btn-main" onclick="window.print()" style="background:#27ae60; margin-top:20px;">DESCARGAR REPORTE PDF</button>`;
-        resDiv.innerHTML = html;
-        resDiv.scrollIntoView({ behavior: 'smooth' });
-    } catch (e) {
-        resDiv.innerHTML = "❌ Error en el motor de diagnóstico.";
-    }
-}
 
-function limpiarTodo() {
-    if(confirm('¿Limpiar todos los datos?')) location.reload();
+        if(data.fotos.length > 0) {
+            html += `<div class="section-h">Evidencia Fotográfica</div><div class="photo-strip">`;
+            data.fotos.forEach(f => { html += `<img src="${f}">`; });
+            html += `</div>`;
+        }
+
+        html += `<div class="no-print" style="margin-top:25px; display:flex; gap:10px;">
+            <button onclick="window.print()" style="flex:2; padding:15px; background:var(--blue); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">IMPRIMIR REPORTE (PDF)</button>
+            <button onclick="location.reload()" style="flex:1; padding:15px; background:#666; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">NUEVO</button>
+        </div>`;
+        
+        rBox.innerHTML = html;
+    } catch(e) {
+        rBox.innerHTML = "<p style='color:red;'>Error procesando el diagnóstico. Intente de nuevo.</p>";
+    }
 }
 </script>
 </body>
