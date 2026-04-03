@@ -15,32 +15,28 @@ async def home():
 @app.post("/api/evaluar")
 async def evaluar(data: dict):
     errores, soluciones = [], []
+    awb = data.get("awb", "")
     alto = data.get("alto", 0)
     codigo = data.get("codigo", "")
-    awb = data.get("awb", "")
 
-    # 1. Validación AWB
+    # Reglas de Negocio SmartCargo
     if not awb.startswith("045"):
-        errores.append("AWB no pertenece a Avianca (045).")
-        soluciones.append("Verificar con el cliente si es una guía Interline o COMAT.")
+        errores.append("Prefijo No-Avianca.")
+        soluciones.append("Revisar si es un vuelo compartido o Interline.")
 
-    # 2. Regla de Altura Avianca
     if alto > 160:
-        errores.append(f"Altura de {alto}cm excede límite de avión de pasajeros (Bellies).")
-        soluciones.append("Solicitar espacio en avión carguero B767F o realizar 'Breakdown' (re-estibar a <160cm).")
-    else:
-        soluciones.append("Altura apta para Bellies y Main Deck.")
+        errores.append("Exceso de altura para Bellies.")
+        soluciones.append("Llevar a muelle de carguero o solicitar breakdown inmediato.")
 
-    # 3. Seguridad y Naturaleza
+    if not data.get("chkWood"):
+        errores.append("Madera sin tratamiento visible.")
+        soluciones.append("Cambiar por pallet plástico para evitar multa CBP.")
+
     if codigo == "DGR" and not data.get("chkDGR"):
-        errores.append("Carga DGR declarada pero sin confirmación de Shipper's Declaration.")
-        soluciones.append("🚨 NO RECIBIR. Solicitar DGD original con borde rojo y verificar UN Number.")
+        errores.append("Falta DGD de Mercancía Peligrosa.")
+        soluciones.append("No recibir carga. Exigir Shipper's Declaration original.")
 
-    if not data.get("chkEmbalaje"):
-        errores.append("Embalaje dañado / Pallet roto.")
-        soluciones.append("Re-embalar o cambiar pallet de madera por plástico para evitar rechazo en counter.")
-
-    status = "CARGA EN RETENCIÓN (ON HOLD)" if errores else "VUELO AUTORIZADO (FLY READY)"
+    status = "RECHAZADA / ON HOLD" if errores else "APROBADA / FLY READY"
     
     return {"status": status, "errores": errores, "soluciones": soluciones}
 
