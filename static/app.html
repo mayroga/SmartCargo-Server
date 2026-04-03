@@ -2,212 +2,301 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>AL CIELO - AURA BY MAY ROGA</title>
+    <title>AL CIELO - Sistema Integral de Asesoría de Carga</title>
     <style>
-        :root { --red: #d63031; --blue: #0984e3; --black: #2d3436; --gold: #fdcb6e; }
-        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: var(--black); }
-        .container { max-width: 1300px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 10px solid var(--red); overflow: hidden; }
-        .header { background: var(--black); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .section { padding: 20px; border-bottom: 1px solid #eee; }
-        h3 { color: var(--blue); text-transform: uppercase; font-size: 14px; letter-spacing: 1px; margin-top: 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #dfe6e9; border-radius: 8px; box-sizing: border-box; }
-        .piece-row { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-blue { background: var(--blue); color: white; }
-        .btn-red { background: var(--red); color: white; width: 100%; font-size: 18px; margin-top: 20px; }
-        .btn-gold { background: var(--gold); color: black; }
-        .voice-area { background: #fff9db; border: 2px dashed var(--gold); padding: 15px; border-radius: 8px; margin-top: 20px; }
-        .photo-slot { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #eee; }
-        .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
-        #results { display: none; margin-top: 30px; padding: 20px; border-radius: 12px; }
+        :root { --red-av: #e11a22; --blue-dark: #0a3d62; --gold-av: #f39c12; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* HEADER PROFESIONAL */
+        .header { background: var(--blue-dark); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--red-av); }
+        .header h1 { margin: 0; font-size: 24px; }
+        .perfil-selector { background: var(--red-av); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        /* ÁREA DE TRABAJO */
+        .main-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; padding: 20px; flex: 1; overflow-y: auto; }
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border-top: 3px solid var(--blue-dark); }
+        h3 { color: var(--blue-dark); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+
+        /* INPUTS Y CORTINAS */
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 5px; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        .pouch-docs { background: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 5px solid var(--gold-av); }
+        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* PIEZA POR PIEZA */
+        .piece-container { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 10px; position: relative; }
+        .piece-header { display: flex; justify-content: space-between; font-weight: bold; color: var(--red-av); margin-bottom: 10px; }
+        .vol-calc { background: var(--blue-dark); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+
+        /* VOZ Y MULTIMEDIA */
+        .voice-section { background: #fffbe6; border: 2px dashed var(--gold-av); padding: 20px; border-radius: 8px; }
+        .btn-voice { background: var(--gold-av); color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-voice.active { background: var(--red-av); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .photo-btn { background: #eee; border: 1px solid #ccc; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; border-radius: 5px; }
+
+        /* ACCIÓN FINAL */
+        .footer-actions { padding: 20px; background: white; border-top: 1px solid #ddd; text-align: right; }
+        .btn-generate { background: var(--red-av); color: white; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(225, 26, 34, 0.4); }
+
+        /* RESULTADOS */
+        #results-area { position: fixed; right: 0; top: 0; width: 40%; height: 100%; background: white; box-shadow: -5px 0 20px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 1000; }
+        .results-header { background: var(--blue-dark); color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .results-content { padding: 30px; overflow-y: auto; flex: 1; }
+        .alert-item { background: #fee2e2; border-left: 5px solid var(--red-av); padding: 15px; margin-bottom: 10px; color: #991b1b; }
+        .solucion-item { background: #dcfce7; border-left: 5px solid #16a34a; padding: 15px; margin-bottom: 10px; color: #166534; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div>
-            <h1 style="margin:0; font-size:22px;">AL CIELO - ASESORÍA DE CARGA TÉCNICA</h1>
-            <small>AURA BY MAY ROGA LLC | IATA & TSA COMPLIANCE</small>
-        </div>
-        <select id="perfil" style="width: 200px; background: var(--blue); color: white; border: none;">
-            <option value="CAMIONERO">PERFIL: CAMIONERO / CHOFER</option>
-            <option value="FORWARDER">PERFIL: FREIGHT FORWARDER</option>
-            <option value="WAREHOUSE">PERFIL: AGENTE WAREHOUSE</option>
-            <option value="COUNTER">PERFIL: AGENTE COUNTER</option>
-            <option value="DUENO">PERFIL: DUEÑO / SHIPPER</option>
-        </select>
+<div class="header">
+    <div style="display:flex; align-items:center; gap:20px;">
+        <h1>AL CIELO - SMARTCARGO ADVISORY</h1>
+        <div style="height:30px; width:2px; background:white;"></div>
+        <span>AURA BY MAY ROGA LLC</span>
     </div>
+    <select id="user_profile" class="perfil-selector">
+        <option value="SHIPPER">DUEÑO / SHIPPER</option>
+        <option value="FORWARDER">FREIGHT FORWARDER</option>
+        <option value="DRIVER">CAMIONERO / CHOFER</option>
+        <option value="WAREHOUSE">AGENTE WAREHOUSE</option>
+        <option value="COUNTER">AGENTE COUNTER AVIANCA</option>
+        <option value="DG_SPECIALIST">ESPECIALISTA DGR</option>
+    </select>
+</div>
 
-    <div class="section">
-        <h3>I. Identificación de la Cadena de Custodia</h3>
-        <div class="grid">
-            <div><label>AWB # (Prefijo 045):</label><input type="text" id="awb" placeholder="045-00000000"></div>
-            <div><label>ID Portador / Licencia:</label><input type="text" id="id_chofer" placeholder="ID Legal"></div>
-            <div><label>Aeropuerto Origen/Destino:</label><input type="text" id="ruta" placeholder="MIA -> BOG"></div>
-            <div><label>Tipo de Servicio:</label>
-                <select id="tipo_vuelo">
-                    <option value="GENERAL">CARGA GENERAL</option>
-                    <option value="TRANSFER">TRANSFERENCIA (INTERLINE)</option>
-                    <option value="COMAT">COMAT (MATERIAL COMPAÑÍA)</option>
-                    <option value="EXPRESS">EXPRESS / PRIORIDAD</option>
-                </select>
+<div class="main-grid">
+    <div>
+        <div class="card">
+            <h3>I. Identificación de la Carga (Chain of Custody)</h3>
+            <div class="input-row">
+                <div><label>AWB COMPLETO (045-):</label><input type="text" id="awb_full" placeholder="045-88776655"></div>
+                <div><label>ID / LICENCIA PORTADOR:</label><input type="text" id="driver_id" placeholder="ID-1234567"></div>
+            </div>
+            <div class="input-row">
+                <div><label>ORIGEN (IATACode):</label><input type="text" id="origin" placeholder="MIA"></div>
+                <div><label>DESTINO (IATACode):</label><input type="text" id="destination" placeholder="BOG"></div>
+            </div>
+            <div class="input-row">
+                <div><label>TIPO DE TRÁFICO:</label>
+                    <select id="traffic_type">
+                        <option value="GENERAL">CARGA GENERAL</option>
+                        <option value="TRANSFER">TRANSFERENCIA INTERLINE</option>
+                        <option value="COMAT">MATERIAL DE COMPAÑÍA</option>
+                        <option value="VAL">ALTO VALOR / SECURITY</option>
+                    </select>
+                </div>
+                <div><label>STATUS TSA:</label>
+                    <select id="shipper_status">
+                        <option value="KNOWN">KNOWN SHIPPER (Certificado)</option>
+                        <option value="UNKNOWN">UNKNOWN SHIPPER (Inspección)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>II. Auditoría del Pouch (Cortina Inteligente)</h3>
+            <label>Naturaleza de la Mercancía:</label>
+            <select id="naturaleza" style="margin-bottom: 15px;" onchange="updatePouchDocs()">
+                <option value="GENERAL">CARGA GENERAL (GCR)</option>
+                <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
+                <option value="PER">PERECEDEROS (PER)</option>
+                <option value="VAL">VALORES (VAL)</option>
+                <option value="AVI">ANIMALES VIVOS (AVI)</option>
+                <option value="HUM">RESTOS HUMANOS (HUM)</option>
+            </select>
+
+            <div class="pouch-docs">
+                <label>Documentación Obligatoria en Mano:</label>
+                <div id="pouch_list" class="checkbox-group">
+                    </div>
+                <hr>
+                <label style="color:var(--red-av);"><input type="checkbox" id="has_corrections"> ¿DOCUMENTOS CON TACHADURAS / BORRONES?</label>
             </div>
         </div>
     </div>
 
-    <div class="section">
-        <h3>II. Naturaleza de Mercancía y "Pouch" Inteligente</h3>
-        <div class="grid">
-            <div>
-                <label>Naturaleza:</label>
-                <select id="naturaleza" onchange="showDocs()">
-                    <option value="GEN">GENERAL CARGO</option>
-                    <option value="DGR">DGR (MERCANCÍA PELIGROSA)</option>
-                    <option value="PER">PER (PERECEDEROS)</option>
-                    <option value="VAL">VAL (VALORES)</option>
-                    <option value="AVI">AVI (ANIMALES VIVOS)</option>
-                </select>
-            </div>
-            <div id="docs_container" style="background: #f1f2f6; padding: 10px; border-radius: 8px;">
-                <label>Documentos en mano (Organizados y Originales):</label>
-                <div id="docs_list"></div>
+    <div>
+        <div class="card">
+            <h3>III. Auditoría Física (Pieza por Pieza - IATA TACT)</h3>
+            <div id="pieces_list">
+                </div>
+            <button class="btn-voice" style="background:var(--blue-dark); margin-top:0;" onclick="addPiece()">+ AGREGAR PIEZA / PALLET / BOX</button>
+        </div>
+
+        <div class="card voice-section">
+            <h3>IV. Chequeo Técnico de Muelle (Voz / Copiar / Pegar)</h3>
+            <p style="font-size:12px; color:#666;">Dicte el estado visual, pegue el reporte de muelle o escriba las novedades observadas. El sistema analiza riesgos.</p>
+            <textarea id="reporte_voz" rows="6" placeholder="Ej: Pallet 1 con esquina húmeda. Sellos de seguridad intactos. Etiqueta Clase 9 visible..."></textarea>
+            <div style="display:flex; gap:10px;">
+                <button id="btn_voice_start" class="btn-voice" onclick="toggleVoice()">🎤 INICIAR DICTADO (SIN CORTES)</button>
+                <button class="btn-voice" style="background:#27ae60;" onclick="preAnalizar()">🧠 ANALIZAR PRELIMINAR</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="section">
-        <h3>III. Auditoría Física de Muelle (Pieza por Pieza)</h3>
-        <div id="piezas_list"></div>
-        <button class="btn btn-blue" onclick="addPiece()">+ AGREGAR PIEZA / PALLET</button>
+<div class="footer-actions">
+    <button class="btn-generate" onclick="finalAudit()">GENERAR ASESORÍA TÉCNICA DE DESPACHO</button>
+</div>
+
+<div id="results-area">
+    <div class="results-header">
+        <h2>REPORTE TÉCNICO DE ADMISIÓN</h2>
+        <button onclick="closeResults()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
     </div>
-
-    <div class="section">
-        <h3>IV. Chequeo Técnico de Muelle (Dictado / Copia / Pegado)</h3>
-        <div class="voice-area">
-            <textarea id="voz_texto" rows="5" placeholder="Escriba, pegue reporte de warehouse o use el botón de voz para dictar sin interrupciones..."></textarea>
-            <div style="margin-top:10px; display: flex; gap: 10px;">
-                <button class="btn btn-gold" onclick="startVoice()">🎤 HABLAR (MODO WHATSAPP)</button>
-                <button class="btn btn-blue" onclick="analizarTexto()">🧠 ANALIZAR ESTADO TÉCNICO</button>
-            </div>
-            <div id="analisis_preliminar" style="margin-top:10px; font-weight: bold; color: var(--red);"></div>
+    <div class="results-content" id="results_body">
         </div>
-    </div>
-
-    <div class="section">
-        <button class="btn btn-red" onclick="procesarTodo()">GENERAR ASESORÍA TÉCNICA DE DESPACHO</button>
-    </div>
-
-    <div id="results" class="section"></div>
 </div>
 
 <script>
 let pieceCount = 0;
-const pieces = [];
+let recognition;
+
+function updatePouchDocs() {
+    const nat = document.getElementById('naturaleza').value;
+    const list = document.getElementById('pouch_list');
+    const docs = {
+        "GENERAL": ["AWB Original", "Com. Invoice (3x)", "Packing List", "SLI"],
+        "DGR": ["DGD (Red Border)", "MSDS", "NOTOC Form", "Checklist IATA"],
+        "PER": ["Cert. Fitosanitario", "Temp Log", "Health Cert", "DGD Dry Ice"],
+        "VAL": ["Armed Escort Record", "Seal Form", "Vault Receipt"],
+        "AVI": ["LAR Checklist", "Vet Health Cert", "Feeding Manual"],
+        "HUM": ["Death Cert", "Embalming Cert", "Transit Permit"]
+    };
+    list.innerHTML = docs[nat].map(d => `
+        <label><input type="checkbox" class="doc-item" value="${d}"> ${d}</label>
+    `).join('');
+}
 
 function addPiece() {
     pieceCount++;
     const div = document.createElement('div');
-    div.className = 'piece-row';
+    div.className = 'piece-container';
     div.innerHTML = `
-        <span>#${pieceCount}</span>
-        <input type="number" class="p_cant" placeholder="Cant" style="width:60px">
-        <input type="number" class="p_l" placeholder="L" style="width:60px">
-        <input type="number" class="p_w" placeholder="W" style="width:60px">
-        <input type="number" class="p_h" placeholder="H" style="width:60px">
-        <input type="number" class="p_real" placeholder="Peso Real Unit" style="width:100px">
-        <div class="photo-slot" id="photo_${pieceCount}" onclick="takePhoto(${pieceCount})">📸</div>
-        <div id="vol_${pieceCount}" style="font-weight:bold; color:var(--blue); min-width:80px;">Vol: 0</div>
+        <div class="piece-header">
+            <span>PIEZA / ULD #${pieceCount}</span>
+            <div class="vol-calc" id="vol_disp_${pieceCount}">Volume: 0 Lbs</div>
+        </div>
+        <div class="input-row">
+            <input type="number" class="p_cant" placeholder="Cant" oninput="calcVol(${pieceCount})">
+            <input type="number" class="p_l" placeholder="L (in)" oninput="calcVol(${pieceCount})">
+            <input type="number" class="p_w" placeholder="W (in)" oninput="calcVol(${pieceCount})">
+            <input type="number" class="p_h" placeholder="H (in)" oninput="calcVol(${pieceCount})">
+        </div>
+        <div class="input-row">
+            <input type="number" class="p_real" placeholder="Peso Real Unit (Lbs)">
+            <div class="photo-btn" onclick="alert('Cámara Activada para Pieza #${pieceCount}')">📸 FOTO OBLIGATORIA</div>
+        </div>
     `;
-    document.getElementById('piezas_list').appendChild(div);
-    
-    // Auto-cálculo de volumen al escribir
-    div.addEventListener('input', () => {
-        const l = div.querySelector('.p_l').value || 0;
-        const w = div.querySelector('.p_w').value || 0;
-        const h = div.querySelector('.p_h').value || 0;
-        const cant = div.querySelector('.p_cant').value || 0;
-        const vol = ((l * w * h * cant) / 166).toFixed(2);
-        document.getElementById(`vol_${pieceCount}`).innerText = "Vol: " + vol;
-    });
+    document.getElementById('pieces_list').appendChild(div);
 }
 
-function showDocs() {
-    const nat = document.getElementById('naturaleza').value;
-    const list = document.getElementById('docs_list');
-    const docs = {
-        "GEN": ["Factura Original", "Packing List", "SLI"],
-        "DGR": ["DGD (Original Roja)", "MSDS", "Checklist DGR"],
-        "PER": ["Cert. Fitosanitario", "Factura", "Guía de Hielo/Temp"],
-        "VAL": ["Manifiesto VAL", "Hoja de Ruta", "Sello de Seguridad"]
-    };
-    list.innerHTML = docs[nat].map(d => `<label><input type="checkbox" class="doc_chk" value="${d}"> ${d}</label>`).join('');
+function calcVol(id) {
+    const container = document.getElementsByClassName('piece-container')[id-1];
+    const l = container.querySelector('.p_l').value || 0;
+    const w = container.querySelector('.p_w').value || 0;
+    const h = container.querySelector('.p_h').value || 0;
+    const cant = container.querySelector('.p_cant').value || 1;
+    const vol = ((l * w * h * cant) / 166).toFixed(2);
+    document.getElementById(`vol_disp_${id}`).innerText = `Volume: ${vol} Lbs`;
 }
 
-function startVoice() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'es-ES';
-    recognition.continuous = true;
-    recognition.onresult = (event) => {
-        const text = event.results[event.results.length - 1][0].transcript;
-        document.getElementById('voz_texto').value += text + " ";
-    };
-    recognition.start();
+function toggleVoice() {
+    if (!recognition) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'es-ES';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onresult = (event) => {
+            let final = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) final += event.results[i][0].transcript;
+            }
+            document.getElementById('reporte_voz').value += final + " ";
+        };
+    }
+
+    const btn = document.getElementById('btn_voice_start');
+    if (btn.classList.contains('active')) {
+        recognition.stop();
+        btn.classList.remove('active');
+        btn.innerText = "🎤 INICIAR DICTADO (SIN CORTES)";
+    } else {
+        recognition.start();
+        btn.classList.add('active');
+        btn.innerText = "🛑 DETENER Y PROCESAR VOZ";
+    }
 }
 
-function analizarTexto() {
-    const texto = document.getElementById('voz_texto').value.toUpperCase();
-    let r = "ANÁLISIS: ";
-    if(texto.includes("DAÑO") || texto.includes("GOLPE")) r += "⚠️ DETECTADO DAÑO FÍSICO. ";
-    if(texto.includes("ETIQUETA")) r += "✅ REVISIÓN DE LABELS OK. ";
-    document.getElementById('analisis_preliminar').innerText = r;
-}
-
-async function procesarTodo() {
-    const piezasData = [];
-    document.querySelectorAll('.piece-row').forEach(row => {
-        piezasData.push({
-            cant: row.querySelector('.p_cant').value,
-            l: row.querySelector('.p_l').value,
-            w: row.querySelector('.p_w').value,
-            h: row.querySelector('.p_h').value,
-            p_real: row.querySelector('.p_real').value
+async function finalAudit() {
+    const piecesData = [];
+    document.querySelectorAll('.piece-container').forEach(p => {
+        piecesData.push({
+            cant: p.querySelector('.p_cant').value,
+            l: p.querySelector('.p_l').value,
+            w: p.querySelector('.p_w').value,
+            h: p.querySelector('.p_h').value,
+            p_real: p.querySelector('.p_real').value
         });
     });
 
     const body = {
-        perfil: document.getElementById('perfil').value,
-        id_awb: document.getElementById('awb').value,
-        id_chofer: document.getElementById('id_chofer').value,
+        perfil: document.getElementById('user_profile').value,
+        awb_full: document.getElementById('awb_full').value,
+        driver_id: document.getElementById('driver_id').value,
+        origin: document.getElementById('origin').value,
+        destination: document.getElementById('destination').value,
         naturaleza: document.getElementById('naturaleza').value,
-        piezas: piezasData,
-        pouch: { documentos_fisicos: Array.from(document.querySelectorAll('.doc_chk:checked')).map(c => c.value) },
-        analisis_voz: document.getElementById('voz_texto').value
+        shipper_status: document.getElementById('shipper_status').value,
+        has_corrections: document.getElementById('has_corrections').checked,
+        pouch_docs: Array.from(document.querySelectorAll('.doc-item:checked')).map(c => c.value),
+        piezas: piecesData,
+        reporte_voz: document.getElementById('reporte_voz').value
     };
 
-    const res = await fetch('/api/auditoria_mortal', {
+    const response = await fetch('/api/auditoria_mortal', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body)
     });
-    const out = await res.json();
     
-    const resDiv = document.getElementById('results');
-    resDiv.style.display = 'block';
-    resDiv.style.background = out.status.includes('RECHAZO') ? '#ffeef0' : '#e6fffa';
-    
-    let html = `<h2>RESULTADO FINAL: ${out.status}</h2>`;
-    html += `<p>AUDITADO PARA: <strong>${out.perfil_auditado}</strong></p>`;
-    html += `<p>PESO COBRABLE: <strong>${out.chargeable} Lbs</strong> (Peso Real: ${out.real} Lbs)</p>`;
-    out.alertas.forEach((a, i) => {
-        html += `<div style="color:red; margin-bottom:10px;">⚠️ ${a}<br><small style="color:green;">💡 SOLUCIÓN: ${out.soluciones[i]}</small></div>`;
-    });
-    resDiv.innerHTML = html;
+    const result = await response.json();
+    showResults(result);
 }
 
+function showResults(res) {
+    const area = document.getElementById('results-area');
+    const body = document.getElementById('results_body');
+    area.style.display = 'flex';
+    
+    let html = `<h1 style="color:${res.status.includes('RECHAZADO') ? 'var(--red-av)' : 'green'}">${res.status}</h1>`;
+    html += `<div style="background:#eee; padding:15px; border-radius:5px; margin-bottom:20px;">
+                <strong>CARGO AUDITADO:</strong> ${res.chargeable} Lbs<br>
+                <strong>MÉTODO:</strong> ${res.method}<br>
+                <strong>LOG ID:</strong> ${res.log_id}
+             </div>`;
+    
+    html += `<h3>DISCREPANCIAS TÉCNICAS:</h3>`;
+    res.alertas.forEach((a, i) => {
+        html += `<div class="alert-item">⚠️ ${a}</div>`;
+        html += `<div class="solucion-item">💡 SOLUCIÓN: ${res.instrucciones[i]}</div>`;
+    });
+    
+    html += `<button class="btn-generate" style="width:100%;" onclick="window.print()">IMPRIMIR PDF DE ADMISIÓN</button>`;
+    body.innerHTML = html;
+}
+
+function closeResults() { document.getElementById('results-area').style.display = 'none'; }
+
+// Init
+updatePouchDocs();
 addPiece();
-showDocs();
 </script>
 </body>
 </html>
