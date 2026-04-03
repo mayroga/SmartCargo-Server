@@ -2,29 +2,36 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTGOSERVER - Asesoría Completa de Carga</title>
+<title>AL CIELO - SmartCargo Advisory</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
     body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-    h1 { text-align:center; color:#0a3d62; margin-bottom:20px; }
-    .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
+    h1 { text-align:center; color:#0a3d62; margin-bottom:20px; text-transform: uppercase; letter-spacing: 2px; }
+    .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:12px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; font-weight: 600; }
     .active, .collapsible:hover { background-color:#062c47; }
-    .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
+    .content { padding:15px; display:none; overflow:hidden; background-color:#ffffff; border: 1px solid #ddd; border-radius:5px; margin-bottom:10px; }
     label { display:block; margin:8px 0 4px; font-weight:500; }
-    input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
-    .docs, .tip, .checklist { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
-    .tip { font-style:italic; color:#555; }
-    .result { font-size:16px; margin-top:15px; white-space:pre-wrap; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
-    .alert { color:red; font-weight:bold; margin:5px 0; }
+    input, select { padding:8px; width:100%; box-sizing: border-box; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
+    .docs, .tip, .checklist { background:#eef; padding:10px; margin:5px 0; border-radius:4px; font-size:14px; }
+    .tip { font-style:italic; color:#555; border-left: 3px solid #0a3d62; }
+    .result { font-size:16px; margin-top:15px; white-space:pre-wrap; background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #0a3d62; }
+    .alert { color:#e74c3c; font-weight:bold; margin:10px 0; padding: 10px; background: #fdf2f2; border-radius: 4px; display: none; }
     .checklist input { margin-right:8px; width: auto; }
-    .btn-evaluar { background-color:#0a3d62; color:white; font-weight:bold; cursor:pointer; border:none; padding:15px; width:100%; border-radius:5px; margin-top:10px; }
-    .btn-borrar { background-color:#eb4d4b; color:white; font-weight:bold; cursor:pointer; border:none; padding:10px; width:100%; border-radius:5px; margin-top:10px; }
+    .btn-evaluar { background-color:#0a3d62; color:white; font-weight:bold; cursor:pointer; border:none; padding:18px; width:100%; border-radius:5px; margin-top:10px; font-size: 16px; }
+    .btn-borrar { background-color:#eb4d4b; color:white; font-weight:bold; cursor:pointer; border:none; padding:12px; width:100%; border-radius:5px; margin-top:10px; }
+    .btn-add { background-color:#27ae60; color:white; border:none; padding:10px; border-radius:4px; cursor:pointer; width:100%; margin: 10px 0; font-weight: bold; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th { background: #0a3d62; color: white; padding: 8px; text-align: center; }
+    td { border: 1px solid #ddd; padding: 5px; }
+    .input-tabla { width: 100%; border: none; padding: 5px; text-align: center; background: transparent; }
+    .resumen-box { background: #dff9fb; padding: 15px; border-radius: 5px; margin-top: 15px; border: 1px solid #c7ecee; }
 </style>
 </head>
 <body>
 
-<h1>SMARTGOSERVER - Asesoría Completa de Carga Aérea</h1>
+<h1>AL CIELO - SmartCargo Advisory</h1>
 
 <button class="collapsible">I. Identificación y Rol</button>
 <div class="content">
@@ -38,13 +45,10 @@
         <option value="CounterAgent">Counter Agent</option>
     </select>
     <p id="avisoRol" class="tip"></p>
-
     <label for="awb">Número de Guía Aérea (AWB):</label>
     <input type="text" id="awb" placeholder="XXX-12345675">
-    
     <label for="forwarder">Forwarder / Agente de Carga:</label>
     <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
-    
     <label for="origen">Origen:</label>
     <input type="text" id="origen" placeholder="Ej: MIA">
     <label for="destino">Destino:</label>
@@ -66,48 +70,61 @@
     <div id="documentosObligatorios" class="docs tip">Seleccione un tipo de carga para ver documentos.</div>
 </div>
 
-<button class="collapsible">III. Dimensiones, Peso y Pallets</button>
+<button class="collapsible">III. Detalle de Bultos y Dimensiones</button>
 <div class="content">
-    <label for="piezas">Número de piezas:</label>
-    <input type="number" id="piezas" min="1" value="1">
-    <label for="pesoTotal">Peso Total (kg):</label>
-    <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
-    <label for="largo">Largo (cm):</label>
-    <input type="number" id="largo" min="0" oninput="calcularVolumen()">
-    <label for="ancho">Ancho (cm):</label>
-    <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
-    <label for="alto">Alto (cm):</label>
-    <input type="number" id="alto" min="0" oninput="calcularVolumen()">
-    
-    <label for="volumen">Volumen (m³):</label>
-    <input type="text" id="volumen" readonly>
-    <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
-    <input type="text" id="pesoVolumetrico" readonly>
+    <p class="tip">Ingrese cada partida de carga. El sistema calculará el peso tasable automáticamente.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Cant.</th>
+                <th>L (cm)</th>
+                <th>W (cm)</th>
+                <th>H (cm)</th>
+                <th>Kg/u</th>
+                <th>Elim.</th>
+            </tr>
+        </thead>
+        <tbody id="listaBultos">
+            <tr>
+                <td><input type="number" class="p-cant input-tabla" value="1"></td>
+                <td><input type="number" class="p-l input-tabla" placeholder="0"></td>
+                <td><input type="number" class="p-w input-tabla" placeholder="0"></td>
+                <td><input type="number" class="p-h input-tabla" placeholder="0"></td>
+                <td><input type="number" class="p-p input-tabla" placeholder="0"></td>
+                <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <button class="btn-add" onclick="agregarFila()">+ AGREGAR OTRA PARTIDA</button>
 
-    <label for="tipoPallet">Tipo de Pallet / ULD:</label>
+    <div class="resumen-box">
+        <strong>RESUMEN TOTAL DE CARGA:</strong><br>
+        Piezas: <span id="totalPiezas">0</span> | Peso Real: <span id="totalPesoR">0.00</span> kg<br>
+        Volumen: <span id="totalVol">0.000</span> m³ | Peso Vol: <span id="totalPesoV">0.00</span> kg
+    </div>
+    
+    <label for="tipoPallet" style="margin-top:15px;">Tipo de Pallet / ULD sugerido:</label>
     <select id="tipoPallet" onchange="mostrarEmbalaje()">
         <option value="">Seleccione</option>
         <option value="Loose">Loose Cargo</option>
-        <option value="PMC">PMC Pallet</option>
-        <option value="PAG">PAG Pallet</option>
-        <option value="Contenedor">Contenedor</option>
+        <option value="PMC">PMC Pallet (125 x 96 in)</option>
+        <option value="PAG">PAG Pallet (125 x 88 in)</option>
+        <option value="Contenedor">Contenedor LD3/LD2</option>
     </select>
     <div id="infoEmbalaje" class="tip">Seleccione pallet para detalles.</div>
-    <p id="alertDimensiones" class="alert"></p>
+    <div id="alertDimensiones" class="alert"></div>
 </div>
 
 <button class="collapsible">IV. Evidencia Visual y Seguridad</button>
 <div class="content">
     <label for="fotoCarga">Subir Foto de la Carga / Etiquetas (Opcional):</label>
     <input type="file" id="fotoCarga" accept="image/*">
-    
     <label for="knownShipper">Known Shipper:</label>
     <select id="knownShipper">
         <option value="">Seleccione</option>
         <option value="Sí">Sí</option>
         <option value="No">No</option>
     </select>
-
     <h3>Checklist de Rectificación</h3>
     <div class="checklist">
         <label><input type="checkbox" id="chkDryIce"> Dry Ice Declarado</label>
@@ -119,21 +136,15 @@
     </div>
 </div>
 
-<button class="collapsible">V. Validación Final y Resultado</button>
-<div class="content" id="faseFinal">
-    <button class="btn-evaluar" onclick="evaluarCarga()">EVALUAR ASESORÍA TÉCNICA</button>
-    <button class="btn-borrar" onclick="borrarTodo()">BORRAR DATOS</button>
+<button class="collapsible">V. Evaluación y Asesoría Técnica</button>
+<div class="content">
+    <button class="btn-evaluar" onclick="evaluarCarga()">GENERAR ASESORÍA AL CIELO</button>
+    <button class="btn-borrar" onclick="borrarTodo()">BORRAR DATOS Y REINICIAR</button>
     <div id="resultadoFinal" class="result" style="display:none;"></div>
 </div>
 
-<button class="collapsible">VI. Desglose de Documentos</button>
-<div class="content">
-    <button onclick="mostrarDocumentosDetallados()">Mostrar y Escuchar Desglose</button>
-    <div id="documentosDetallados" class="docs" style="display:none; margin-top:10px;"></div>
-</div>
-
 <script>
-// Manejo de secciones colapsables
+// Manejo de Colapsables
 document.querySelectorAll(".collapsible").forEach(btn => {
     btn.addEventListener("click", function() {
         this.classList.toggle("active");
@@ -142,117 +153,149 @@ document.querySelectorAll(".collapsible").forEach(btn => {
     });
 });
 
+// Funciones de Tabla Dinámica
+function agregarFila() {
+    const html = `<tr>
+        <td><input type="number" class="p-cant input-tabla" value="1"></td>
+        <td><input type="number" class="p-l input-tabla" placeholder="0"></td>
+        <td><input type="number" class="p-w input-tabla" placeholder="0"></td>
+        <td><input type="number" class="p-h input-tabla" placeholder="0"></td>
+        <td><input type="number" class="p-p input-tabla" placeholder="0"></td>
+        <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
+    </tr>`;
+    document.getElementById('listaBultos').insertAdjacentHTML('beforeend', html);
+    conectarListeners();
+}
+
+function eliminarFila(btn) {
+    btn.closest('tr').remove();
+    calcularTotales();
+}
+
+function calcularTotales() {
+    let tPiezas = 0, tPesoR = 0, tVol = 0, alertMsg = "";
+    const alertDiv = document.getElementById('alertDimensiones');
+    
+    document.querySelectorAll('#listaBultos tr').forEach(fila => {
+        const cant = +fila.querySelector('.p-cant').value || 0;
+        const l = +fila.querySelector('.p-l').value || 0;
+        const w = +fila.querySelector('.p-w').value || 0;
+        const h = +fila.querySelector('.p-h').value || 0;
+        const peso = +fila.querySelector('.p-p').value || 0;
+
+        tPiezas += cant;
+        tPesoR += (cant * peso);
+        tVol += (cant * (l * w * h)) / 1000000;
+        
+        if (h > 160) alertMsg = "⚠ Atención: Hay bultos con H > 160cm (Solo Carguero/Main Deck).";
+        if (h > 244) alertMsg = "❌ RECHAZO: Altura de bulto excede el límite máximo (244cm).";
+    });
+
+    document.getElementById('totalPiezas').innerText = tPiezas;
+    document.getElementById('totalPesoR').innerText = tPesoR.toFixed(2);
+    document.getElementById('totalVol').innerText = tVol.toFixed(3);
+    document.getElementById('totalPesoV').innerText = (tVol * 167).toFixed(2);
+    
+    if(alertMsg) {
+        alertDiv.innerText = alertMsg;
+        alertDiv.style.display = "block";
+    } else {
+        alertDiv.style.display = "none";
+    }
+}
+
+function conectarListeners() {
+    document.querySelectorAll('.input-tabla').forEach(input => {
+        input.oninput = calcularTotales;
+    });
+}
+conectarListeners();
+
+// Lógica de Negocio
 function updateRolFields() {
     const rol = document.getElementById('rolUsuario').value;
     const aviso = document.getElementById('avisoRol');
-    aviso.innerText = (rol === "Chofer" || rol === "AgenteWarehouse") ? "Tip: Revise sellos y manifiestos." :
-                      (rol === "Forwarder") ? "Tip: Validar documentación y AWB." : "";
+    aviso.innerText = (rol === "Chofer" || rol === "AgenteWarehouse") ? "Validación: Verifique sellos del camión y condición física de los bultos." :
+                      (rol === "Forwarder") ? "Validación: Asegure que los documentos (AWB/Invoice) coincidan con la carga física." : "";
 }
 
 function mostrarDocumentos() {
     const tipo = document.getElementById('codigoCarga').value;
     const docs = {
         "GEN":"AWB, Packing List, Invoice, Known Shipper",
-        "PER":"AWB, Packing List, Fitosanitario, FDA, Known Shipper",
-        "HUM":"AWB, Death Certificate, Embalming Certificate",
-        "VAL":"AWB, Invoice, Declaración de valor",
-        "AVI":"AWB, Certificado Sanitario, Known Shipper",
-        "DGR":"AWB, Shipper Declaration x2, MSDS, Known Shipper"
+        "PER":"AWB, Packing List, Certificado Fitosanitario, FDA Prior Notice",
+        "HUM":"AWB, Death Certificate, Embalming Certificate, Funeral Letter",
+        "VAL":"AWB, Invoice, Declaración de valor / Seguro",
+        "AVI":"AWB, Certificado Sanitario, IATA Live Animals Form",
+        "DGR":"AWB, Shipper Declaration (DGD) x2 Original, MSDS"
     };
     document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga";
-}
-
-function calcularVolumen() {
-    const L = +document.getElementById('largo').value || 0;
-    const W = +document.getElementById('ancho').value || 0;
-    const H = +document.getElementById('alto').value || 0;
-    const vol = (L * W * H) / 1000000;
-    document.getElementById('volumen').value = vol.toFixed(3) + ' m³';
-    document.getElementById('pesoVolumetrico').value = (vol * 167).toFixed(2);
-    
-    let msg = "";
-    if(H > 160) msg = "⚠ Solo Main Deck.";
-    if(H > 244) msg = "⚠ Excede altura máxima.";
-    document.getElementById('alertDimensiones').innerText = msg;
 }
 
 function mostrarEmbalaje() {
     const tipo = document.getElementById('tipoPallet').value;
     const info = {
-        "Loose": "Cargue en BOXES/CRATES. Fleje y etiquetas obligatorias.",
-        "PMC": "Palet PMC: Etiquetas hacia afuera, red de seguridad tensa.",
-        "PAG": "Palet PAG: Verificar fleje y orientación UPSIDE.",
-        "Contenedor": "Contenedor: Carga uniforme, asegurar DGR por separado."
+        "Loose": "Carga suelta: Use fleje, etiquetas visibles en 2 caras.",
+        "PMC": "Palet PMC: Altura máx 96in (Belly) / 118in (Main Deck). Red de seguridad obligatoria.",
+        "PAG": "Palet PAG: Altura máx 64in (Belly). No sobrepasar contorno.",
+        "Contenedor": "LD3: Carga equilibrada internamente. Cerradura de seguridad."
     };
-    document.getElementById('infoEmbalaje').innerText = info[tipo] || "Seleccione un tipo de pallet.";
+    document.getElementById('infoEmbalaje').innerText = info[tipo] || "Seleccione pallet para detalles.";
 }
 
-// ENVÍO DE DATOS AL SERVIDOR (SmartCargo-Server)
+// Envío al Servidor
 async function evaluarCarga() {
     const resDiv = document.getElementById('resultadoFinal');
     resDiv.style.display = "block";
-    resDiv.innerHTML = "Analizando carga con especialistas de AL CIELO...";
+    resDiv.innerHTML = "Generando asesoría técnica de AL CIELO...";
+
+    // Recolectar tabla de bultos
+    const detalle_bultos = [];
+    document.querySelectorAll('#listaBultos tr').forEach(fila => {
+        detalle_bultos.push({
+            cant: fila.querySelector('.p-cant').value,
+            l: fila.querySelector('.p-l').value,
+            w: fila.querySelector('.p-w').value,
+            h: fila.querySelector('.p-h').value,
+            p: fila.querySelector('.p-p').value
+        });
+    });
 
     const formData = new FormData();
     const payload = {
-        rolUsuario: document.getElementById('rolUsuario').value,
+        rol: document.getElementById('rolUsuario').value,
         awb: document.getElementById('awb').value,
-        codigoCarga: document.getElementById('codigoCarga').value,
-        piezas: document.getElementById('piezas').value,
-        pesoTotal: document.getElementById('pesoTotal').value,
-        alto: document.getElementById('alto').value,
-        pesoVolumetrico: document.getElementById('pesoVolumetrico').value,
-        knownShipper: document.getElementById('knownShipper').value,
-        chkDGR: document.getElementById('chkDGR').checked,
-        chkEmbalaje: document.getElementById('chkEmbalaje').checked
+        tipo: document.getElementById('codigoCarga').value,
+        detalle_bultos: detalle_bultos,
+        totales: {
+            piezas: document.getElementById('totalPiezas').innerText,
+            pesoR: document.getElementById('totalPesoR').innerText,
+            pesoV: document.getElementById('totalPesoV').innerText
+        },
+        chk: {
+            dgr: document.getElementById('chkDGR').checked,
+            embalaje: document.getElementById('chkEmbalaje').checked,
+            labels: document.getElementById('chkEtiquetas').checked
+        }
     };
 
     formData.append("data", JSON.stringify(payload));
-    const fotoFile = document.getElementById('fotoCarga').files[0];
-    if (fotoFile) {
-        formData.append("foto", fotoFile);
-    }
+    const foto = document.getElementById('fotoCarga').files[0];
+    if (foto) formData.append("foto", foto);
 
     try {
-        const response = await fetch('/api/evaluar', {
-            method: 'POST',
-            body: formData // Importante: No poner headers de JSON aquí
-        });
+        const response = await fetch('/api/evaluar', { method: 'POST', body: formData });
         const result = await response.json();
-        
-        let html = `<div style="border-left: 5px solid #0a3d62; padding-left: 10px;">`;
-        html += `<h3>Estado Final: ${result.status}</h3>`;
-        if (result.errores.length > 0) {
-            html += `<ul style="color:red;">${result.errores.map(e => `<li>${e}</li>`).join('')}</ul>`;
-        }
-        html += `<div class="docs" style="background:#fff; border:1px solid #ccc; white-space: pre-wrap;">${result.asesoria_tecnica}</div>`;
-        html += `<p style="font-size:10px; color:#888; margin-top:10px;">Procesado vía: ${result.fuente}</p>`;
-        html += `</div>`;
-        resDiv.innerHTML = html;
+        resDiv.innerHTML = `<h3>REPORTE TÉCNICO AL CIELO</h3>${result.asesoria_tecnica}<p style='font-size:10px; color:gray;'>Fuente: ${result.fuente}</p>`;
     } catch (err) {
-        resDiv.innerHTML = "❌ Error al conectar con SmartCargo-Server.";
+        resDiv.innerHTML = "❌ Error de conexión con el servidor.";
     }
 }
 
 function borrarTodo() {
-    if(confirm("¿Seguro que desea limpiar todos los campos?")) {
-        document.querySelectorAll('input').forEach(i => i.value = '');
-        document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-        document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
-        document.getElementById('resultadoFinal').innerHTML = '';
-        document.getElementById('resultadoFinal').style.display = 'none';
-        window.speechSynthesis.cancel();
+    if(confirm("¿Desea borrar todos los datos ingresados?")) {
+        location.reload();
     }
-}
-
-function mostrarDocumentosDetallados() {
-    const cont = document.getElementById('documentosDetallados');
-    cont.style.display = 'block';
-    const texto = "Rectificación de documentos: AWB sin tachaduras, Packing List detallado, Shipper Declaration original. Verifique etiquetas DGR y fitosanitarios.";
-    cont.innerText = texto;
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-ES';
-    speechSynthesis.speak(utterance);
 }
 </script>
 </body>
