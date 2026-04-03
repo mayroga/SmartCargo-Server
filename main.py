@@ -1,78 +1,83 @@
 import os, re, json
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="AL CIELO - SmartCargo Advisory")
 
-if not os.path.exists("static"): os.makedirs("static")
+# Crear carpeta para archivos estáticos si no existe
+if not os.path.exists("static"): 
+    os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f:
-        return f.read()
+    html_path = os.path.join("static", "app.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h1>Error: app.html no encontrado en /static</h1>")
 
 @app.post("/api/evaluar")
-async def api_evaluar_carga(data: dict):
+async def api_evaluar_carga(request: Request):
+    data = await request.json()
     errores = []
     soluciones = []
+    lang = data.get("lang", "es")
     
+    # Análisis del Cuadro de Texto Inteligente (Pre-chequeo)
+    texto_analisis = data.get("analisisTexto", "").upper()
+    es_consolidado = any(word in texto_analisis for word in ["CONSOLIDADO", "CONSOLIDATED", "CONSOL"])
+    es_peligrosa = any(word in texto_analisis for word in ["DGR", "PELIGROSA", "HAZMAT", "UN3481", "BATERIA"])
+
     # Datos Técnicos
     awb = data.get("awb", "").strip()
     codigo = data.get("codigoCarga", "")
-    piezas = int(data.get("piezas") or 0)
-    peso_total = float(data.get("pesoTotal") or 0)
     alto = float(data.get("alto") or 0)
-    peso_vol = float(data.get("pesoVolumetrico") or 0)
-    cutoff = data.get("cutoff", "18:00")
-    hora_camion = data.get("horaCamion", "")
+    peso_total = float(data.get("pesoTotal") or 0)
+    piezas = int(data.get("piezas") or 0)
 
-    # 1. Validación de Guía (AWB)
+    # 1. Validación de Documentación de Counter (Sobres y Manifiestos)
+    if es_consolidado:
+        msg_err = "Carga Consolidada: Requiere revisión de HAWBs." if lang=="es" else "Consolidated Cargo: HAWB review required."
+        msg_sol = "💡 Tip de Counter: Sobres con Originales DENTRO y Copias FUERA, ordenadas." if lang=="es" else "💡 Counter Tip: Envelopes with Originals INSIDE and Copies OUTSIDE, sorted."
+        errores.append(msg_err)
+        soluciones.append(msg_sol)
+
+    # 2. Validación AWB (IATA)
     if not re.match(r"^\d{3}-\d{8}$", awb):
-        errores.append("Formato AWB inválido (Debe ser XXX-XXXXXXXX).")
-        soluciones.append("💡 Rectificar: Use 3 dígitos del transportista, guion y 8 correlativos.")
+        errores.append("AWB Incorrecto (Formato XXX-XXXXXXXX)." if lang=="es" else "Invalid AWB (Format XXX-XXXXXXXX).")
+        soluciones.append("💡 Corregir guía aérea antes de procesar." if lang=="es" else "💡 Correct air waybill before processing.")
 
-    # 2. Límites de Aeronavegabilidad (Avianca/General)
+    # 3. Aeronavegabilidad (Dimensiones/Peso)
+    if alto > 160:
+        msg = "Dimensiones: Solo Avión Carguero (Main Deck)." if lang=="es" else "Dimensions: Freighter Only (Main Deck)."
+        errores.append(msg)
+        soluciones.append("💡 Verificar disponibilidad en Boeing 767F/A330F." if lang=="es" else "💡 Check availability on B767F/A330F.")
+    
     if alto > 244:
-        errores.append("Altura crítica: Excede el límite de carguero (244cm).")
-        soluciones.append("💡 Rectificar: Re-paletizar o desglosar bultos para bajar la altura.")
-    elif alto > 160:
-        errores.append("Restricción de Equipo: Solo apto para MAIN DECK (Carguero).")
-        soluciones.append("💡 Consultar: Verificar disponibilidad en avión carguero, no cabe en PAX.")
+        errores.append("ERROR CRÍTICO: Excede altura máxima de 244cm." if lang=="es" else "CRITICAL ERROR: Exceeds 244cm height limit.")
 
-    if peso_total > 6800:
-        errores.append("Exceso de peso: Límite estructural de pallet PMC/PAG (6800kg).")
-        soluciones.append("💡 Solución: Dividir la carga en dos pallets independientes.")
+    # 4. Seguridad (TSA / CBP)
+    if es_peligrosa and codigo != "DGR":
+        errores.append("Inconsistencia: Texto detecta DGR pero código es GEN." if lang=="es" else "Inconsistency: Text detects DGR but code is GEN.")
+        soluciones.append("💡 Cambiar tipo de carga a DGR y adjuntar DGD." if lang=="es" else "💡 Change cargo type to DGR and attach DGD.")
 
-    # 3. Lógica de Checklist por Tipo de Carga
-    checks = {
-        "DGR": (data.get("chkDGR"), "Declaración Shipper (DGD) x2 firmada y MSDS."),
-        "PER": (data.get("chkPerecederos"), "Certificado Fitosanitario y etiquetas de 'Perishable'."),
-        "AVI": (data.get("chkAnimales"), "Certificado Veterinario y contenedor reglamentario IATA LAR."),
-        "GEN": (data.get("chkEmbalaje"), "Inspección de flejes y sellos de seguridad.")
-    }
-
-    if codigo in checks:
-        marcado, consejo = checks[codigo]
-        if not marcado:
-            errores.append(f"Falta validación obligatoria para carga {codigo}.")
-            soluciones.append(f"💡 Documentación: Asegurar {consejo}")
-
-    # 4. Tiempo de Entrega (Logística)
-    if hora_camion and hora_camion > cutoff:
-        errores.append("Riesgo de Offload: El camión llega después del Cut-Off.")
-        soluciones.append("💡 Acción: Solicitar extensión de horario o reprogramar reserva.")
+    if not data.get("chkSeguridad"):
+        errores.append("Falta Inspección TSA / Rayos X." if lang=="es" else "TSA Screening / X-Ray Missing.")
 
     # Estado Final
-    status = "RECHAZADO" if errores else "LISTO PARA VUELO"
-    if 0 < len(errores) <= 2: status = "ALERTA / REVISIÓN"
+    if lang == "es":
+        status = "RECHAZADO" if errores else "LISTO PARA VUELO"
+    else:
+        status = "REJECTED" if errores else "FLY READY"
 
     return {
         "status": status,
         "errores": errores,
         "soluciones": soluciones,
-        "peso_tasable": max(peso_total, peso_vol)
+        "es_consolidado": es_consolidado,
+        "peso_tasable": max(peso_total, (float(data.get("largo",0))*float(data.get("ancho",0))*alto/6000))
     }
 
 if __name__ == "__main__":
