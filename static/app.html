@@ -1,199 +1,309 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>AL CIELO - SmartCargo Advisory</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-/* Tus Estilos Originales */
-body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-h1 { text-align:center; color:#0a3d62; margin-bottom:20px; }
-.collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
-.active, .collapsible:hover { background-color:#062c47; }
-.content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-label { display:block; margin:8px 0 4px; font-weight:500; }
-input, select, textarea { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; box-sizing: border-box; }
-.docs, .tip, .checklist { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-wrap; }
-.alert { color:red; font-weight:bold; margin:5px 0; }
-.checklist input { margin-right:8px; }
+    <meta charset="UTF-8">
+    <title>AL CIELO - SmartCargo Advisory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0a3d62; --danger: #e11a22; --success: #27ae60; --warning: #f39c12; --light: #f4f6f8; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:10px; color: #333; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        
+        /* Navbar de Idiomas */
+        .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
+        .lang-btn { padding: 8px 16px; cursor: pointer; border: 2px solid var(--primary); border-radius: 20px; background: white; font-weight: bold; transition: 0.3s; }
+        .lang-btn.active { background: var(--primary); color: white; }
 
-/* Nuevos Estilos Agregados */
-.lang-bar { text-align: right; margin-bottom: 15px; }
-.btn-lang { padding: 5px 15px; cursor: pointer; border-radius: 20px; border: 1px solid #0a3d62; background: white; font-weight: bold; }
-.btn-lang.active { background: #0a3d62; color: white; }
-.analysis-box { background: #fffde7; border: 2px solid #0a3d62; height: 100px; font-family: monospace; }
-.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin: 10px 0; }
-.photo-item { border: 1px solid #ddd; padding: 5px; background: white; border-radius: 5px; text-align: center; }
-.photo-item img { max-width: 100%; height: 80px; object-fit: cover; }
-</style>
+        h1 { color: var(--primary); text-align: center; border-bottom: 3px solid var(--danger); padding-bottom: 10px; font-size: 22px; text-transform: uppercase; }
+        
+        /* Cuadro de Análisis Inteligente */
+        .analysis-container { margin: 15px 0; }
+        .analysis-box { width: 100%; height: 120px; padding: 12px; border: 2px solid var(--primary); border-radius: 8px; font-family: 'Courier New', monospace; background: #fffde7; box-sizing: border-box; font-size: 14px; }
+
+        .collapsible { background: var(--primary); color: white; cursor: pointer; padding: 14px; width: 100%; border: none; text-align: left; border-radius: 6px; margin-top: 10px; font-weight: 600; display: flex; justify-content: space-between; }
+        .content { padding: 15px; display: none; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; background: #fff; }
+        
+        /* Grid de Fotos */
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 10px; }
+        .photo-item { border: 2px solid #eee; padding: 5px; border-radius: 8px; position: relative; background: #f9f9f9; text-align: center; }
+        .photo-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 4px; }
+        .photo-item span { font-size: 10px; font-weight: bold; color: var(--primary); }
+
+        label { display: block; margin: 12px 0 5px; font-weight: 600; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        
+        .btn-eval { background: var(--danger); color: white; border: none; padding: 18px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(225,26,34,0.3); }
+        .btn-eval:hover { background: #b31218; }
+
+        .result-box { margin-top: 25px; padding: 20px; border-radius: 10px; display: none; border-left: 10px solid #ccc; }
+        .checklist label { font-weight: 400; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 0; }
+        .checklist input { width: auto; height: 18px; width: 18px; }
+        
+        .tip { font-style: italic; color: #666; font-size: 13px; margin-top: -5px; margin-bottom: 10px; }
+        .docs { background: #eef; padding: 10px; border-radius: 6px; margin-top: 10px; }
+    </style>
 </head>
 <body>
 
-<div class="lang-bar">
-    <button class="btn-lang active" onclick="setLang('es')">ESPAÑOL</button>
-    <button class="btn-lang" onclick="setLang('en')">ENGLISH</button>
-</div>
+<div class="container">
+    <div class="lang-bar">
+        <button class="lang-btn active" id="btnEs" onclick="setLang('es')">ESPAÑOL</button>
+        <button class="lang-btn" id="btnEn" onclick="setLang('en')">ENGLISH</button>
+    </div>
 
-<h1 id="txtTitle">AL CIELO - SmartCargo Advisory</h1>
+    <h1 id="txtTitle">AL CIELO - SmartCargo Advisory</h1>
 
-<label id="txtAnalysis">Cuadro de Análisis (Análisis, Voz, Copiar/Pegar):</label>
-<textarea id="analisisTexto" class="analysis-box" placeholder="Pegue aquí el manifiesto o describa la carga..."></textarea>
+    <div class="analysis-container">
+        <label id="txtAnalysis">Análisis de Manifiesto / Notas de Carga:</label>
+        <textarea id="analisisTexto" class="analysis-box" placeholder="Pegue aquí el manifiesto, detalles del forwarder o descripción de la mercancía..."></textarea>
+    </div>
 
-<button class="collapsible" id="txtSec1">I. Identificación y Rol</button>
-<div class="content">
-<label for="rolUsuario" id="txtRol">Rol del Usuario:</label>
-<select id="rolUsuario" onchange="updateRolFields()">
-<option value="">Seleccione</option>
-<option value="Forwarder">Forwarder</option>
-<option value="Chofer">Chofer / Camionero</option>
-<option value="AgenteWarehouse">Agente Warehouse</option>
-<option value="CounterAgent">Counter Agent</option>
-</select>
-<p id="avisoRol" class="tip"></p>
-<label for="awb">AWB:</label>
-<input type="text" id="awb" placeholder="045-12345678">
-</div>
+    <button class="collapsible" id="txtSec1">I. IDENTIFICACIÓN Y ROL <span>+</span></button>
+    <div class="content">
+        <label id="txtRol">Rol del Usuario:</label>
+        <select id="rolUsuario" onchange="updateRolFields()">
+            <option value="">Seleccione / Select</option>
+            <option value="Counter">Counter Agent (Avianca)</option>
+            <option value="Forwarder">Freight Forwarder</option>
+            <option value="Driver">Driver / Chofer</option>
+            <option value="Warehouse">Warehouse Agent</option>
+        </select>
+        <p id="avisoRol" class="tip"></p>
 
-<button class="collapsible" id="txtSecPhotos">II. Fotos de la Mercancía</button>
-<div class="content">
-    <label id="txtPhotoLabel">Subir fotos (Aparecerán en reportes):</label>
-    <input type="file" id="fotoInput" accept="image/*" multiple onchange="previewPhotos()">
-    <div class="photo-grid" id="photoGrid"></div>
-</div>
+        <label>Air Waybill (AWB):</label>
+        <input type="text" id="awb" placeholder="045-12345678">
+        <p class="tip">Formato: XXX-XXXXXXXX</p>
 
-<button class="collapsible" id="txtSec3">III. Dimensiones y Peso</button>
-<div class="content">
-<label id="txtPcs">Piezas:</label>
-<input type="number" id="piezas" value="1">
-<label id="txtWeight">Peso Total (kg):</label>
-<input type="number" id="pesoTotal" oninput="calcularVolumen()">
-<label>L (cm):</label> <input type="number" id="largo" oninput="calcularVolumen()">
-<label>W (cm):</label> <input type="number" id="ancho" oninput="calcularVolumen()">
-<label>H (cm):</label> <input type="number" id="alto" oninput="calcularVolumen()">
-<label>Peso Volumétrico (kg):</label>
-<input type="text" id="pesoVolumetrico" readonly style="background:#eee">
-<p id="alertDimensiones" class="alert"></p>
-</div>
+        <label id="txtForwarder">Forwarder / Agente:</label>
+        <input type="text" id="forwarder" placeholder="Ej: DHL, May Roga">
 
-<button class="collapsible" id="txtSec4">IV. Seguridad y Checklist</button>
-<div class="content">
-<div class="checklist">
-<label><input type="checkbox" id="chkDGR"> DGR / MSDS</label>
-<label><input type="checkbox" id="chkPerecederos"> Perecederos / Cert. Fitosanitario</label>
-<label><input type="checkbox" id="chkAnimales"> AVI / Cert. Veterinario</label>
-<label><input type="checkbox" id="chkEmbalaje"> Embalaje y Flejes</label>
-<label><input type="checkbox" id="chkSobres"> Sobres: Originales INSIDE / Copias OUTSIDE</label>
-</div>
-</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>Origen:</label><input type="text" id="origen" placeholder="MIA"></div>
+            <div><label>Destino:</label><input type="text" id="destino" placeholder="BOG"></div>
+        </div>
+    </div>
 
-<button class="collapsible" id="txtSec5">V. Validación Final</button>
-<div class="content">
-<button onclick="evaluarCarga()" style="background:red; color:white; padding:15px; width:100%; border:none; border-radius:5px; font-weight:bold; cursor:pointer;" id="txtBtnEval">EVALUAR CARGA</button>
-<div id="resultadoFinal" class="result"></div>
+    <button class="collapsible" id="txtSec2">II. EVIDENCIA FOTOGRÁFICA <span>+</span></button>
+    <div class="content">
+        <label id="txtPhotoLabel">Subir fotos de la mercancía (etiquetas, embalaje, estado):</label>
+        <input type="file" id="fotoInput" accept="image/*" multiple onchange="previewImages()">
+        <div class="photo-grid" id="photoGrid"></div>
+    </div>
+
+    <button class="collapsible" id="txtSec3">III. DIMENSIONES Y PESO <span>+</span></button>
+    <div class="content">
+        <label id="txtType">Tipo de Carga (IATA):</label>
+        <select id="codigoCarga" onchange="mostrarDocumentos()">
+            <option value="">Seleccione / Select</option>
+            <option value="GEN">GEN - General Cargo</option>
+            <option value="PER">PER - Perecederos</option>
+            <option value="DGR">DGR - Dangerous Goods</option>
+            <option value="AVI">AVI - Animales Vivos</option>
+            <option value="HUM">HUM - Restos Humanos</option>
+            <option value="VAL">VAL - Valores</option>
+        </select>
+        <div id="documentosObligatorios" class="docs tip">Seleccione carga para ver documentos.</div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label id="txtPcs">Piezas:</label><input type="number" id="piezas" value="1"></div>
+            <div><label id="txtWeight">Peso Real (kg):</label><input type="number" id="pesoTotal" oninput="calcularVolumen()"></div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div><label>L (cm):</label><input type="number" id="largo" oninput="calcularVolumen()"></div>
+            <div><label>W (cm):</label><input type="number" id="ancho" oninput="calcularVolumen()"></div>
+            <div><label>H (cm):</label><input type="number" id="alto" oninput="calcularVolumen()"></div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <div><label>Volumen (m³):</label><input type="text" id="volumen" readonly style="background:#eee"></div>
+            <div><label>Peso Vol. (kg):</label><input type="text" id="pesoVolumetrico" readonly style="background:#eee"></div>
+        </div>
+        <p id="alertDimensiones" style="color:red; font-weight:bold;"></p>
+    </div>
+
+    <button class="collapsible" id="txtSec4">IV. PRE-CHEQUEO DE COUNTER (TSA/CBP) <span>+</span></button>
+    <div class="content">
+        <div class="checklist">
+            <label><input type="checkbox" id="chkSeguridad"> TSA Screening / Known Shipper Checked</label>
+            <label><input type="checkbox" id="chkSobres"> Envelopes: Originals Inside / Copies Outside</label>
+            <label><input type="checkbox" id="chkManifiesto"> Ground Manifest Signed & Stamped</label>
+            <label><input type="checkbox" id="chkWood"> NIMF-15 / Heat Treated Wood Checked</label>
+            <label><input type="checkbox" id="chkDGR"> Mercancía Peligrosa (DGD Presente)</label>
+            <label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles (Fragile, Orientation)</label>
+        </div>
+    </div>
+
+    <button class="collapsible" id="txtSec6">V. DESGLOSE TÉCNICO DE DOCUMENTOS <span>+</span></button>
+    <div class="content">
+        <button onclick="mostrarDocumentosDetallados()" style="padding:10px; background:var(--primary); color:white; border:none; border-radius:5px; cursor:pointer;">Mostrar y Escuchar Desglose</button>
+        <div id="documentosDetallados" class="docs" style="display:none; margin-top:10px; font-size:14px; line-height:1.5;"></div>
+    </div>
+
+    <button class="btn-eval" onclick="evaluar()" id="txtBtnEval">EVALUAR: ¿VUELA O NO VUELA?</button>
+    
+    <div id="resultado" class="result-box"></div>
 </div>
 
 <script>
-let currentLang = 'es';
+let lang = 'es';
 
-// Función para cambiar idioma completo
-function setLang(lang) {
-    currentLang = lang;
-    document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    
-    const t = {
-        es: { title: "AL CIELO - SmartCargo Advisory", sec1: "I. Identificación y Rol", secPhotos: "II. Fotos de la Mercancía", sec3: "III. Dimensiones y Peso", sec4: "IV. Seguridad y Checklist", btn: "EVALUAR CARGA" },
-        en: { title: "AL CIELO - Smart Cargo Advisory", sec1: "I. ID & Role", secPhotos: "II. Cargo Photos", sec3: "III. Weight & Dimensions", sec4: "IV. Security Checklist", btn: "EVALUATE CARGO" }
-    };
-    document.getElementById('txtTitle').innerText = t[lang].title;
-    document.getElementById('txtSec1').innerText = t[lang].sec1;
-    document.getElementById('txtSecPhotos').innerText = t[lang].secPhotos;
-    document.getElementById('txtSec3').innerText = t[lang].sec3;
-    document.getElementById('txtSec4').innerText = t[lang].sec4;
-    document.getElementById('txtBtnEval').innerText = t[lang].btn;
-}
-
-// Previsualización de fotos
-function previewPhotos() {
-    const grid = document.getElementById('photoGrid');
-    const files = document.getElementById('fotoInput').files;
-    grid.innerHTML = "";
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            grid.innerHTML += `<div class="photo-item"><img src="${e.target.result}"><br><span>OK</span></div>`;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// Lógica original de colapsables
-document.querySelectorAll(".collapsible").forEach(btn => {
-    btn.onclick = function() {
-        this.classList.toggle("active");
-        let content = this.nextElementSibling;
-        content.style.display = content.style.display === "block" ? "none" : "block";
+const translations = {
+    es: {
+        title: "AL CIELO - SmartCargo Advisory",
+        analysis: "Análisis de Manifiesto / Notas de Carga:",
+        sec1: "I. IDENTIFICACIÓN Y ROL",
+        sec2: "II. EVIDENCIA FOTOGRÁFICA",
+        sec3: "III. DIMENSIONES Y PESO",
+        sec4: "IV. PRE-CHEQUEO DE COUNTER (TSA/CBP)",
+        sec6: "V. DESGLOSE TÉCNICO DE DOCUMENTOS",
+        btnEval: "EVALUAR: ¿VUELA O NO VUELA?",
+        rol: "Rol del Usuario:",
+        type: "Tipo de Carga:",
+        pcs: "Piezas:",
+        weight: "Peso Real (kg):",
+        wait: "Procesando pre-chequeo técnico..."
+    },
+    en: {
+        title: "AL CIELO - SmartCargo Advisory",
+        analysis: "Manifest Analysis / Cargo Notes:",
+        sec1: "I. IDENTIFICATION & ROLE",
+        sec2: "II. PHOTOGRAPHIC EVIDENCE",
+        sec3: "III. DIMENSIONS & WEIGHT",
+        sec4: "IV. COUNTER PRE-CHECK (TSA/CBP)",
+        sec6: "V. TECHNICAL DOCUMENT BREAKDOWN",
+        btnEval: "EVALUATE: FLY OR NO FLY?",
+        rol: "User Role:",
+        type: "Cargo Type:",
+        pcs: "Pieces:",
+        weight: "Real Weight (kg):",
+        wait: "Processing technical pre-check..."
     }
-});
+};
+
+function setLang(l) {
+    lang = l;
+    document.getElementById('btnEs').classList.toggle('active', l === 'es');
+    document.getElementById('btnEn').classList.toggle('active', l === 'en');
+    
+    document.getElementById('txtTitle').innerText = translations[l].title;
+    document.getElementById('txtAnalysis').innerText = translations[l].analysis;
+    document.getElementById('txtSec1').innerHTML = translations[l].sec1 + " <span>+</span>";
+    document.getElementById('txtSec2').innerHTML = translations[l].sec2 + " <span>+</span>";
+    document.getElementById('txtSec3').innerHTML = translations[l].sec3 + " <span>+</span>";
+    document.getElementById('txtSec4').innerHTML = translations[l].sec4 + " <span>+</span>";
+    document.getElementById('txtSec6').innerHTML = translations[l].sec6 + " <span>+</span>";
+    document.getElementById('txtBtnEval').innerText = translations[l].btnEval;
+    document.getElementById('txtRol').innerText = translations[l].rol;
+    document.getElementById('txtType').innerText = translations[l].type;
+    document.getElementById('txtPcs').innerText = translations[l].pcs;
+    document.getElementById('txtWeight').innerText = translations[l].weight;
+}
 
 function calcularVolumen() {
     const L = +document.getElementById('largo').value || 0;
     const W = +document.getElementById('ancho').value || 0;
     const H = +document.getElementById('alto').value || 0;
-    const vol = (L * W * H) / 6000;
-    document.getElementById('pesoVolumetrico').value = vol.toFixed(2);
+    const pesoReal = +document.getElementById('pesoTotal').value || 0;
+    
+    const volM3 = (L * W * H) / 1000000;
+    const pesoVol = (L * W * H) / 6000;
+    
+    document.getElementById('volumen').value = volM3.toFixed(3) + " m³";
+    document.getElementById('pesoVolumetrico').value = pesoVol.toFixed(2);
     
     let msg = "";
-    if(H > 160) msg = currentLang === 'es' ? "⚠️ Solo Main Deck." : "⚠️ Main Deck Only.";
+    if(H > 244) msg = "❌ Alto excede límite (244cm).";
+    else if(H > 160) msg = "⚠️ Solo Main Deck (Carguero).";
+    if(pesoReal > 6800) msg += " ❌ Peso excede límite pallet.";
     document.getElementById('alertDimensiones').innerText = msg;
 }
 
-async function evaluarCarga() {
-    const resDiv = document.getElementById('resultadoFinal');
-    resDiv.innerHTML = "...";
-    
-    const data = {
-        lang: currentLang,
-        analisisTexto: document.getElementById('analisisTexto').value,
-        rolUsuario: document.getElementById('rolUsuario').value,
-        awb: document.getElementById('awb').value,
-        piezas: document.getElementById('piezas').value,
-        pesoTotal: document.getElementById('pesoTotal').value,
-        alto: document.getElementById('alto').value,
-        pesoVolumetrico: document.getElementById('pesoVolumetrico').value,
-        chkDGR: document.getElementById('chkDGR').checked,
-        chkPerecederos: document.getElementById('chkPerecederos').checked,
-        chkAnimales: document.getElementById('chkAnimales').checked,
-        chkEmbalaje: document.getElementById('chkEmbalaje').checked
+function mostrarDocumentos() {
+    const tipo = document.getElementById('codigoCarga').value;
+    const docs = {
+        "GEN": "AWB, Packing List, Invoice, Security Dec.",
+        "PER": "AWB, Fitosanitario, FDA, Packing List.",
+        "DGR": "AWB, Shipper Dec (DGD) x3, MSDS.",
+        "AVI": "AWB, Cert. Veterinario, IATA Live Animals.",
+        "HUM": "AWB, Death Certificate, Embalming Cert.",
+        "VAL": "AWB, Declaración de Valor, Escolta."
     };
-
-    try {
-        const res = await fetch('/api/evaluar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const result = await res.json();
-        
-        let html = `<div style="padding:15px; border-radius:10px; background:${result.status.includes('READY')?'#dff9fb':'#ffbe76'}">`;
-        html += `<h2>${result.status}</h2>`;
-        html += "<ul>" + result.errores.map(e => `<li style="color:red">${e}</li>`).join('') + "</ul>";
-        html += "<h3>Acciones:</h3><ul>" + result.soluciones.map(s => `<li>${s}</li>`).join('') + "</ul></div>";
-        resDiv.innerHTML = html;
-
-        // Voz en el idioma seleccionado
-        const utterance = new SpeechSynthesisUtterance(result.status + ". " + (result.errores[0] || ""));
-        utterance.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
-        speechSynthesis.speak(utterance);
-
-    } catch (err) { resDiv.innerHTML = "Error."; }
+    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione carga";
 }
+
+function previewImages() {
+    const grid = document.getElementById('photoGrid');
+    const files = document.getElementById('fotoInput').files;
+    grid.innerHTML = "";
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            grid.innerHTML += `<div class="photo-item"><img src="${e.target.result}"><span>FOTO ${index + 1}</span></div>`;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+document.querySelectorAll(".collapsible").forEach(btn => {
+    btn.onclick = function() {
+        this.classList.toggle("active");
+        let content = this.nextElementSibling;
+        content.style.display = (content.style.display === "block") ? "none" : "block";
+    }
+});
 
 function updateRolFields() {
     const rol = document.getElementById('rolUsuario').value;
-    document.getElementById('avisoRol').innerText = (rol === "Chofer") ? "Tip: Revise sellos." : "";
+    document.getElementById('avisoRol').innerText = (rol === "Driver" || rol === "Warehouse") ? "Tip: Revise sellos y manifiesto terrestre." : "";
+}
+
+const textoDocumentos = `Desglose Técnico: 1. ID Original Vigente del chofer. 2. Manifiesto Terrestre firmado. 3. AWB sin tachaduras. 4. Packing List detallado. 5. Security Declaration. 6. Para DGR: DGD con borde rojo original.`;
+
+function mostrarDocumentosDetallados() {
+    const cont = document.getElementById('documentosDetallados');
+    cont.style.display = 'block';
+    cont.innerText = textoDocumentos;
+    const utterance = new SpeechSynthesisUtterance(textoDocumentos);
+    utterance.lang = lang === 'es' ? 'es-ES' : 'en-US';
+    speechSynthesis.speak(utterance);
+}
+
+async function evaluar() {
+    const resDiv = document.getElementById('resultado');
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = `<p>${translations[lang].wait}</p>`;
+
+    const payload = {
+        lang: lang,
+        analisisTexto: document.getElementById('analisisTexto').value,
+        awb: document.getElementById('awb').value,
+        codigoCarga: document.getElementById('codigoCarga').value,
+        piezas: document.getElementById('piezas').value,
+        pesoTotal: document.getElementById('pesoTotal').value,
+        alto: document.getElementById('alto').value,
+        chkSeguridad: document.getElementById('chkSeguridad').checked
+    };
+
+    try {
+        const response = await fetch('/api/evaluar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        let html = `<h2>${res.status}</h2>`;
+        if (res.errores.length > 0) {
+            html += "<ul>" + res.errores.map(e => `<li>❌ ${e}</li>`).join('') + "</ul>";
+        } else {
+            html += "<p>✅ Carga Lista para Vuelo.</p>";
+        }
+        resDiv.innerHTML = html;
+        resDiv.style.background = res.errores.length > 0 ? '#fff5f5' : '#f0fff4';
+        
+        const utterance = new SpeechSynthesisUtterance(res.status);
+        utterance.lang = lang === 'es' ? 'es-ES' : 'en-US';
+        speechSynthesis.speak(utterance);
+    } catch (e) { resDiv.innerHTML = "Error de conexión."; }
 }
 </script>
 </body>
