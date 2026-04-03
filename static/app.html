@@ -1,266 +1,286 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>AL CIELO - SmartCargo Advisory</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-    body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-    h1 { text-align:center; color:#0a3d62; margin-bottom:20px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-    .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:12px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; font-weight: 600; transition: 0.3s; }
-    .active, .collapsible:hover { background-color:#062c47; }
-    .content { padding:15px; display:none; overflow:hidden; background-color:#ffffff; border: 1px solid #ddd; border-radius:5px; margin-bottom:10px; }
-    label { display:block; margin:8px 0 4px; font-weight:500; font-size: 14px; }
-    input, select { padding:10px; width:100%; box-sizing: border-box; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; font-size: 14px; }
-    .docs, .tip, .checklist { background:#eef; padding:12px; margin:5px 0; border-radius:4px; font-size:14px; border-left: 4px solid #0a3d62; }
-    .result { font-size:15px; margin-top:15px; white-space:pre-wrap; background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #0a3d62; line-height: 1.5; }
-    .alert { color:#e74c3c; font-weight:bold; margin:10px 0; padding: 10px; background: #fdf2f2; border-radius: 4px; display: none; font-size: 13px; }
-    .btn-evaluar { background-color:#0a3d62; color:white; font-weight:bold; cursor:pointer; border:none; padding:18px; width:100%; border-radius:5px; margin-top:10px; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .btn-borrar { background-color:#eb4d4b; color:white; font-weight:bold; cursor:pointer; border:none; padding:12px; width:100%; border-radius:5px; margin-top:10px; opacity: 0.9; }
-    .btn-add { background-color:#27ae60; color:white; border:none; padding:10px; border-radius:4px; cursor:pointer; width:100%; margin: 10px 0; font-weight: bold; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th { background: #0a3d62; color: white; padding: 10px; text-align: center; }
-    td { border: 1px solid #ddd; padding: 5px; text-align: center; }
-    .input-tabla { width: 100%; border: 1px solid #eee; padding: 5px; text-align: center; border-radius: 3px; }
-    .resumen-box { background: #dff9fb; padding: 15px; border-radius: 5px; margin-top: 15px; border: 1px solid #c7ecee; font-size: 14px; color: #0a3d62; }
-    .resumen-box span { font-weight: bold; }
-</style>
+    <meta charset="UTF-8">
+    <title>AL CIELO - SmartCargo Advisory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0a3d62; --danger: #eb4d4b; --success: #27ae60; --light: #f4f6f8; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:20px; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        h1 { color: var(--primary); text-align: center; font-size: 26px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
+        .lang-btn { cursor: pointer; border: 2px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; transition: 0.3s; }
+        .selected-lang { background: var(--primary); color: white; }
+
+        .section { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; }
+        .header { background: var(--primary); color: white; padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .body { padding: 20px; display: none; }
+        .active .body { display: block; }
+
+        label { display: block; font-weight: 600; margin-top: 12px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
+        
+        .grid-types { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .type-item { background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #eee; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: #f0f2f5; padding: 10px; border: 1px solid #ddd; font-size: 12px; color: var(--primary); }
+        td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+        
+        .btn { padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.3s; font-size: 15px; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-main:hover { background: #062c47; }
+        .btn-voice { background: #686de0; color: white; width: auto; padding: 8px 15px; font-size: 13px; margin-top: 10px; }
+        .btn-add { background: var(--success); color: white; margin-top: 15px; }
+        
+        .result-box { margin-top: 25px; padding: 20px; border-radius: 8px; border: 2px solid var(--primary); background: #fff; line-height: 1.6; }
+        .alert-list { color: var(--danger); font-weight: bold; list-style: none; padding: 0; }
+        
+        /* Estilos para impresión/PDF */
+        @media print {
+            .btn, .lang-bar, .header span, .btn-add, input[type="file"] { display: none !important; }
+            .body { display: block !important; }
+            .container { box-shadow: none; border: none; }
+        }
+    </style>
 </head>
 <body>
 
-<h1>AL CIELO - SmartCargo Advisory</h1>
+<div class="container">
+    <div class="lang-bar">
+        <div id="btn-es" class="lang-btn selected-lang" onclick="changeLang('es')">ESPAÑOL</div>
+        <div id="btn-en" class="lang-btn" onclick="changeLang('en')">ENGLISH</div>
+    </div>
 
-<button class="collapsible">I. Identificación y Destino</button>
-<div class="content">
-    <label for="rolUsuario">Rol en la Operación:</label>
-    <select id="rolUsuario">
-        <option value="Forwarder">Forwarder / Agente de Carga</option>
-        <option value="Dueño">Dueño de Carga (Shipper)</option>
-        <option value="Chofer">Chofer / Camionero</option>
-        <option value="AgenteWarehouse">Agente de Bodega (Warehouse)</option>
-        <option value="CounterAgent">Agente de Counter (Aerolínea)</option>
-    </select>
-    <label for="awb">Número de Guía (AWB):</label>
-    <input type="text" id="awb" placeholder="045-12345678">
-    <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
-            <label>Origen (IATA):</label>
-            <input type="text" id="origen" placeholder="MIA">
-        </div>
-        <div style="flex: 1;">
-            <label>Destino (IATA):</label>
-            <input type="text" id="destino" placeholder="BOG">
+    <h1 id="txt-title">AL CIELO - SmartCargo Advisory</h1>
+
+    <div class="section active">
+        <div class="header" onclick="toggle(this)">I. <span id="txt-sec1">IDENTIFICACIÓN</span> <span>▼</span></div>
+        <div class="body">
+            <label id="lbl-awb">Número de Guía (AWB):</label>
+            <input type="text" id="awb" placeholder="045-12345678">
+            <label id="lbl-obs">Notas / Copiar Texto (Email/PDF):</label>
+            <textarea id="notas" rows="4" placeholder="Pegue aquí los detalles del correo o documento..."></textarea>
+            <button class="btn btn-voice" onclick="startDictation('notas')">🎤 <span id="txt-voice">Dictar por Voz</span></button>
         </div>
     </div>
-</div>
 
-<button class="collapsible">II. Naturaleza de la Carga</button>
-<div class="content">
-    <label for="codigoCarga">Código de Carga IATA:</label>
-    <select id="codigoCarga" onchange="mostrarDocumentos()">
-        <option value="">-- Seleccione --</option>
-        <option value="GEN">GEN - Carga General</option>
-        <option value="PER">PER - Perecederos</option>
-        <option value="DGR">DGR - Mercancía Peligrosa</option>
-        <option value="AVI">AVI - Animales Vivos</option>
-        <option value="HUM">HUM - Restos Humanos</option>
-        <option value="VAL">VAL - Carga de Valor</option>
-    </select>
-    <div id="documentosObligatorios" class="docs">Seleccione el tipo de carga para ver los requisitos documentales.</div>
-</div>
-
-<button class="collapsible">III. Dimensiones y Pesos (Desglose)</button>
-<div class="content">
-    <p class="tip">Ingrese cada partida de carga. El sistema calculará el peso tasable (Real vs Volumétrico 1:6).</p>
-    <table>
-        <thead>
-            <tr>
-                <th>Cant.</th>
-                <th>L(cm)</th>
-                <th>W(cm)</th>
-                <th>H(cm)</th>
-                <th>Kg/u</th>
-                <th>X</th>
-            </tr>
-        </thead>
-        <tbody id="listaBultos">
-            <tr>
-                <td><input type="number" class="p-cant input-tabla" value="1"></td>
-                <td><input type="number" class="p-l input-tabla" placeholder="L"></td>
-                <td><input type="number" class="p-w input-tabla" placeholder="W"></td>
-                <td><input type="number" class="p-h input-tabla" placeholder="H"></td>
-                <td><input type="number" class="p-p input-tabla" placeholder="Kg"></td>
-                <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
-            </tr>
-        </tbody>
-    </table>
-    <button class="btn-add" onclick="agregarFila()">+ AGREGAR OTRA PARTIDA</button>
-
-    <div class="resumen-box">
-        <strong>RESUMEN TOTAL:</strong><br>
-        Piezas: <span id="totalPiezas">0</span> | Peso Real: <span id="totalPesoR">0.00</span> kg<br>
-        Volumen: <span id="totalVol">0.000</span> m³ | Peso Vol: <span id="totalPesoV">0.00</span> kg
+    <div class="section">
+        <div class="header" onclick="toggle(this)">II. <span id="txt-sec2">NATURALEZA DE CARGA</span> <span>▼</span></div>
+        <div class="body">
+            <p id="txt-multiselect" style="font-size: 12px; color: #666; margin: 0;">Seleccione todas las categorías aplicables:</p>
+            <div class="grid-types">
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="GEN"> GEN - General</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="PER"> PER - Perecedero</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="DGR"> DGR - Peligrosa</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="ICE"> DRY ICE - Hielo Seco</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="HUM"> HUM - Restos Humanos</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="VAL"> VAL - Valores</div>
+            </div>
+        </div>
     </div>
-    
-    <label style="margin-top:10px;">Pallet / ULD Sugerido:</label>
-    <select id="tipoPallet">
-        <option value="Loose">Loose Cargo (Suelto)</option>
-        <option value="PMC">Pallet PMC (Apto Main Deck/Bellies)</option>
-        <option value="PAG">Pallet PAG (Apto Main Deck/Bellies)</option>
-        <option value="LD3">Contenedor LD3 (Belly)</option>
-    </select>
-    <div id="alertDimensiones" class="alert"></div>
-</div>
 
-<button class="collapsible">IV. Evidencia y Seguridad</button>
-<div class="content">
-    <label>Captura de Carga / Etiquetas (Opcional):</label>
-    <input type="file" id="fotoCarga" accept="image/*" capture="environment">
-    
-    <label>Seguridad (TSA/CBP):</label>
-    <select id="knownShipper">
-        <option value="No">Unknown Shipper (Requiere Inspección)</option>
-        <option value="Sí">Known Shipper</option>
-    </select>
-
-    <div class="checklist">
-        <label><input type="checkbox" id="chkDGR"> Mercancía Peligrosa Declarada</label><br>
-        <label><input type="checkbox" id="chkEmbalaje"> Embalaje en Buen Estado</label><br>
-        <label><input type="checkbox" id="chkEtiquetas"> Etiquetas de Orientación/Riesgo Visibles</label><br>
-        <label><input type="checkbox" id="chkFleje"> Fleje y Seguridad Correcta</label>
+    <div class="section">
+        <div class="header" onclick="toggle(this)">III. <span id="txt-sec3">DETALLE Y FOTOS</span> <span>▼</span></div>
+        <div class="body">
+            <table id="tablaBultos">
+                <thead>
+                    <tr>
+                        <th id="th-cant">Cant.</th>
+                        <th>L(cm)</th>
+                        <th>W(cm)</th>
+                        <th>H(cm)</th>
+                        <th>Kg/u</th>
+                        <th id="th-foto">Foto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="number" class="p-cant" value="1" min="1"></td>
+                        <td><input type="number" class="p-l" placeholder="0"></td>
+                        <td><input type="number" class="p-w" placeholder="0"></td>
+                        <td><input type="number" class="p-h" placeholder="0"></td>
+                        <td><input type="number" class="p-p" placeholder="0"></td>
+                        <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-add" id="btn-add" onclick="addRow()">+ <span id="txt-add">Añadir Partida</span></button>
+        </div>
     </div>
-</div>
 
-<button class="collapsible">V. Generar Asesoría Técnica</button>
-<div class="content">
-    <button class="btn-evaluar" onclick="evaluarCarga()">GENERAR REPORTE AL CIELO</button>
-    <button class="btn-borrar" onclick="borrarTodo()">LIMPIAR TODO</button>
-    <div id="resultadoFinal" class="result" style="display:none;"></div>
+    <div class="section">
+        <div class="header" onclick="toggle(this)">IV. <span id="txt-sec4">EMBALAJE / ULD</span> <span>▼</span></div>
+        <div class="body">
+            <label id="lbl-pallet">Tipo de Pallet/Contenedor:</label>
+            <select id="tipoPallet">
+                <option value="Wood">Pallet Madera (Wood)</option>
+                <option value="Plastic">Pallet Plástico (Plastic)</option>
+                <option value="Metal">Pallet Metal</option>
+                <option value="Bagazo">Pallet Bagazo (Eco)</option>
+                <option value="PMC">PMC (ULD)</option>
+                <option value="PAG">PAG (ULD)</option>
+                <option value="Crate">Crate (Huacal)</option>
+                <option value="Skip">Skip</option>
+            </select>
+            
+            <div style="margin-top: 15px;">
+                <label><input type="checkbox" id="chkDGR"> <span id="txt-chk-dgr">DGD / MSDS verificado</span></label>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-main" id="btn-eval" onclick="evaluar()">GENERAR ASESORÍA TÉCNICA</button>
+    <button class="btn" style="background:var(--danger); color:white;" id="btn-clear" onclick="limpiarTodo()">BORRAR TODO</button>
+
+    <div id="resultado" class="result-box" style="display:none;"></div>
 </div>
 
 <script>
-// Acordeón
-document.querySelectorAll(".collapsible").forEach(btn => {
-    btn.addEventListener("click", function() {
-        this.classList.toggle("active");
-        let content = this.nextElementSibling;
-        content.style.display = (content.style.display === "block") ? "none" : "block";
-    });
-});
+let currentLang = 'es';
 
-// Lógica de Tabla Dinámica
-function agregarFila() {
-    const html = `<tr>
-        <td><input type="number" class="p-cant input-tabla" value="1"></td>
-        <td><input type="number" class="p-l input-tabla"></td>
-        <td><input type="number" class="p-w input-tabla"></td>
-        <td><input type="number" class="p-h input-tabla"></td>
-        <td><input type="number" class="p-p input-tabla"></td>
-        <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
+const translations = {
+    es: {
+        title: "AL CIELO - SmartCargo Advisory",
+        sec1: "IDENTIFICACIÓN",
+        sec2: "NATURALEZA DE CARGA",
+        sec3: "DETALLE Y FOTOS",
+        sec4: "EMBALAJE / ULD",
+        voice: "Dictar por Voz",
+        eval: "GENERAR ASESORÍA TÉCNICA",
+        awb: "Número de Guía (AWB):",
+        obs: "Notas / Copiar Texto (Email/PDF):",
+        add: "Añadir Partida",
+        cant: "Cant.",
+        foto: "Foto",
+        chkDgr: "DGD / MSDS verificado",
+        clear: "BORRAR TODO",
+        loading: "Procesando dictamen técnico..."
+    },
+    en: {
+        title: "AL CIELO - SmartCargo Advisory",
+        sec1: "IDENTIFICATION",
+        sec2: "NATURE OF CARGO",
+        sec3: "DETAILS AND PHOTOS",
+        sec4: "PACKAGING / ULD",
+        voice: "Voice Dictation",
+        eval: "GENERATE TECHNICAL ADVISORY",
+        awb: "AWB Number:",
+        obs: "Notes / Copy Text (Email/PDF):",
+        add: "Add Entry",
+        cant: "Qty",
+        foto: "Photo",
+        chkDgr: "DGD / MSDS verified",
+        clear: "CLEAR ALL",
+        loading: "Processing technical report..."
+    }
+};
+
+function changeLang(l) {
+    currentLang = l;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected-lang'));
+    document.getElementById(`btn-${l}`).classList.add('selected-lang');
+    
+    document.getElementById('txt-title').innerText = translations[l].title;
+    document.getElementById('txt-sec1').innerText = translations[l].sec1;
+    document.getElementById('txt-sec2').innerText = translations[l].sec2;
+    document.getElementById('txt-sec3').innerText = translations[l].sec3;
+    document.getElementById('txt-sec4').innerText = translations[l].sec4;
+    document.getElementById('txt-voice').innerText = translations[l].voice;
+    document.getElementById('btn-eval').innerText = translations[l].eval;
+    document.getElementById('lbl-awb').innerText = translations[l].awb;
+    document.getElementById('lbl-obs').innerText = translations[l].obs;
+    document.getElementById('txt-add').innerText = translations[l].add;
+    document.getElementById('th-cant').innerText = translations[l].cant;
+    document.getElementById('th-foto').innerText = translations[l].foto;
+    document.getElementById('txt-chk-dgr').innerText = translations[l].chkDgr;
+    document.getElementById('btn-clear').innerText = translations[l].clear;
+}
+
+function toggle(el) { el.parentElement.classList.toggle('active'); }
+
+function addRow() {
+    const row = `<tr>
+        <td><input type="number" class="p-cant" value="1" min="1"></td>
+        <td><input type="number" class="p-l" placeholder="0"></td>
+        <td><input type="number" class="p-w" placeholder="0"></td>
+        <td><input type="number" class="p-h" placeholder="0"></td>
+        <td><input type="number" class="p-p" placeholder="0"></td>
+        <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
     </tr>`;
-    document.getElementById('listaBultos').insertAdjacentHTML('beforeend', html);
-    conectarListeners();
+    document.querySelector('#tablaBultos tbody').insertAdjacentHTML('beforeend', row);
 }
 
-function eliminarFila(btn) {
-    btn.closest('tr').remove();
-    calcularTotales();
-}
-
-function calcularTotales() {
-    let tPiezas = 0, tPesoR = 0, tVol = 0;
-    let alertMsg = "";
-    
-    document.querySelectorAll('#listaBultos tr').forEach(fila => {
-        const cant = +fila.querySelector('.p-cant').value || 0;
-        const l = +fila.querySelector('.p-l').value || 0;
-        const w = +fila.querySelector('.p-w').value || 0;
-        const h = +fila.querySelector('.p-h').value || 0;
-        const peso = +fila.querySelector('.p-p').value || 0;
-
-        tPiezas += cant;
-        tPesoR += (cant * peso);
-        tVol += (cant * (l * w * h)) / 1000000;
-        
-        if (h > 160 && h <= 244) alertMsg = "⚠️ Bultos sobre 160cm: Solo Avión Carguero.";
-        if (h > 244) alertMsg = "❌ ERROR: Altura máxima excedida (244cm).";
-    });
-
-    document.getElementById('totalPiezas').innerText = tPiezas;
-    document.getElementById('totalPesoR').innerText = tPesoR.toFixed(2);
-    document.getElementById('totalVol').innerText = tVol.toFixed(3);
-    document.getElementById('totalPesoV').innerText = (tVol * 167).toFixed(2);
-    
-    const alertDiv = document.getElementById('alertDimensiones');
-    if(alertMsg) { alertDiv.innerText = alertMsg; alertDiv.style.display = "block"; }
-    else { alertDiv.style.display = "none"; }
-}
-
-function conectarListeners() {
-    document.querySelectorAll('.input-tabla').forEach(i => i.oninput = calcularTotales);
-}
-conectarListeners();
-
-function mostrarDocumentos() {
-    const tipo = document.getElementById('codigoCarga').value;
-    const docs = {
-        "GEN": "AWB, Packing List, Factura Comercial, SLI.",
-        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA (si aplica).",
-        "DGR": "AWB, Shipper's Declaration (DGD) por duplicado, MSDS.",
-        "AVI": "AWB, Certificado de Salud, IATA Live Animals Form.",
-        "HUM": "AWB, Certificado de Defunción, Permiso de Sanidad.",
-        "VAL": "AWB, Factura, Manifiesto de Seguridad Especial."
+function startDictation(id) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Navegador no compatible con voz.");
+    const recognition = new SpeechRecognition();
+    recognition.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
+    recognition.onresult = (event) => {
+        document.getElementById(id).value += " " + event.results[0][0].transcript;
     };
-    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga.";
+    recognition.start();
 }
 
-// Envío al Servidor
-async function evaluarCarga() {
-    const resDiv = document.getElementById('resultadoFinal');
-    resDiv.style.display = "block";
-    resDiv.innerHTML = "Analizando con especialistas de AL CIELO...";
+async function evaluar() {
+    const resDiv = document.getElementById('resultado');
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = `<p>${translations[currentLang].loading}</p>`;
 
     const bultos = [];
-    document.querySelectorAll('#listaBultos tr').forEach(f => {
+    const formData = new FormData();
+    
+    document.querySelectorAll('#tablaBultos tbody tr').forEach(tr => {
         bultos.push({
-            cant: f.querySelector('.p-cant').value,
-            l: f.querySelector('.p-l').value,
-            w: f.querySelector('.p-w').value,
-            h: f.querySelector('.p-h').value,
-            p: f.querySelector('.p-p').value
+            cant: tr.querySelector('.p-cant').value,
+            l: tr.querySelector('.p-l').value,
+            w: tr.querySelector('.p-w').value,
+            h: tr.querySelector('.p-h').value,
+            p: tr.querySelector('.p-p').value
         });
+        const foto = tr.querySelector('.p-foto').files[0];
+        if(foto) formData.append("fotos", foto);
     });
 
     const payload = {
-        rol: document.getElementById('rolUsuario').value,
+        lang: currentLang,
         awb: document.getElementById('awb').value,
-        tipo: document.getElementById('codigoCarga').value,
+        tipos_carga: Array.from(document.querySelectorAll('.tipo-carga:checked')).map(c => c.value),
+        tipo_pallet: document.getElementById('tipoPallet').value,
         detalle_bultos: bultos,
-        chk: {
-            dgr: document.getElementById('chkDGR').checked,
-            embalaje: document.getElementById('chkEmbalaje').checked,
-            etiquetas: document.getElementById('chkEtiquetas').checked
-        }
+        chk: { dgr: document.getElementById('chkDGR').checked }
     };
 
-    const formData = new FormData();
     formData.append("data", JSON.stringify(payload));
-    const foto = document.getElementById('fotoCarga').files[0];
-    if (foto) formData.append("foto", foto);
 
     try {
         const response = await fetch('/api/evaluar', { method: 'POST', body: formData });
         const result = await response.json();
-        resDiv.innerHTML = `<h3>REPORTE TÉCNICO</h3>${result.asesoria_tecnica}<p style="font-size:10px; color:gray; margin-top:10px;">Validación: ${result.fuente}</p>`;
-    } catch (err) {
-        resDiv.innerHTML = "❌ Error crítico de comunicación con el servidor.";
+
+        let html = `<h3>${result.status}</h3>`;
+        html += result.asesoria_tecnica; // Contiene la tabla HTML del servidor
+        
+        if(result.alertas.length > 0) {
+            html += `<ul class="alert-list">`;
+            result.alertas.forEach(a => html += `<li>${a}</li>`);
+            html += `</ul>`;
+        }
+        
+        resDiv.innerHTML = html;
+        resDiv.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+        resDiv.innerHTML = "❌ Error en conexión con el servidor.";
     }
 }
 
-function borrarTodo() {
-    if(confirm("¿Seguro que desea limpiar todos los datos?")) location.reload();
+function limpiarTodo() {
+    if(confirm(currentLang === 'es' ? '¿Borrar todos los datos?' : 'Clear all data?')) {
+        location.reload();
+    }
 }
 </script>
 </body>
