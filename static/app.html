@@ -2,111 +2,95 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>AURA BY MAY ROGA | SMARTCARGO ADVISORY</title>
+    <title>AL CIELO | AURA BY MAY ROGA</title>
     <style>
-        :root { --red: #e11a22; --black: #050505; --gray: #1a1a1a; --gold: #d4a017; --white: #f5f5f5; }
-        body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); margin: 0; }
-        
-        /* CORTINAS INTELIGENTES - EFECTO PREMIUM */
-        #curtains { position: fixed; width: 100%; height: 100vh; display: flex; z-index: 9999; transition: 1.5s cubic-bezier(0.8, 0, 0.2, 1); }
-        .curtain { width: 50%; height: 100%; background: var(--black); display: flex; align-items: center; border: 1px solid #222; }
-        .left-c { justify-content: flex-end; padding-right: 50px; }
-        .right-c { justify-content: flex-start; padding-left: 50px; }
-        .logo-trigger { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 180px; height: 180px; background: var(--red); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 8px solid var(--black); box-shadow: 0 0 80px rgba(225,26,34,0.6); z-index: 10000; transition: 0.5s; }
-        .logo-trigger h1 { font-size: 20px; margin: 0; letter-spacing: 4px; font-weight: 900; }
-        .opened #curtains { transform: scale(1.1); opacity: 0; pointer-events: none; }
+        :root { --red: #e11a22; --gold: #c5a059; --black: #080808; --white: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); margin: 0; overflow-x: hidden; }
 
-        /* DASHBOARD DEL ASESOR */
-        .app-grid { display: grid; grid-template-columns: 350px 1fr 350px; gap: 20px; padding: 20px; height: 100vh; box-sizing: border-box; }
-        .panel { background: var(--gray); border-radius: 10px; padding: 20px; border-top: 5px solid var(--red); overflow-y: auto; }
-        h2 { font-size: 14px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        /* CORTINAS INTELIGENTES */
+        #curtains { position: fixed; width: 100%; height: 100vh; display: flex; z-index: 999; transition: 1.5s cubic-bezier(0.8, 0, 0.2, 1); }
+        .curtain { width: 50%; height: 100%; background: var(--black); display: flex; align-items: center; border: 1px solid #222; }
+        .left-c { justify-content: flex-end; padding-right: 40px; }
+        .right-c { justify-content: flex-start; padding-left: 40px; }
+        .logo-trigger { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 160px; height: 160px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 10px solid var(--black); box-shadow: 0 0 60px rgba(225,26,34,0.5); z-index: 1000; transition: 0.4s; font-weight: 900; }
+        .logo-trigger:hover { transform: translate(-50%, -50%) scale(1.1); }
         
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        .btn-red { background: var(--red); color: white; }
+        .opened #curtains { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+        /* INTERFAZ DEL ASESOR */
+        .app-container { padding: 40px; max-width: 1400px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; opacity: 0; transition: 1s; }
+        .opened ~ .app-container { opacity: 1; }
+        
+        .section { background: #151515; padding: 25px; border-radius: 12px; border-top: 4px solid var(--red); margin-bottom: 25px; }
+        h2 { color: var(--gold); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        
+        input, select, textarea { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; }
+        .btn { padding: 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; }
+        .btn-red { background: var(--red); color: white; font-size: 16px; }
         .btn-gold { background: var(--gold); color: black; }
 
-        /* TABLAS TÉCNICAS */
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { text-align: left; color: #888; padding-bottom: 10px; }
-        td { padding: 5px 0; }
-        .piece-row input { margin: 0; padding: 8px; }
-
-        /* CARDS DE SOLUCIÓN */
-        .sol-card { background: var(--white); color: #000; padding: 15px; border-radius: 5px; border-left: 8px solid #2ecc71; margin-bottom: 15px; }
-        .sol-card.critical { border-left-color: var(--red); }
-        .action-tag { display: block; margin-top: 8px; font-weight: 800; color: var(--red); text-transform: uppercase; font-size: 11px; }
-
-        /* CONTROLES FLOTANTES */
-        .floating-footer { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 50px; border: 1px solid var(--red); }
+        .piece-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .piece-table input { margin: 0; padding: 8px; }
+        
+        .sol-card { background: white; color: black; padding: 20px; border-radius: 5px; border-left: 10px solid #2ecc71; margin-bottom: 15px; }
+        .action-point { display: block; margin-top: 10px; color: var(--red); font-weight: 900; text-transform: uppercase; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="curtains">
-        <div class="curtain left-c"><h2>AURA BY</h2></div>
-        <div class="logo-trigger" onclick="document.body.classList.add('opened')">
-            <h1>AL CIELO</h1>
-            <small>START</small>
-        </div>
-        <div class="curtain right-c"><h2>MAY ROGA</h2></div>
+        <div class="curtain left-c"><h1>AL CIELO</h1></div>
+        <div class="logo-trigger" onclick="document.body.classList.add('opened')">ASESORAR</div>
+        <div class="curtain right-c"><h1>SMARTCARGO</h1></div>
     </div>
 
-    <div class="app-grid">
-        <div class="panel">
-            <h2>I. Datos de Reserva (Miami MIA)</h2>
-            <label>Master AWB / Guía Madre</label>
-            <input type="text" id="awb" placeholder="045-12345678">
-            
-            <label>Tipo de Equipo Reservado</label>
-            <select id="tipo_vuelo">
-                <option value="PAX">Bellies (PAX - 63" Max)</option>
-                <option value="CAO">Freighter (CAO - Carguero)</option>
-            </select>
+    <div class="app-container">
+        <div>
+            <div class="section">
+                <h2>I. Identificación & Vuelo</h2>
+                <input type="text" id="awb" placeholder="GUÍA AÉREA (045-XXXXXXXX)">
+                <select id="tipo_vuelo">
+                    <option value="PAX">PASAJEROS (PAX - Bellies)</option>
+                    <option value="CAO">CARGUERO (CAO - Freighters)</option>
+                </select>
+                <select id="naturaleza" onchange="dibujarPouch()">
+                    <option value="GEN">GENERAL (GEN)</option>
+                    <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
+                    <option value="PER">PERECEDEROS (PER)</option>
+                </select>
+                <div id="pouch_area" style="background:#0a0a0a; padding:15px; border:1px dashed var(--gold);"></div>
+            </div>
 
-            <label>Naturaleza de Carga</label>
-            <select id="naturaleza" onchange="dibujarPouch()">
-                <option value="GEN">General (GEN)</option>
-                <option value="DGR">Mercancía Peligrosa (DGR)</option>
-                <option value="PER">Perecederos (PER)</option>
-                <option value="VAL">Valor (VAL)</option>
-            </select>
-
-            <div id="pouch_checks">
+            <div class="section">
+                <h2>II. Reporte de Condición Física</h2>
+                <textarea id="reporte" rows="4" placeholder="Reporte de daños, sellos o discrepancias visibles..."></textarea>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-gold" onclick="activarVoz()">🎤 DICTADO</button>
+                    <button class="btn btn-gold">📸 FOTOS (MAX 3)</button>
                 </div>
+            </div>
         </div>
 
-        <div class="panel">
-            <h2>II. Asesoría Física y Reporte</h2>
-            <table id="tabla_piezas">
-                <thead>
-                    <tr><th>CANT</th><th>L (in)</th><th>W (in)</th><th>H (in)</th><th>PESO (lb)</th></tr>
-                </thead>
-                <tbody id="body_piezas"></tbody>
-            </table>
-            <button class="btn" style="background:#333; color:var(--gold); margin-top:10px;" onclick="addPiece()">+ AGREGAR ESTIBA / PIEZA</button>
+        <div>
+            <div class="section">
+                <h2>III. Dimensiones & Peso</h2>
+                <table class="piece-table">
+                    <thead>
+                        <tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th></tr>
+                    </thead>
+                    <tbody id="lista_piezas"></tbody>
+                </table>
+                <button class="btn" style="background:#222; color:var(--gold); margin-top:10px;" onclick="addPiece()">+ AGREGAR PIEZA</button>
+            </div>
+
+            <div id="panel_soluciones" class="section" style="display:none;">
+                <h2>IV. Asesoría Resolutiva AURA</h2>
+                <div id="output"></div>
+                <button class="btn btn-gold" style="margin-top:20px;" onclick="window.print()">GENERAR REPORTE PDF</button>
+            </div>
             
-            <h2 style="margin-top:30px;">III. Hallazgos del Asesor</h2>
-            <textarea id="reporte" rows="5" placeholder="Dictado de voz o notas sobre el estado físico de la carga..."></textarea>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn btn-gold" onclick="voz()">🎤 DICTAR REPORTE</button>
-                <button class="btn btn-gold">📸 ADJUNTAR (3 MAX)</button>
-            </div>
+            <button class="btn btn-red" style="margin-top:20px; height:80px;" onclick="enviarAsesoria()">VALIDAR Y SOLUCIONAR DESPACHO</button>
         </div>
-
-        <div class="panel" id="panel_resultados">
-            <h2>IV. Soluciones SmartCargo</h2>
-            <div id="output_status" style="margin-bottom:20px;">
-                <p style="color:#666; text-align:center;">Esperando validación de muelle...</p>
-            </div>
-            <div id="output_soluciones"></div>
-        </div>
-    </div>
-
-    <div class="floating-footer">
-        <button class="btn btn-red" style="width:250px;" onclick="asesorar()">SOLUCIONAR DESPACHO</button>
-        <button class="mini-btn" style="background:var(--gold); border:none; padding:10px 20px; border-radius:20px;" onclick="window.print()">GENERAR PDF</button>
-        <button class="mini-btn" style="background:#444; color:white; border:none; padding:10px 20px; border-radius:20px;" onclick="location.reload()">BORRAR</button>
     </div>
 
     <script>
@@ -115,32 +99,27 @@
             tr.className = 'piece-row';
             tr.innerHTML = `
                 <td><input type="number" class="p_cant" value="1"></td>
-                <td><input type="number" class="p_l" value="0"></td>
-                <td><input type="number" class="p_w" value="0"></td>
-                <td><input type="number" class="p_h" value="0"></td>
-                <td><input type="number" class="p_real" value="0"></td>
+                <td><input type="number" class="p_l" placeholder="L"></td>
+                <td><input type="number" class="p_w" placeholder="W"></td>
+                <td><input type="number" class="p_h" placeholder="H"></td>
+                <td><input type="number" class="p_real" placeholder="Lb"></td>
             `;
-            document.getElementById('body_piezas').appendChild(tr);
+            document.getElementById('lista_piezas').appendChild(tr);
         }
 
         function dibujarPouch() {
             const nat = document.getElementById('naturaleza').value;
             const docs = {
                 "GEN": ["INVOICE", "PACKING LIST"],
-                "DGR": ["DGD", "MSDS", "CHECKLIST", "LOI"],
-                "PER": ["PHITO", "SANITARY", "IMPORT PERMIT"],
-                "VAL": ["SECURITY SEALS", "VAL MANIFEST"]
+                "DGR": ["DGD", "MSDS", "CHECKLIST"],
+                "PER": ["PHITO", "SANITARY"]
             };
-            let html = "<h3>POUCH DOCUMENTAL</h3>";
-            docs[nat].forEach(d => {
-                html += `<label style="display:block; font-size:11px; margin-bottom:5px;">
-                            <input type="checkbox" class="pouch_val" value="${d}"> ${d}
-                         </label>`;
-            });
-            document.getElementById('pouch_checks').innerHTML = html;
+            document.getElementById('pouch_area').innerHTML = docs[nat].map(d => 
+                `<label style="display:block; margin:5px;"><input type="checkbox" class="p_check" value="${d}"> ${d}</label>`
+            ).join('');
         }
 
-        async function asesorar() {
+        async function enviarAsesoria() {
             const piezas = Array.from(document.querySelectorAll('.piece-row')).map(r => ({
                 cant: r.querySelector('.p_cant').value,
                 l: r.querySelector('.p_l').value,
@@ -149,53 +128,44 @@
                 p_real: r.querySelector('.p_real').value
             }));
 
-            const pouch = Array.from(document.querySelectorAll('.pouch_val:checked')).map(c => c.value);
+            const pouch = Array.from(document.querySelectorAll('.p_check:checked')).map(c => c.value);
 
+            // LLAMADA AL API (Asegúrate de que la ruta coincida con el @app.post del Python)
             const res = await fetch('/api/asesorar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     awb: document.getElementById('awb').value,
-                    tipo_vuelo: document.getElementById('tipo_vuelo').value,
                     naturaleza: document.getElementById('naturaleza').value,
+                    tipo_vuelo: document.getElementById('tipo_vuelo').value,
                     piezas: piezas,
                     pouch: pouch
                 })
             });
 
             const data = await res.json();
-            
-            document.getElementById('output_status').innerHTML = `
-                <div style="background:var(--red); padding:15px; border-radius:5px; text-align:center;">
-                    <h3 style="margin:0">${data.status}</h3>
-                    <p style="margin:5px 0 0 0">PESO COBRABLE: ${data.p_cobrable} LBS</p>
-                    <small>EQUIPO RECOMENDADO: ${data.equipo_sugerido}</small>
-                </div>
-            `;
+            const panel = document.getElementById('panel_soluciones');
+            const out = document.getElementById('output');
+            panel.style.display = 'block';
 
-            let solHtml = "";
+            let html = `<div style="background:var(--red); color:white; padding:15px; font-weight:bold; margin-bottom:15px;">ESTADO: ${data.status}</div>`;
+            html += `<p>PESO COBRABLE: <b>${data.p_cobrable} Lbs</b> | EQUIPO: <b>${data.equipo}</b></p>`;
+            
             data.soluciones.forEach((s, i) => {
-                solHtml += `
-                    <div class="sol-card critical">
-                        <b>⚠️ ${s}</b>
-                        <span class="action-tag">RESOLUCIÓN: ${data.acciones[i]}</span>
-                    </div>
-                `;
+                html += `<div class="sol-card"><b>SITUACIÓN:</b> ${s}<span class="action-point">RESOLUCIÓN: ${data.acciones[i]}</span></div>`;
             });
 
-            if(data.soluciones.length === 0) {
-                solHtml = `<div class="sol-card">✅ CARGA LISTA PARA VOLAR. No se detectan discrepancias en Pouch ni Dimensiones.</div>`;
-            }
-            document.getElementById('output_soluciones').innerHTML = solHtml;
+            if(data.soluciones.length === 0) html += "<div class='sol-card'>✅ CARGA LISTA PARA VUELO. Proceda al muelle.</div>";
+            
+            out.innerHTML = html;
+            window.scrollTo(0, document.body.scrollHeight);
         }
 
-        function voz() {
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'es-ES';
-            recognition.onresult = (event) => {
-                document.getElementById('reporte').value += event.results[0][0].transcript;
-            };
-            recognition.start();
+        function activarVoz() {
+            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            rec.lang = 'es-ES';
+            rec.onresult = (e) => { document.getElementById('reporte').value += e.results[0][0].transcript; };
+            rec.start();
         }
 
         addPiece();
