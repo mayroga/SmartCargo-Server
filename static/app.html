@@ -1,57 +1,64 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL CIELO - PRE-CHECK ADVISORY</title>
+    <title>AL CIELO - AURA BY MAY ROGA</title>
     <style>
-        :root { --blue: #00d4ff; --dark: #0b1220; --panel: #111a2e; }
-        body { font-family: sans-serif; background: var(--dark); color: white; margin: 0; padding: 15px; }
-        .container { max-width: 800px; margin: auto; }
-        .section { background: var(--panel); padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #1e2a44; }
-        h2, h3 { color: var(--blue); margin-top: 0; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; background: #070d19; border: 1px solid #334466; color: white; border-radius: 5px; box-sizing: border-box; }
-        button { background: var(--blue); color: #0b1220; border: none; padding: 15px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .grid-piezas { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; background: #070d19; padding: 10px; border-radius: 5px; margin-top: 5px; }
-        .piece-row { border-bottom: 1px solid #334466; padding: 10px 0; }
+        :root { --blue: #00d4ff; --bg: #0b1220; --panel: #111a2e; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; }
+        .container { max-width: 900px; margin: auto; }
+        .section { background: var(--panel); padding: 25px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #1e2a44; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h2, h3 { color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #070d19; border: 1px solid #334466; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { background: var(--blue); color: #0b1220; border: none; padding: 18px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        button:hover { filter: brightness(1.2); }
+        .grid-header { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; font-weight: bold; color: var(--blue); font-size: 12px; margin-bottom: 5px; }
+        .piece-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #2a3a5a; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; }
         .hidden { display: none; }
-        .alert-card { background: rgba(255, 77, 77, 0.1); border-left: 5px solid #ff4d4d; padding: 15px; margin: 10px 0; }
-        .success-card { background: rgba(77, 255, 136, 0.1); border-left: 5px solid #4dff88; padding: 15px; margin: 10px 0; }
-        .file-input { background: #1a2742; padding: 10px; border: 1px dashed var(--blue); text-align: center; cursor: pointer; }
+        .alert-box { border-left: 6px solid #ff4d4d; background: rgba(255,77,77,0.1); padding: 20px; border-radius: 8px; }
+        .success-box { border-left: 6px solid #4dff88; background: rgba(77,255,136,0.1); padding: 20px; border-radius: 8px; }
+        .btn-delete { background: #ff4d4d; color: white; width: auto; padding: 10px 20px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>✈️ AL CIELO: Pre-Check Advisory</h2>
-    <p>Asegure su carga antes de llegar al Warehouse.</p>
+    <div style="display:flex; justify-content: space-between; align-items:center;">
+        <h2>✈️ AL CIELO</h2>
+        <button class="btn-delete" onclick="location.reload()">BORRAR TODO</button>
+    </div>
 
     <div class="section">
-        <h3>📄 Datos del AWB</h3>
-        <input id="awb" placeholder="Número de AWB (ej: 729-3126250)">
+        <h3>📋 Datos del Envío</h3>
+        <input id="awb" placeholder="Número de Guía (ej: 729-3126250)">
         <select id="tipo">
-            <option value="GENERAL">Carga General</option>
-            <option value="PHARMA">Pharma / Cold Chain</option>
-            <option value="DGR">Dangerous Goods</option>
+            <option value="GENERAL">CARGA GENERAL</option>
+            <option value="PHARMA">PHARMA / COLD CHAIN</option>
+            <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
+            <option value="PER">PERECEDEROS</option>
         </select>
-        <button onclick="document.getElementById('auditSection').classList.remove('hidden')">Iniciar Auditoría Física</button>
+        <button onclick="document.getElementById('auditBox').classList.remove('hidden')">INICIAR ASESORÍA FÍSICA</button>
     </div>
 
-    <div class="section hidden" id="auditSection">
-        <h3>📦 Auditoría Pieza por Pieza</h3>
+    <div class="section hidden" id="auditBox">
+        <h3>📦 Auditoría de Piezas (Manual)</h3>
+        <div class="grid-header">
+            <span>CANT</span><span>LARGO(in)</span><span>ANCHO(in)</span><span>ALTO(in)</span><span>PESO(kg)</span>
+        </div>
         <div id="listaPiezas"></div>
-        <button style="background:#1a2742; color:var(--blue); border:1px solid var(--blue)" onclick="addPiece()">+ AGREGAR PIEZA MANUAL</button>
+        <button style="background:#1a2742; color:var(--blue); margin-top:10px;" onclick="addPiece()">+ AGREGAR PIEZA</button>
         
-        <h3 style="margin-top:20px;">🎤 Estado de la Carga</h3>
-        <textarea id="obs" placeholder="Describa si hay daños, olores o sellos rotos..."></textarea>
-        <button onclick="procesarEnvio()">VALIDAR ANTES DEL COUNTER</button>
+        <h3 style="margin-top:30px;">🎤 Reporte del Inspector</h3>
+        <textarea id="obs" rows="3" placeholder="Indique si hay daños visibles, fugas o falta de sellos..."></textarea>
+        <button onclick="enviarValidacion()">EJECUTAR PRE-CHEQUEO FINAL</button>
     </div>
 
-    <div class="section hidden" id="resultSection">
-        <div id="finalStatus"></div>
-        <div id="detalles"></div>
-        <button onclick="window.print()">Generar Reporte PDF</button>
-        <button style="background:gray" onclick="location.reload()">Borrar Todo</button>
+    <div class="section hidden" id="resultBox">
+        <div id="statusContainer"></div>
+        <div id="alertasLista" style="margin-top:20px;"></div>
+        <button style="margin-top:20px; background:#4dff88" onclick="window.print()">GENERAR PDF PARA WHATSAPP</button>
     </div>
 </div>
 
@@ -59,80 +66,73 @@
     let piezas = [];
 
     function addPiece() {
-        const id = Date.now();
-        piezas.push({ id, cant: 1, l: 0, w: 0, h: 0, peso: 0 });
-        renderPiezas();
+        const p = { cant: 1, l: 0, w: 0, h: 0, peso: 0 };
+        piezas.push(p);
+        render();
     }
 
-    function renderPiezas() {
+    function render() {
         const container = document.getElementById("listaPiezas");
-        container.innerHTML = piezas.map((p, index) => `
+        container.innerHTML = piezas.map((p, i) => `
             <div class="piece-row">
-                <strong>Pieza #${index + 1}</strong>
-                <div class="grid-piezas">
-                    <input type="number" placeholder="Cant" onchange="update(${index}, 'cant', this.value)" value="${p.cant}">
-                    <input type="number" placeholder="L(in)" onchange="update(${index}, 'l', this.value)" value="${p.l}">
-                    <input type="number" placeholder="W(in)" onchange="update(${index}, 'w', this.value)" value="${p.w}">
-                    <input type="number" placeholder="H(in)" onchange="update(${index}, 'h', this.value)" value="${p.h}">
-                    <input type="number" placeholder="Peso(kg)" onchange="update(${index}, 'peso', this.value)" value="${p.peso}">
+                <div class="grid-inputs">
+                    <input type="number" value="${p.cant}" onchange="update(${i},'cant',this.value)">
+                    <input type="number" placeholder="L" onchange="update(${i},'l',this.value)">
+                    <input type="number" placeholder="W" onchange="update(${i},'w',this.value)">
+                    <input type="number" placeholder="H" onchange="update(${i},'h',this.value)">
+                    <input type="number" placeholder="KG" onchange="update(${i},'peso',this.value)">
                 </div>
-                <div style="margin-top:5px">
-                    <input type="file" accept="image/*" capture="environment" class="file-input">
+                <div style="margin-top:10px">
+                    <label style="font-size:12px; color:var(--blue)">SUBIR FOTO / CÁMARA:</label>
+                    <input type="file" accept="image/*" capture="environment">
                 </div>
             </div>
         `).join("");
     }
 
-    function update(index, key, val) {
-        piezas[index][key] = val;
-    }
+    function update(i, k, v) { piezas[i][k] = v; }
 
-    async function procesarEnvio() {
-        const payload = {
+    async function enviarValidacion() {
+        const data = {
             awb: document.getElementById("awb").value,
             naturaleza: document.getElementById("tipo").value,
             piezas: piezas,
             observaciones: document.getElementById("obs").value
         };
 
-        const response = await fetch('/api/validar_precheck', {
+        const res = await fetch('/api/validar_precheck', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
+            body: JSON.stringify(data)
         });
 
-        const res = await response.json();
-        mostrarResultados(res);
+        const result = await res.json();
+        mostrar(result);
     }
 
-    function mostrarResultados(res) {
-        const section = document.getElementById("resultSection");
-        section.classList.remove("hidden");
-        
+    function mostrar(res) {
+        document.getElementById("resultBox").classList.remove("hidden");
         const isOk = res.status === "READY TO FLY";
-        document.getElementById("finalStatus").innerHTML = `
-            <div class="${isOk ? 'success-card' : 'alert-card'}">
-                <h2>ESTADO: ${res.status}</h2>
-                <p>Peso Cobrable Estimado: <strong>${res.peso_cobrable} KG</strong></p>
+        
+        document.getElementById("statusContainer").innerHTML = `
+            <div class="${isOk ? 'success-box' : 'alert-box'}">
+                <h1 style="margin:0">${res.status}</h1>
+                <p style="font-size:20px">Peso Cobrable: <strong>${res.p_cobrable} KG</strong></p>
             </div>
         `;
 
-        let html = "<h4>Hallazgos de la Asesoría:</h4>";
-        if(res.alertas.length === 0) {
-            html += "<p>✅ Todo parece estar en orden para la entrega.</p>";
-        } else {
-            res.alertas.forEach((a, i) => {
-                html += `
-                    <div style="margin-bottom:10px; border-bottom:1px solid #334466">
-                        <span style="color:#ff4d4d">⚠ ${a}</span><br>
-                        <small>${res.explicaciones[i]}</small><br>
-                        <strong style="font-size:12px; color:var(--blue)">RIESGO: ${res.riesgos[i]}</strong>
-                    </div>
-                `;
-            });
-        }
-        document.getElementById("detalles").innerHTML = html;
-        section.scrollIntoView();
+        let html = "";
+        res.alertas.forEach((a, i) => {
+            html += `
+                <div style="border-bottom: 1px solid #334466; padding: 10px 0;">
+                    <strong style="color:#ff4d4d">⚠ ${a}</strong><br>
+                    <small>${res.explicaciones[i]}</small><br>
+                    <em style="color:var(--blue)">Riesgo: ${res.riesgos[i]}</em>
+                </div>
+            `;
+        });
+        document.getElementById("alertasLista").innerHTML = html || "✅ Carga verificada sin discrepancias.";
+        window.scrollTo(0, document.body.scrollHeight);
     }
 </script>
 
