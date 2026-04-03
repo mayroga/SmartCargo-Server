@@ -1,377 +1,139 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>SMART CARGO-SERVER</title>
-
-<style>
-body { font-family: Arial; background:#0b1220; color:white; margin:0; padding:20px; }
-
-h2 { color:#00d4ff; }
-
-.container { max-width:1400px; margin:auto; }
-
-.section, .panel {
-    background:#111a2e;
-    padding:15px;
-    margin:10px 0;
-    border-radius:10px;
-}
-
-.card { background:#1a2742; padding:10px; border-radius:8px; margin-top:10px; }
-
-input, select, textarea {
-    width:100%;
-    padding:8px;
-    margin:5px 0;
-}
-
-button {
-    padding:10px;
-    background:#00d4ff;
-    border:none;
-    cursor:pointer;
-    margin-top:10px;
-    width:100%;
-}
-
-.hidden { display:none; }
-
-.step { border-left:3px solid #00d4ff; padding:5px; margin:5px 0; }
-
-.red { color:#ff4d4d; }
-.green { color:#4dff88; }
-.yellow { color:#ffd24d; }
-
-table { width:100%; border-collapse:collapse; }
-td, th { border:1px solid #333; padding:5px; text-align:center; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL CIELO - PRE-CHECK ADVISORY</title>
+    <style>
+        :root { --blue: #00d4ff; --dark: #0b1220; --panel: #111a2e; }
+        body { font-family: sans-serif; background: var(--dark); color: white; margin: 0; padding: 15px; }
+        .container { max-width: 800px; margin: auto; }
+        .section { background: var(--panel); padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #1e2a44; }
+        h2, h3 { color: var(--blue); margin-top: 0; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; background: #070d19; border: 1px solid #334466; color: white; border-radius: 5px; box-sizing: border-box; }
+        button { background: var(--blue); color: #0b1220; border: none; padding: 15px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .grid-piezas { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; background: #070d19; padding: 10px; border-radius: 5px; margin-top: 5px; }
+        .piece-row { border-bottom: 1px solid #334466; padding: 10px 0; }
+        .hidden { display: none; }
+        .alert-card { background: rgba(255, 77, 77, 0.1); border-left: 5px solid #ff4d4d; padding: 15px; margin: 10px 0; }
+        .success-card { background: rgba(77, 255, 136, 0.1); border-left: 5px solid #4dff88; padding: 15px; margin: 10px 0; }
+        .file-input { background: #1a2742; padding: 10px; border: 1px dashed var(--blue); text-align: center; cursor: pointer; }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <h2>✈️ AL CIELO: Pre-Check Advisory</h2>
+    <p>Asegure su carga antes de llegar al Warehouse.</p>
 
-<h2>✈️ SMART CARGO OS - Unified Advisory + Audit + AWB Engine</h2>
+    <div class="section">
+        <h3>📄 Datos del AWB</h3>
+        <input id="awb" placeholder="Número de AWB (ej: 729-3126250)">
+        <select id="tipo">
+            <option value="GENERAL">Carga General</option>
+            <option value="PHARMA">Pharma / Cold Chain</option>
+            <option value="DGR">Dangerous Goods</option>
+        </select>
+        <button onclick="document.getElementById('auditSection').classList.remove('hidden')">Iniciar Auditoría Física</button>
+    </div>
 
-<!-- ===================== -->
-<!-- 1. DATOS INICIALES -->
-<!-- ===================== -->
-<div class="section">
-<h3>📋 Datos Iniciales</h3>
+    <div class="section hidden" id="auditSection">
+        <h3>📦 Auditoría Pieza por Pieza</h3>
+        <div id="listaPiezas"></div>
+        <button style="background:#1a2742; color:var(--blue); border:1px solid var(--blue)" onclick="addPiece()">+ AGREGAR PIEZA MANUAL</button>
+        
+        <h3 style="margin-top:20px;">🎤 Estado de la Carga</h3>
+        <textarea id="obs" placeholder="Describa si hay daños, olores o sellos rotos..."></textarea>
+        <button onclick="procesarEnvio()">VALIDAR ANTES DEL COUNTER</button>
+    </div>
 
-<input id="name" placeholder="Nombre">
-<input id="phone" placeholder="Teléfono">
-<input id="email" placeholder="Email">
-<input id="origin" placeholder="Origen">
-<input id="destination" placeholder="Destino">
-
-<button onclick="goRole()">Continuar</button>
-</div>
-
-<!-- ===================== -->
-<!-- 2. ROL -->
-<!-- ===================== -->
-<div class="section hidden" id="roleBox">
-<h3>👤 Rol Operativo</h3>
-
-<select id="role" onchange="roleLogic()">
-<option>SHIPPER</option>
-<option>FORWARDER</option>
-<option>WAREHOUSE</option>
-<option>TRUCKER</option>
-<option>CONSIGNEE</option>
-</select>
-
-<div id="roleHelp"></div>
-
-<button onclick="goCargo()">Siguiente</button>
-</div>
-
-<!-- ===================== -->
-<!-- 3. TIPO CARGA -->
-<!-- ===================== -->
-<div class="section hidden" id="cargoBox">
-<h3>📦 Tipo de Carga</h3>
-
-<select id="type" onchange="docRules()">
-<option>GENERAL</option>
-<option>DGR</option>
-<option>PERECEDERO</option>
-<option>VALIOSO</option>
-<option>HUMANO</option>
-<option>ANIMALES</option>
-</select>
-
-<div id="docsPreview"></div>
-
-<button onclick="goAudit()">Continuar Auditoría</button>
-</div>
-
-<!-- ===================== -->
-<!-- 4. AUDITORÍA FÍSICA -->
-<!-- ===================== -->
-<div class="section hidden" id="auditBox">
-<h3>📦 Auditoría Física (Pieza por Pieza)</h3>
-
-<table id="table">
-<tr>
-<th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th>
-</tr>
-</table>
-
-<button onclick="addPiece()">+ AGREGAR PIEZA</button>
-
-<h3>🎤 Reporte Inspector</h3>
-<textarea id="report"></textarea>
-<button onclick="dictation()">🎤 Dictado Técnico</button>
-
-<button onclick="goValidation()">Continuar Validación</button>
-</div>
-
-<!-- ===================== -->
-<!-- 5. VALIDACIÓN -->
-<!-- ===================== -->
-<div class="section hidden" id="validationBox">
-<h3>⚖️ VALIDACIÓN OPERATIVA</h3>
-
-<button onclick="validate()">VALIDAR DESPACHO</button>
-
-<div id="validationResult"></div>
-<div id="riskEngine"></div>
-</div>
-
-<!-- ===================== -->
-<!-- 6. PROCESO EN VIVO -->
-<!-- ===================== -->
-<div class="section hidden" id="processBox">
-<h3>🧠 PROCESAMIENTO EN VIVO</h3>
-<div id="flow"></div>
-</div>
-
-<!-- ===================== -->
-<!-- 7. AWB FINAL -->
-<!-- ===================== -->
-<div class="section hidden" id="awbBox">
-<h3>✈️ AWB FINAL</h3>
-<div id="awb"></div>
-</div>
-
+    <div class="section hidden" id="resultSection">
+        <div id="finalStatus"></div>
+        <div id="detalles"></div>
+        <button onclick="window.print()">Generar Reporte PDF</button>
+        <button style="background:gray" onclick="location.reload()">Borrar Todo</button>
+    </div>
 </div>
 
 <script>
+    let piezas = [];
 
-let state = {};
-let pieces = [];
+    function addPiece() {
+        const id = Date.now();
+        piezas.push({ id, cant: 1, l: 0, w: 0, h: 0, peso: 0 });
+        renderPiezas();
+    }
 
-/* ===================== */
-/* FLOW CONTROL */
-/* ===================== */
+    function renderPiezas() {
+        const container = document.getElementById("listaPiezas");
+        container.innerHTML = piezas.map((p, index) => `
+            <div class="piece-row">
+                <strong>Pieza #${index + 1}</strong>
+                <div class="grid-piezas">
+                    <input type="number" placeholder="Cant" onchange="update(${index}, 'cant', this.value)" value="${p.cant}">
+                    <input type="number" placeholder="L(in)" onchange="update(${index}, 'l', this.value)" value="${p.l}">
+                    <input type="number" placeholder="W(in)" onchange="update(${index}, 'w', this.value)" value="${p.w}">
+                    <input type="number" placeholder="H(in)" onchange="update(${index}, 'h', this.value)" value="${p.h}">
+                    <input type="number" placeholder="Peso(kg)" onchange="update(${index}, 'peso', this.value)" value="${p.peso}">
+                </div>
+                <div style="margin-top:5px">
+                    <input type="file" accept="image/*" capture="environment" class="file-input">
+                </div>
+            </div>
+        `).join("");
+    }
 
-function goRole(){
-state.name = name.value;
-state.phone = phone.value;
-state.email = email.value;
-state.origin = origin.value;
-state.destination = destination.value;
+    function update(index, key, val) {
+        piezas[index][key] = val;
+    }
 
-roleBox.classList.remove("hidden");
-}
+    async function procesarEnvio() {
+        const payload = {
+            awb: document.getElementById("awb").value,
+            naturaleza: document.getElementById("tipo").value,
+            piezas: piezas,
+            observaciones: document.getElementById("obs").value
+        };
 
-function goCargo(){
-state.role = role.value;
-cargoBox.classList.remove("hidden");
-}
+        const response = await fetch('/api/validar_precheck', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
 
-function goAudit(){
-state.type = type.value;
-auditBox.classList.remove("hidden");
-}
+        const res = await response.json();
+        mostrarResultados(res);
+    }
 
-function goValidation(){
-validationBox.classList.remove("hidden");
-}
+    function mostrarResultados(res) {
+        const section = document.getElementById("resultSection");
+        section.classList.remove("hidden");
+        
+        const isOk = res.status === "READY TO FLY";
+        document.getElementById("finalStatus").innerHTML = `
+            <div class="${isOk ? 'success-card' : 'alert-card'}">
+                <h2>ESTADO: ${res.status}</h2>
+                <p>Peso Cobrable Estimado: <strong>${res.peso_cobrable} KG</strong></p>
+            </div>
+        `;
 
-/* ===================== */
-/* ROLE LOGIC */
-/* ===================== */
-
-function roleLogic(){
-
-let r = role.value;
-
-let msg = {
-SHIPPER:"Dueño de carga - control total documental",
-FORWARDER:"Consolidador - alta carga regulatoria",
-WAREHOUSE:"Inspección física prioritaria",
-TRUCKER:"Solo transporte - validación reducida",
-CONSIGNEE:"Receptor final - verificación documental"
-};
-
-roleHelp.innerHTML = msg[r];
-}
-
-/* ===================== */
-/* DOC RULES */
-/* ===================== */
-
-function docRules(){
-
-let t = type.value;
-
-let base = ["AWB", "Factura Comercial"];
-let extra = [];
-
-if(t==="DGR") extra = ["MSDS", "IATA DGR", "UN Packaging"];
-if(t==="PERECEDERO") extra = ["Cert Temp", "Cold Chain Log"];
-if(t==="VALIOSO") extra = ["Seguro", "Custodia"];
-if(t==="HUMANO") extra = ["Autorización Legal"];
-
-docsPreview.innerHTML =
-"<div class='card'>" + base.concat(extra).map(d=>`<div class='step'>📄 ${d}</div>`).join("") + "</div>";
-}
-
-/* ===================== */
-/* PIEZAS */
-/* ===================== */
-
-function addPiece(){
-
-pieces.push({
-cant:1,
-l:200,
-w:200,
-h:280,
-peso:8000,
-foto:"dg.jpg"
-});
-
-renderTable();
-}
-
-function renderTable(){
-
-table.innerHTML = `
-<tr>
-<th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th>
-</tr>` +
-
-pieces.map(p=>`
-<tr>
-<td>${p.cant}</td>
-<td>${p.l}</td>
-<td>${p.w}</td>
-<td>${p.h}</td>
-<td>${p.peso}</td>
-<td>${p.foto}</td>
-</tr>
-`).join("");
-}
-
-/* ===================== */
-/* DICTADO */
-/* ===================== */
-
-function dictation(){
-report.value =
-"Sellos intactos. olor químico leve. posible DG. sin fugas visibles.";
-}
-
-/* ===================== */
-/* VALIDACIÓN + RIESGO ENGINE */
-/* ===================== */
-
-function validate(){
-
-let risk = [];
-let total = 0;
-
-pieces.forEach((p,i)=>{
-total += p.peso;
-
-if(p.h > 240){
-risk.push(`EXCESO ALTURA PIEZA ${i+1}`);
-}
-});
-
-if(!state.awbPrefix) state.awbPrefix="000";
-
-if(state.awbPrefix !== "045"){
-risk.push("PREFIJO AWB INVÁLIDO (debe iniciar 045)");
-}
-
-risk.push("FALTA DOCUMENTO: AWB");
-risk.push("FALTA DOCUMENTO: FACTURA");
-risk.push("FALTA DOCUMENTO: UN PACKAGING");
-
-let status = risk.length ? "RECHAZADO" : "APROBADO";
-
-validationResult.innerHTML = `
-<div class="card">
-<div class="${risk.length?'red':'green'}">ESTADO: ${status}</div>
-<div>PESO TOTAL: ${(total*8.43).toFixed(2)} LB</div>
-</div>
-`;
-
-riskEngine.innerHTML = risk.map(r=>`<div class="step red">⚠ ${r}</div>`).join("");
-
-if(risk.length === 0) runProcess();
-}
-
-/* ===================== */
-/* PROCESS SIMULATION */
-/* ===================== */
-
-function runProcess(){
-
-processBox.classList.remove("hidden");
-
-let steps = [
-"Recibiendo datos",
-"Validando física",
-"Comparando peso",
-"Revisando documentos",
-"Aplicando reglas IATA",
-"Generando AWB"
-];
-
-let i=0;
-
-let interval = setInterval(()=>{
-
-flow.innerHTML += `<div class='step green'>${steps[i]}</div>`;
-i++;
-
-if(i>=steps.length){
-clearInterval(interval);
-generateAWB();
-}
-
-},700);
-}
-
-/* ===================== */
-/* AWB FINAL */
-/* ===================== */
-
-function generateAWB(){
-
-awbBox.classList.remove("hidden");
-
-let awb = "045-" + Math.floor(Math.random()*99999999);
-
-awb.innerHTML = `
-<div class="card">
-<h3>✈️ ${awb}</h3>
-<p>Cliente: ${state.name}</p>
-<p>Ruta: ${state.origin} → ${state.destination}</p>
-<p>Tipo: ${state.type}</p>
-<p>Rol: ${state.role}</p>
-<p class="green">✔ CARGA PROCESADA</p>
-</div>
-`;
-}
-
+        let html = "<h4>Hallazgos de la Asesoría:</h4>";
+        if(res.alertas.length === 0) {
+            html += "<p>✅ Todo parece estar en orden para la entrega.</p>";
+        } else {
+            res.alertas.forEach((a, i) => {
+                html += `
+                    <div style="margin-bottom:10px; border-bottom:1px solid #334466">
+                        <span style="color:#ff4d4d">⚠ ${a}</span><br>
+                        <small>${res.explicaciones[i]}</small><br>
+                        <strong style="font-size:12px; color:var(--blue)">RIESGO: ${res.riesgos[i]}</strong>
+                    </div>
+                `;
+            });
+        }
+        document.getElementById("detalles").innerHTML = html;
+        section.scrollIntoView();
+    }
 </script>
 
 </body>
