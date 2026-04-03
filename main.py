@@ -2,88 +2,89 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-import os
 import json
+import os
 
 app = FastAPI()
 
-# Asegurar directorio estático
-if not os.path.exists("static"): 
-    os.makedirs("static")
-
+# Directorio para archivos estáticos
+if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Carga de base de conocimientos técnicos de Avianca y Carga General
-def get_rules(filename):
+def load_json(filename):
     path = f"static/{filename}"
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(path, "r", encoding="utf-8") as f: return json.load(f)
     return {}
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f:
-        return f.read()
+    with open("static/app.html", "r", encoding="utf-8") as f: return f.read()
 
 @app.post("/api/evaluar")
 async def evaluar(data: dict):
-    # Cargar reglas en tiempo real para cada consulta
-    AVIANCA = get_rules("avianca_rules.json")
-    CARGO = get_rules("cargo_rules.json")
+    AVIANCA = load_json("avianca_rules.json")
+    CARGO_RULES = load_json("cargo_rules.json")
     
     errores, soluciones = [], []
-    codigos = data.get("codigos", [])
+    
+    # --- FASE 1: IDENTIFICACIÓN Y SEGURIDAD (TSA) ---
     awb = data.get("awb", "").strip()
-    id_chofer = data.get("idChofer", "").strip()
-    uld = data.get("uldSugerido", "")
-    destino = data.get("destino", "USA")
-    
-    # 1. SEGURIDAD Y ACCESO (Protocolo TSA/CBP)
+    id_entidad = data.get("idChofer", "").strip()
+    shipper_status = data.get("shipperStatus", "Unknown")
+
     if not awb.startswith("045"):
-        errores.append("Prefijo AWB incorrecto para la red Avianca.")
-        soluciones.append("Rectificar Master AWB. Si es transferencia, validar guía original.")
+        errores.append("Prefijo AWB inválido para Avianca Cargo (045).")
+        soluciones.append("Solicitar re-emisión de guía o verificar si es transferencia Interline autorizada.")
+
+    if shipper_status == "Unknown":
+        errores.append("Shipper No Conocido (Unknown Shipper).")
+        soluciones.append("Aplicar Security Screening obligatorio (X-Ray/ETD) según TSA. Tiempo de espera estimado: +2h.")
+
+    # --- FASE 2: AUDITORÍA FÍSICA Y EMBALAJE (IATA) ---
+    l, w, h = float(data.get("length", 0)), float(data.get("width", 0)), float(data.get("height", 0))
+    peso_real = float(data.get("pesoReal", 0))
+    tipo_empaque = data.get("tipoEmpaque", "")
     
-    if not id_chofer:
-        errores.append("Ausencia de identificación del transportista.")
-        soluciones.append("Presentar Licencia o ID de Seguridad para registro en el Manifiesto de Carga.")
+    # Cálculo de Peso Volumétrico (Fórmula IATA: L*W*H / 166 para lb o 6000 para kg)
+    peso_vol = (l * w * h) / 166 
+    chargeable = max(peso_real, peso_vol)
 
-    # 2. DOCUMENTACIÓN ESPECÍFICA (Lógica de Counter Humano)
+    if h > 63 and data.get("uld") == "LD3":
+        errores.append(f"Altura de {h}\" excede límite de Belly (Avión PAX).")
+        soluciones.append("Re-estibar carga a máximo 63\" o solicitar cambio a carguero (Freighter).")
+
+    if tipo_empaque == "WOOD" and not data.get("chkNIMF"):
+        errores.append("Embalaje de madera sin sello NIMF-15 visible.")
+        soluciones.append("La carga será retenida por USDA. Opción: Sustituir por pallet plástico o fumigar en estación autorizada.")
+
+    # --- FASE 3: DOCUMENTACIÓN Y CARGA ESPECIAL ---
+    codigos = data.get("codigos", [])
     for cod in codigos:
-        regla_tipo = CARGO.get(cod, {})
-        if regla_tipo:
-            # Validación de copias y sobres
-            copias = regla_tipo.get("copies_outside", 1)
-            soluciones.append(f"Adjuntar {copias} copias originales de {cod} en el sobre exterior.")
+        regla = CARGO_RULES.get(cod, {})
+        if regla:
+            # Validación de copias (Resolutor de Counter)
+            docs = regla.get("documents", [])
+            soluciones.append(f"REQ {cod}: Presentar {regla.get('copies_outside', 1)} copias de: {', '.join(docs)}.")
             
-            # Casos críticos (DGR/AVI/PER)
             if cod == "DGR" and not data.get("chkDGR"):
-                errores.append("Declaración de Mercancías Peligrosas (DGD) no confirmada.")
-                soluciones.append("Emitir DGD con bordes rojos, firmada por personal certificado IATA.")
-            
-            if cod == "PER" and "temperature_range" in regla_tipo:
-                soluciones.append(f"Rango térmico requerido: {regla_tipo['temperature_range']}.")
+                errores.append("Falta Shipper's Declaration (DGD) para Mercancía Peligrosa.")
+                soluciones.append("Contactar a un DGR Specialist para emitir DGD con bordes rojos y UN Number verificado.")
 
-    # 3. RESTRICCIONES FÍSICAS Y DE AERONAVE
-    if uld == "LD3":
-        limite_h = AVIANCA.get("aircraft_limits", {}).get("max_height_belly_in", 63)
-        soluciones.append(f"Restricción Belly: Altura máxima de {limite_h} pulgadas para carga en bodega de pasajeros.")
-    elif uld == "PMC":
-        soluciones.append("Pallet PMC: Verificar integridad de la malla y que no exceda el contorno (Overhang).")
+    # --- FASE 4: INTERPRETACIÓN DE NOTAS (PRE-CHEQUEO) ---
+    notas_tecnicas = data.get("prechequeo", "").upper()
+    if "DAÑO" in notas_tecnicas or "MOJADO" in notas_tecnicas:
+        errores.append("Daño estructural o humedad detectada en el embalaje.")
+        soluciones.append("Reparar embalaje o emitir 'Letter of Indemnity' (LOI) si la aerolínea lo autoriza bajo protesta.")
 
-    # 4. ADUANA Y DESTINO (CBP / DIAN / SAT)
-    requisitos_pais = AVIANCA.get("country_specific", {}).get(destino, [])
-    for req in requisitos_pais:
-        soluciones.append(f"Cumplimiento {destino}: Verificar {req.replace('_', ' ')} antes del cierre de vuelo.")
-
-    # ESTATUS FINAL (Sin términos prohibidos)
-    status = "REVISIÓN TÉCNICA REQUERIDA (HOLD)" if errores else "CARGA APTA PARA DESPACHO (FLY READY)"
+    status = "RECHAZO TÉCNICO (REVISAR DISCREPANCIAS)" if errores else "VUELO AUTORIZADO (FLY READY)"
     
     return {
         "status": status,
         "errores": errores,
         "soluciones": soluciones,
-        "prechequeo": data.get("prechequeo", "").upper()
+        "chargeable_weight": round(chargeable, 2),
+        "notas_finales": notas_tecnicas
     }
 
 if __name__ == "__main__":
