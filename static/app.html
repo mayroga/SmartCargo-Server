@@ -1,175 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>AL CIELO | AURA BY MAY ROGA</title>
-    <style>
-        :root { --red: #e11a22; --gold: #c5a059; --black: #080808; --white: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); margin: 0; overflow-x: hidden; }
+<meta charset="UTF-8">
+<title>SMARTCARGO OS</title>
 
-        /* CORTINAS INTELIGENTES */
-        #curtains { position: fixed; width: 100%; height: 100vh; display: flex; z-index: 999; transition: 1.5s cubic-bezier(0.8, 0, 0.2, 1); }
-        .curtain { width: 50%; height: 100%; background: var(--black); display: flex; align-items: center; border: 1px solid #222; }
-        .left-c { justify-content: flex-end; padding-right: 40px; }
-        .right-c { justify-content: flex-start; padding-left: 40px; }
-        .logo-trigger { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 160px; height: 160px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 10px solid var(--black); box-shadow: 0 0 60px rgba(225,26,34,0.5); z-index: 1000; transition: 0.4s; font-weight: 900; }
-        .logo-trigger:hover { transform: translate(-50%, -50%) scale(1.1); }
-        
-        .opened #curtains { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+<style>
+body { background:#0b1220; color:white; font-family:Arial; padding:20px; }
+h2 { color:#00d4ff; }
 
-        /* INTERFAZ DEL ASESOR */
-        .app-container { padding: 40px; max-width: 1400px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; opacity: 0; transition: 1s; }
-        .opened ~ .app-container { opacity: 1; }
-        
-        .section { background: #151515; padding: 25px; border-radius: 12px; border-top: 4px solid var(--red); margin-bottom: 25px; }
-        h2 { color: var(--gold); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        
-        input, select, textarea { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; }
-        .btn { padding: 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; }
-        .btn-red { background: var(--red); color: white; font-size: 16px; }
-        .btn-gold { background: var(--gold); color: black; }
+.section { background:#111a2e; padding:15px; margin:10px 0; border-radius:10px; }
+.card { background:#1a2742; padding:10px; margin-top:10px; border-radius:8px; }
 
-        .piece-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .piece-table input { margin: 0; padding: 8px; }
-        
-        .sol-card { background: white; color: black; padding: 20px; border-radius: 5px; border-left: 10px solid #2ecc71; margin-bottom: 15px; }
-        .action-point { display: block; margin-top: 10px; color: var(--red); font-weight: 900; text-transform: uppercase; font-size: 12px; }
-    </style>
+input, select, textarea { width:100%; padding:8px; margin:5px 0; }
+button { background:#00d4ff; border:none; padding:10px; cursor:pointer; width:100%; }
+
+.step { border-left:3px solid #00d4ff; padding:5px; margin:5px 0; }
+.red { color:#ff4d4d; }
+.green { color:#4dff88; }
+
+table { width:100%; border-collapse:collapse; }
+td, th { border:1px solid #333; padding:5px; text-align:center; }
+
+img { max-width:80px; margin-top:5px; }
+
+.hidden { display:none; }
+</style>
 </head>
+
 <body>
 
-    <div id="curtains">
-        <div class="curtain left-c"><h1>AL CIELO</h1></div>
-        <div class="logo-trigger" onclick="document.body.classList.add('opened')">ASESORAR</div>
-        <div class="curtain right-c"><h1>SMARTCARGO</h1></div>
-    </div>
+<h2>✈️ SMARTCARGO OS - Asesor Logístico Inteligente</h2>
 
-    <div class="app-container">
-        <div>
-            <div class="section">
-                <h2>I. Identificación & Vuelo</h2>
-                <input type="text" id="awb" placeholder="GUÍA AÉREA (045-XXXXXXXX)">
-                <select id="tipo_vuelo">
-                    <option value="PAX">PASAJEROS (PAX - Bellies)</option>
-                    <option value="CAO">CARGUERO (CAO - Freighters)</option>
-                </select>
-                <select id="naturaleza" onchange="dibujarPouch()">
-                    <option value="GEN">GENERAL (GEN)</option>
-                    <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
-                    <option value="PER">PERECEDEROS (PER)</option>
-                </select>
-                <div id="pouch_area" style="background:#0a0a0a; padding:15px; border:1px dashed var(--gold);"></div>
-            </div>
+<!-- DATOS -->
+<div class="section">
+<h3>📋 Datos Iniciales</h3>
 
-            <div class="section">
-                <h2>II. Reporte de Condición Física</h2>
-                <textarea id="reporte" rows="4" placeholder="Reporte de daños, sellos o discrepancias visibles..."></textarea>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-gold" onclick="activarVoz()">🎤 DICTADO</button>
-                    <button class="btn btn-gold">📸 FOTOS (MAX 3)</button>
-                </div>
-            </div>
-        </div>
+<input id="name" placeholder="Nombre">
+<input id="origin" placeholder="Origen">
+<input id="destination" placeholder="Destino">
 
-        <div>
-            <div class="section">
-                <h2>III. Dimensiones & Peso</h2>
-                <table class="piece-table">
-                    <thead>
-                        <tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th></tr>
-                    </thead>
-                    <tbody id="lista_piezas"></tbody>
-                </table>
-                <button class="btn" style="background:#222; color:var(--gold); margin-top:10px;" onclick="addPiece()">+ AGREGAR PIEZA</button>
-            </div>
+<button onclick="next1()">Continuar</button>
+</div>
 
-            <div id="panel_soluciones" class="section" style="display:none;">
-                <h2>IV. Asesoría Resolutiva AURA</h2>
-                <div id="output"></div>
-                <button class="btn btn-gold" style="margin-top:20px;" onclick="window.print()">GENERAR REPORTE PDF</button>
-            </div>
-            
-            <button class="btn btn-red" style="margin-top:20px; height:80px;" onclick="enviarAsesoria()">VALIDAR Y SOLUCIONAR DESPACHO</button>
-        </div>
-    </div>
+<!-- ROL -->
+<div class="section hidden" id="step2">
+<h3>👤 Rol</h3>
 
-    <script>
-        function addPiece() {
-            const tr = document.createElement('tr');
-            tr.className = 'piece-row';
-            tr.innerHTML = `
-                <td><input type="number" class="p_cant" value="1"></td>
-                <td><input type="number" class="p_l" placeholder="L"></td>
-                <td><input type="number" class="p_w" placeholder="W"></td>
-                <td><input type="number" class="p_h" placeholder="H"></td>
-                <td><input type="number" class="p_real" placeholder="Lb"></td>
-            `;
-            document.getElementById('lista_piezas').appendChild(tr);
-        }
+<select id="rol" onchange="rolInfo()">
+<option>SHIPPER</option>
+<option>FORWARDER</option>
+<option>WAREHOUSE</option>
+<option>TRUCKER</option>
+<option>CONSIGNEE</option>
+</select>
 
-        function dibujarPouch() {
-            const nat = document.getElementById('naturaleza').value;
-            const docs = {
-                "GEN": ["INVOICE", "PACKING LIST"],
-                "DGR": ["DGD", "MSDS", "CHECKLIST"],
-                "PER": ["PHITO", "SANITARY"]
-            };
-            document.getElementById('pouch_area').innerHTML = docs[nat].map(d => 
-                `<label style="display:block; margin:5px;"><input type="checkbox" class="p_check" value="${d}"> ${d}</label>`
-            ).join('');
-        }
+<div id="rol_text"></div>
 
-        async function enviarAsesoria() {
-            const piezas = Array.from(document.querySelectorAll('.piece-row')).map(r => ({
-                cant: r.querySelector('.p_cant').value,
-                l: r.querySelector('.p_l').value,
-                w: r.querySelector('.p_w').value,
-                h: r.querySelector('.p_h').value,
-                p_real: r.querySelector('.p_real').value
-            }));
+<button onclick="next2()">Continuar</button>
+</div>
 
-            const pouch = Array.from(document.querySelectorAll('.p_check:checked')).map(c => c.value);
+<!-- CARGA -->
+<div class="section hidden" id="step3">
+<h3>📦 Tipo de Carga</h3>
 
-            // LLAMADA AL API (Asegúrate de que la ruta coincida con el @app.post del Python)
-            const res = await fetch('/api/asesorar', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    awb: document.getElementById('awb').value,
-                    naturaleza: document.getElementById('naturaleza').value,
-                    tipo_vuelo: document.getElementById('tipo_vuelo').value,
-                    piezas: piezas,
-                    pouch: pouch
-                })
-            });
+<select id="tipo" onchange="docsAuto()">
+<option>GENERAL</option>
+<option>DGR</option>
+<option>PER</option>
+<option>VAL</option>
+<option>HUM</option>
+<option>AVI</option>
+</select>
 
-            const data = await res.json();
-            const panel = document.getElementById('panel_soluciones');
-            const out = document.getElementById('output');
-            panel.style.display = 'block';
+<div id="docs"></div>
 
-            let html = `<div style="background:var(--red); color:white; padding:15px; font-weight:bold; margin-bottom:15px;">ESTADO: ${data.status}</div>`;
-            html += `<p>PESO COBRABLE: <b>${data.p_cobrable} Lbs</b> | EQUIPO: <b>${data.equipo}</b></p>`;
-            
-            data.soluciones.forEach((s, i) => {
-                html += `<div class="sol-card"><b>SITUACIÓN:</b> ${s}<span class="action-point">RESOLUCIÓN: ${data.acciones[i]}</span></div>`;
-            });
+<button onclick="next3()">Continuar</button>
+</div>
 
-            if(data.soluciones.length === 0) html += "<div class='sol-card'>✅ CARGA LISTA PARA VUELO. Proceda al muelle.</div>";
-            
-            out.innerHTML = html;
-            window.scrollTo(0, document.body.scrollHeight);
-        }
+<!-- AUDITORIA -->
+<div class="section hidden" id="step4">
+<h3>📦 Auditoría Física</h3>
 
-        function activarVoz() {
-            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            rec.lang = 'es-ES';
-            rec.onresult = (e) => { document.getElementById('reporte').value += e.results[0][0].transcript; };
-            rec.start();
-        }
+<table id="tabla">
+<tr>
+<th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th><th>VOL</th>
+</tr>
+</table>
 
-        addPiece();
-        dibujarPouch();
-    </script>
+<button onclick="add()">+ PIEZA</button>
+
+<h3>🎤 Reporte</h3>
+<textarea id="voz"></textarea>
+
+<button onclick="next4()">Validar</button>
+</div>
+
+<!-- RESULTADO -->
+<div class="section hidden" id="step5">
+<h3>⚖️ Resultado</h3>
+
+<div id="res"></div>
+</div>
+
+<script>
+
+let piezas = [];
+
+function next1(){
+step2.classList.remove("hidden");
+}
+
+function next2(){
+step3.classList.remove("hidden");
+}
+
+function next3(){
+step4.classList.remove("hidden");
+}
+
+/* ROL INFO */
+function rolInfo(){
+let r = rol.value;
+let txt = {
+SHIPPER:"Dueño de carga",
+FORWARDER:"Consolidador",
+WAREHOUSE:"Inspector físico",
+TRUCKER:"Transportista",
+CONSIGNEE:"Receptor"
+};
+rol_text.innerHTML = txt[r];
+}
+
+/* DOCS AUTO */
+function docsAuto(){
+let t = tipo.value;
+
+let docs = ["AWB","Factura"];
+
+if(t==="DGR") docs.push("MSDS","DGR Declaration");
+if(t==="PER") docs.push("Certificado sanitario");
+if(t==="VAL") docs.push("Seguro");
+if(t==="HUM") docs.push("Permisos legales");
+
+docs.innerHTML = docs.map(d=>`<div class='step'>📄 ${d}</div>`).join("");
+}
+
+/* PIEZAS */
+function add(){
+
+let row = document.createElement("tr");
+
+row.innerHTML = `
+<td><input class="cant" value="1"></td>
+<td><input class="l"></td>
+<td><input class="w"></td>
+<td><input class="h"></td>
+<td><input class="peso"></td>
+<td><input type="file" onchange="preview(this)"></td>
+<td class="vol">0</td>
+`;
+
+tabla.appendChild(row);
+}
+
+/* FOTO */
+function preview(input){
+let file = input.files[0];
+if(file){
+let img = document.createElement("img");
+img.src = URL.createObjectURL(file);
+input.parentNode.appendChild(img);
+}
+}
+
+/* VALIDACIÓN */
+async function next4(){
+
+let piezasData = [];
+
+document.querySelectorAll("#tabla tr").forEach((tr,i)=>{
+
+if(i===0) return;
+
+let l = parseFloat(tr.querySelector(".l").value)||0;
+let w = parseFloat(tr.querySelector(".w").value)||0;
+let h = parseFloat(tr.querySelector(".h").value)||0;
+let peso = parseFloat(tr.querySelector(".peso").value)||0;
+let cant = parseInt(tr.querySelector(".cant").value)||1;
+
+let vol = (l*w*h)/166;
+
+tr.querySelector(".vol").innerText = vol.toFixed(2);
+
+piezasData.push({l,w,h,peso,cant});
+});
+
+let resFetch = await fetch("/api/validar",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({piezas:piezasData})
+});
+
+let data = await resFetch.json();
+
+let html = `
+<div class="card">
+<div class="${data.alertas.length?'red':'green'}">${data.status}</div>
+<p>Peso Real: ${data.peso_real}</p>
+<p>Peso Vol: ${data.peso_vol}</p>
+<p>Peso Cobrable: ${data.peso_cobrable}</p>
+</div>
+`;
+
+data.alertas.forEach((a,i)=>{
+html += `
+<div class="step red">⚠ ${a}</div>
+<div>${data.explicaciones[i]}</div>
+<div>⚖️ ${data.riesgos[i]}</div>
+`;
+});
+
+res.innerHTML = html;
+step5.classList.remove("hidden");
+}
+
+</script>
+
 </body>
 </html>
