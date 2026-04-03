@@ -6,160 +6,281 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0a3d62; --danger: #eb4d4b; --success: #27ae60; --light: #f4f6f8; --avianca: #e11a22; }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:20px; }
-        .container { max-width: 850px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); text-align: center; border-bottom: 4px solid var(--avianca); padding-bottom: 10px; text-transform: uppercase; margin-top: 0; }
+        :root { --primary: #0a3d62; --danger: #eb4d4b; --success: #27ae60; --light: #f4f6f8; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:20px; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        h1 { color: var(--primary); text-align: center; font-size: 26px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
         .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
-        .lang-btn { cursor: pointer; border: 2px solid var(--primary); padding: 6px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .lang-btn { cursor: pointer; border: 2px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; transition: 0.3s; }
         .selected-lang { background: var(--primary); color: white; }
-        .section { margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-        .header { background: #f8f9fa; padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; }
+
+        .section { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; }
+        .header { background: var(--primary); color: white; padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .body { padding: 20px; display: none; }
         .active .body { display: block; }
+
+        label { display: block; font-weight: 600; margin-top: 12px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
+        
+        .grid-types { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .type-item { background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #eee; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: var(--primary); color: white; padding: 10px; }
+        th { background: #f0f2f5; padding: 10px; border: 1px solid #ddd; font-size: 12px; color: var(--primary); }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        .btn { padding: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; text-transform: uppercase; }
-        .btn-main { background: var(--avianca); color: white; font-size: 16px; }
-        .alert-card { background: #fff5f5; border-left: 5px solid var(--danger); padding: 10px; margin-top: 10px; }
-        .solucion-card { background: #f0fdf4; border-left: 5px solid var(--success); padding: 10px; margin-top: 5px; font-size: 14px; }
-        .photo-preview img { width: 80px; height: 80px; object-fit: cover; margin-right: 5px; border-radius: 5px; }
-        @media print { .btn, .lang-bar, input[type="file"] { display: none !important; } .body { display: block !important; } }
+        
+        .btn { padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.3s; font-size: 15px; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-main:hover { background: #062c47; }
+        .btn-voice { background: #686de0; color: white; width: auto; padding: 8px 15px; font-size: 13px; margin-top: 10px; }
+        .btn-add { background: var(--success); color: white; margin-top: 15px; }
+        
+        .result-box { margin-top: 25px; padding: 20px; border-radius: 8px; border: 2px solid var(--primary); background: #fff; line-height: 1.6; }
+        .alert-list { color: var(--danger); font-weight: bold; list-style: none; padding: 0; }
+        
+        /* Estilos para impresión/PDF */
+        @media print {
+            .btn, .lang-bar, .header span, .btn-add, input[type="file"] { display: none !important; }
+            .body { display: block !important; }
+            .container { box-shadow: none; border: none; }
+        }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div class="lang-bar">
         <div id="btn-es" class="lang-btn selected-lang" onclick="changeLang('es')">ESPAÑOL</div>
         <div id="btn-en" class="lang-btn" onclick="changeLang('en')">ENGLISH</div>
     </div>
+
     <h1 id="txt-title">AL CIELO - SmartCargo Advisory</h1>
 
     <div class="section active">
         <div class="header" onclick="toggle(this)">I. <span id="txt-sec1">IDENTIFICACIÓN</span> <span>▼</span></div>
         <div class="body">
-            <label>Guía (AWB):</label><input type="text" id="awb" placeholder="045-XXXXXXXX">
-            <label>Dictado / Texto:</label><textarea id="dictado" rows="4"></textarea>
-            <button class="btn" style="background:#4b6cb7; color:white; width:auto; padding:8px 15px;" onclick="startVoice()">🎤 <span id="txt-voice">Dictar</span></button>
+            <label id="lbl-awb">Número de Guía (AWB):</label>
+            <input type="text" id="awb" placeholder="045-12345678">
+            <label id="lbl-obs">Notas / Copiar Texto (Email/PDF):</label>
+            <textarea id="notas" rows="4" placeholder="Pegue aquí los detalles del correo o documento..."></textarea>
+            <button class="btn btn-voice" onclick="startDictation('notas')">🎤 <span id="txt-voice">Dictar por Voz</span></button>
         </div>
     </div>
 
     <div class="section">
-        <div class="header" onclick="toggle(this)">II. <span id="txt-sec2">DOCUMENTACIÓN</span> <span>▼</span></div>
+        <div class="header" onclick="toggle(this)">II. <span id="txt-sec2">NATURALEZA DE CARGA</span> <span>▼</span></div>
         <div class="body">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <label><input type="checkbox" id="d-man"> Manifiesto</label>
-                <label><input type="checkbox" id="d-inv"> Factura</label>
-                <label><input type="checkbox" id="d-pk"> Packing List</label>
-                <label><input type="checkbox" id="d-msds"> MSDS/DGD</label>
+            <p id="txt-multiselect" style="font-size: 12px; color: #666; margin: 0;">Seleccione todas las categorías aplicables:</p>
+            <div class="grid-types">
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="GEN"> GEN - General</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="PER"> PER - Perecedero</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="DGR"> DGR - Peligrosa</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="ICE"> DRY ICE - Hielo Seco</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="HUM"> HUM - Restos Humanos</div>
+                <div class="type-item"><input type="checkbox" class="tipo-carga" value="VAL"> VAL - Valores</div>
             </div>
         </div>
     </div>
 
     <div class="section">
-        <div class="header" onclick="toggle(this)">III. <span id="txt-sec3">MEDIDAS</span> <span>▼</span></div>
+        <div class="header" onclick="toggle(this)">III. <span id="txt-sec3">DETALLE Y FOTOS</span> <span>▼</span></div>
         <div class="body">
             <table id="tablaBultos">
-                <thead><tr><th>Cant.</th><th>L</th><th>W</th><th>H</th><th>Kg/u</th><th>Foto</th></tr></thead>
-                <tbody id="bodyBultos">
+                <thead>
                     <tr>
-                        <td><input type="number" class="p-cant" value="1"></td>
-                        <td><input type="number" class="p-l"></td>
-                        <td><input type="number" class="p-w"></td>
-                        <td><input type="number" class="p-h"></td>
-                        <td><input type="number" class="p-p"></td>
+                        <th id="th-cant">Cant.</th>
+                        <th>L(cm)</th>
+                        <th>W(cm)</th>
+                        <th>H(cm)</th>
+                        <th>Kg/u</th>
+                        <th id="th-foto">Foto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="number" class="p-cant" value="1" min="1"></td>
+                        <td><input type="number" class="p-l" placeholder="0"></td>
+                        <td><input type="number" class="p-w" placeholder="0"></td>
+                        <td><input type="number" class="p-h" placeholder="0"></td>
+                        <td><input type="number" class="p-p" placeholder="0"></td>
                         <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
                     </tr>
                 </tbody>
             </table>
-            <button class="btn" style="background:var(--success); color:white; width:auto;" onclick="addRow()">+ Partida</button>
+            <button class="btn btn-add" id="btn-add" onclick="addRow()">+ <span id="txt-add">Añadir Partida</span></button>
         </div>
     </div>
 
     <div class="section">
-        <div class="header" onclick="toggle(this)">IV. <span id="txt-sec4">EMBALAJE</span> <span>▼</span></div>
+        <div class="header" onclick="toggle(this)">IV. <span id="txt-sec4">EMBALAJE / ULD</span> <span>▼</span></div>
         <div class="body">
+            <label id="lbl-pallet">Tipo de Pallet/Contenedor:</label>
             <select id="tipoPallet">
-                <option value="Wood">Pallet Madera (NIMF-15)</option>
-                <option value="Plastic">Pallet Plástico</option>
-                <option value="PMC">PMC (Main Deck)</option>
+                <option value="Wood">Pallet Madera (Wood)</option>
+                <option value="Plastic">Pallet Plástico (Plastic)</option>
+                <option value="Metal">Pallet Metal</option>
+                <option value="Bagazo">Pallet Bagazo (Eco)</option>
+                <option value="PMC">PMC (ULD)</option>
+                <option value="PAG">PAG (ULD)</option>
+                <option value="Crate">Crate (Huacal)</option>
+                <option value="Skip">Skip</option>
             </select>
-            <label style="margin-top:10px;"><input type="checkbox" id="chkFumi"> Sello Fumigación Visible</label>
+            
+            <div style="margin-top: 15px;">
+                <label><input type="checkbox" id="chkDGR"> <span id="txt-chk-dgr">DGD / MSDS verificado</span></label>
+            </div>
         </div>
     </div>
 
-    <button class="btn btn-main" id="btn-eval" onclick="evaluar()">DIAGNOSTICAR: ¿VUELA?</button>
-    <button class="btn" style="background:#64748b; color:white;" onclick="location.reload()">BORRAR DATOS</button>
+    <button class="btn btn-main" id="btn-eval" onclick="evaluar()">GENERAR ASESORÍA TÉCNICA</button>
+    <button class="btn" style="background:var(--danger); color:white;" id="btn-clear" onclick="limpiarTodo()">BORRAR TODO</button>
 
-    <div id="resultado" style="margin-top:20px; display:none;"></div>
+    <div id="resultado" class="result-box" style="display:none;"></div>
 </div>
 
 <script>
 let currentLang = 'es';
+
 const translations = {
-    es: { title: "AL CIELO - SmartCargo Advisory", sec1: "IDENTIFICACIÓN", voice: "Dictar", eval: "DIAGNOSTICAR: ¿VUELA?", loading: "Analizando carga..." },
-    en: { title: "AL CIELO - Advisory", sec1: "IDENTIFICATION", voice: "Dictate", eval: "DIAGNOSE: FLY?", loading: "Analyzing cargo..." }
+    es: {
+        title: "AL CIELO - SmartCargo Advisory",
+        sec1: "IDENTIFICACIÓN",
+        sec2: "NATURALEZA DE CARGA",
+        sec3: "DETALLE Y FOTOS",
+        sec4: "EMBALAJE / ULD",
+        voice: "Dictar por Voz",
+        eval: "GENERAR ASESORÍA TÉCNICA",
+        awb: "Número de Guía (AWB):",
+        obs: "Notas / Copiar Texto (Email/PDF):",
+        add: "Añadir Partida",
+        cant: "Cant.",
+        foto: "Foto",
+        chkDgr: "DGD / MSDS verificado",
+        clear: "BORRAR TODO",
+        loading: "Procesando dictamen técnico..."
+    },
+    en: {
+        title: "AL CIELO - SmartCargo Advisory",
+        sec1: "IDENTIFICATION",
+        sec2: "NATURE OF CARGO",
+        sec3: "DETAILS AND PHOTOS",
+        sec4: "PACKAGING / ULD",
+        voice: "Voice Dictation",
+        eval: "GENERATE TECHNICAL ADVISORY",
+        awb: "AWB Number:",
+        obs: "Notes / Copy Text (Email/PDF):",
+        add: "Add Entry",
+        cant: "Qty",
+        foto: "Photo",
+        chkDgr: "DGD / MSDS verified",
+        clear: "CLEAR ALL",
+        loading: "Processing technical report..."
+    }
 };
 
 function changeLang(l) {
     currentLang = l;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('selected-lang'));
+    document.getElementById(`btn-${l}`).classList.add('selected-lang');
+    
     document.getElementById('txt-title').innerText = translations[l].title;
+    document.getElementById('txt-sec1').innerText = translations[l].sec1;
+    document.getElementById('txt-sec2').innerText = translations[l].sec2;
+    document.getElementById('txt-sec3').innerText = translations[l].sec3;
+    document.getElementById('txt-sec4').innerText = translations[l].sec4;
+    document.getElementById('txt-voice').innerText = translations[l].voice;
     document.getElementById('btn-eval').innerText = translations[l].eval;
+    document.getElementById('lbl-awb').innerText = translations[l].awb;
+    document.getElementById('lbl-obs').innerText = translations[l].obs;
+    document.getElementById('txt-add').innerText = translations[l].add;
+    document.getElementById('th-cant').innerText = translations[l].cant;
+    document.getElementById('th-foto').innerText = translations[l].foto;
+    document.getElementById('txt-chk-dgr').innerText = translations[l].chkDgr;
+    document.getElementById('btn-clear').innerText = translations[l].clear;
 }
 
 function toggle(el) { el.parentElement.classList.toggle('active'); }
 
 function addRow() {
-    const row = `<tr><td><input type="number" class="p-cant" value="1"></td><td><input type="number" class="p-l"></td><td><input type="number" class="p-w"></td><td><input type="number" class="p-h"></td><td><input type="number" class="p-p"></td><td><input type="file" class="p-foto" accept="image/*"></td></tr>`;
-    document.getElementById('bodyBultos').insertAdjacentHTML('beforeend', row);
+    const row = `<tr>
+        <td><input type="number" class="p-cant" value="1" min="1"></td>
+        <td><input type="number" class="p-l" placeholder="0"></td>
+        <td><input type="number" class="p-w" placeholder="0"></td>
+        <td><input type="number" class="p-h" placeholder="0"></td>
+        <td><input type="number" class="p-p" placeholder="0"></td>
+        <td><input type="file" class="p-foto" accept="image/*" capture="environment"></td>
+    </tr>`;
+    document.querySelector('#tablaBultos tbody').insertAdjacentHTML('beforeend', row);
 }
 
-function startVoice() {
-    const sr = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    sr.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
-    sr.onresult = (e) => { document.getElementById('dictado').value += " " + e.results[0][0].transcript; };
-    sr.start();
+function startDictation(id) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Navegador no compatible con voz.");
+    const recognition = new SpeechRecognition();
+    recognition.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
+    recognition.onresult = (event) => {
+        document.getElementById(id).value += " " + event.results[0][0].transcript;
+    };
+    recognition.start();
 }
 
 async function evaluar() {
     const resDiv = document.getElementById('resultado');
     resDiv.style.display = 'block';
-    resDiv.innerHTML = translations[currentLang].loading;
+    resDiv.innerHTML = `<p>${translations[currentLang].loading}</p>`;
 
     const bultos = [];
     const formData = new FormData();
-    document.querySelectorAll('#bodyBultos tr').forEach(tr => {
+    
+    document.querySelectorAll('#tablaBultos tbody tr').forEach(tr => {
         bultos.push({
-            cant: tr.querySelector('.p-cant').value, l: tr.querySelector('.p-l').value,
-            w: tr.querySelector('.p-w').value, h: tr.querySelector('.p-h').value, p: tr.querySelector('.p-p').value
+            cant: tr.querySelector('.p-cant').value,
+            l: tr.querySelector('.p-l').value,
+            w: tr.querySelector('.p-w').value,
+            h: tr.querySelector('.p-h').value,
+            p: tr.querySelector('.p-p').value
         });
-        const f = tr.querySelector('.p-foto').files[0];
-        if(f) formData.append("fotos", f);
+        const foto = tr.querySelector('.p-foto').files[0];
+        if(foto) formData.append("fotos", foto);
     });
 
     const payload = {
-        awb: document.getElementById('awb').value, dictado: document.getElementById('dictado').value,
-        tipo_pallet: document.getElementById('tipoPallet').value, detalle_bultos: bultos,
-        docs: { msds: document.getElementById('d-msds').checked },
-        chk: { fumigado: document.getElementById('chkFumi').checked }
+        lang: currentLang,
+        awb: document.getElementById('awb').value,
+        tipos_carga: Array.from(document.querySelectorAll('.tipo-carga:checked')).map(c => c.value),
+        tipo_pallet: document.getElementById('tipoPallet').value,
+        detalle_bultos: bultos,
+        chk: { dgr: document.getElementById('chkDGR').checked }
     };
+
     formData.append("data", JSON.stringify(payload));
 
-    const res = await fetch('/api/evaluar', { method: 'POST', body: formData });
-    const json = await res.json();
+    try {
+        const response = await fetch('/api/evaluar', { method: 'POST', body: formData });
+        const result = await response.json();
 
-    let html = `<h2 style="color:${json.status.includes('RECHAZADO') ? 'var(--danger)' : 'var(--success)'}">${json.status}</h2>${json.tabla}`;
-    json.alertas.forEach((a, i) => {
-        html += `<div class="alert-card"><strong>AVISO:</strong> ${a}</div>`;
-        html += `<div class="solucion-card"><strong>ASERSORÍA:</strong> ${json.soluciones[i]}</div>`;
-    });
-    if(json.fotos.length > 0) {
-        html += `<div class="photo-preview" style="margin-top:10px;">${json.fotos.map(f => `<img src="${f}">`).join('')}</div>`;
+        let html = `<h3>${result.status}</h3>`;
+        html += result.asesoria_tecnica; // Contiene la tabla HTML del servidor
+        
+        if(result.alertas.length > 0) {
+            html += `<ul class="alert-list">`;
+            result.alertas.forEach(a => html += `<li>${a}</li>`);
+            html += `</ul>`;
+        }
+        
+        resDiv.innerHTML = html;
+        resDiv.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+        resDiv.innerHTML = "❌ Error en conexión con el servidor.";
     }
-    html += `<button class="btn" style="background:var(--success); color:white; margin-top:15px;" onclick="window.print()">GENERAR PDF REPORTE</button>`;
-    resDiv.innerHTML = html;
+}
+
+function limpiarTodo() {
+    if(confirm(currentLang === 'es' ? '¿Borrar todos los datos?' : 'Clear all data?')) {
+        location.reload();
+    }
 }
 </script>
 </body>
