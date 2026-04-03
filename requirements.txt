@@ -8,3 +8,4 @@ python-multipart
 requests
 json5
 google-generativeai
+openai
