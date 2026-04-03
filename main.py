@@ -2,18 +2,56 @@ import os
 import json
 import io
 import re
+import base64
+from PIL import Image  # El "Cerebro" que procesa los bytes
+import google.generativeai as genai
+from openai import OpenAI
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from PIL import Image # Cerebro de procesamiento de imagen
 import uvicorn
 
-app = FastAPI(title="AL CIELO - SmartCargo Engine")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory Server")
 
-# Configuración de archivos estáticos
+# Configuración de Claves (Render Environment)
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Inicialización de Clientes
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
+
+client_openai = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
+
+# Directorio estático
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# --- MOTOR DE PROCESAMIENTO DE IMAGEN (EL CEREBRO) ---
+def procesar_imagen_para_ia(file_bytes):
+    """
+    Optimiza la imagen para planes gratuitos:
+    Redimensiona a max 1024px y comprime a JPEG 70%
+    """
+    try:
+        img = Image.open(io.BytesIO(file_bytes))
+        # Convertir a RGB (evita errores con transparencias PNG)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        
+        # Redimensionar proporcionalmente
+        max_size = 1024
+        if max(img.size) > max_size:
+            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        
+        # Guardar en buffer optimizado
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=70, optimize=True)
+        return buffer.getvalue()
+    except Exception as e:
+        print(f"Error en procesamiento de imagen: {e}")
+        return None
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -23,116 +61,104 @@ async def home():
             return HTMLResponse(content=f.read())
     return HTMLResponse("<h1>AL CIELO: Error - app.html no encontrado</h1>")
 
-# --- MOTOR DE PROCESAMIENTO TÉCNICO ---
 @app.post("/api/evaluar")
 async def api_evaluar_carga(
     data: str = Form(...), 
-    fotos: list[UploadFile] = File(None)
+    foto: UploadFile = File(None)
 ):
-    try:
-        payload = json.loads(data)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid Data Format")
-
-    lang = payload.get("lang", "es")
-    bultos = payload.get("detalle_bultos", [])
-    tipos_carga = payload.get("tipos_carga", []) # Lista de naturalezas (DGR, GEN, PER, etc.)
-    tipo_pallet = payload.get("tipo_pallet", "Wood")
+    payload = json.loads(data)
     
-    # 1. Análisis de Medidas y Pesos (Lógica CargoLink)
+    # 1. Procesar Detalle de Bultos (Multi-partida)
+    bultos = payload.get("detalle_bultos", [])
     t_piezas = 0
     t_peso_real = 0
     t_volumen = 0
-    max_h = 0
-    alertas = []
-    
-    for b in bultos:
-        try:
-            cant = int(b.get('cant', 0))
-            l = float(b.get('l', 0))
-            w = float(b.get('w', 0))
-            h = float(b.get('h', 0))
-            p = float(b.get('p', 0))
+    analisis_dimensiones = ""
 
-            t_piezas += cant
-            t_peso_real += (cant * p)
-            t_volumen += (cant * (l * w * h) / 1000000)
-            if h > max_h: max_h = h
-        except (ValueError, TypeError):
-            continue
+    for b in bultos:
+        c = int(b.get('cant', 0))
+        l, w, h = float(b.get('l', 0)), float(b.get('w', 0)), float(b.get('h', 0))
+        p = float(b.get('p', 0))
+        
+        t_piezas += c
+        t_peso_real += (c * p)
+        t_volumen += (c * (l * w * h) / 1000000)
+        
+        if h > 160: analisis_dimensiones = "⚠️ REQUIERE CARGUERO (Main Deck)."
+        if h > 244: analisis_dimensiones = "❌ RECHAZADO: Excede altura máxima."
 
     peso_volumetrico = t_volumen * 167
     peso_tasable = max(t_peso_real, peso_volumetrico)
 
-    # 2. Dictamen de Aeronavegabilidad
-    vuelo = "PAX (BELLY)" if lang == "es" else "PAX (BELLY)"
-    status = "APROBADO" if lang == "es" else "APPROVED"
+    # 2. El "Cerebro" procesa la foto si existe
+    img_optimizada = None
+    if foto:
+        raw_bytes = await foto.read()
+        img_optimizada = procesar_imagen_para_ia(raw_bytes)
 
-    if max_h > 160:
-        vuelo = "CARGUERO (MAIN DECK)" if lang == "es" else "FREIGHTER (MAIN DECK)"
-    
-    if max_h > 244:
-        status = "RECHAZADO" if lang == "es" else "REJECTED"
-        msg = "Altura excede límite de 244cm" if lang == "es" else "Height exceeds 244cm limit"
-        alertas.append(f"❌ {msg}")
+    # 3. Prompt de Especialista Avianca (IAAT/DOT/CBP)
+    prompt_tecnico = f"""
+    Actúa como Especialista Senior de Carga Avianca. 
+    Analiza esta solicitud de "AL CIELO":
+    - Rol: {payload.get('rol')} | Guía: {payload.get('awb')} | Tipo: {payload.get('tipo')}
+    - Totales: {t_piezas} piezas | {t_peso_real:.2f}kg Real | {peso_volumetrico:.2f}kg Vol.
+    - Peso Tasable: {peso_tasable:.2f} kg.
+    - Detalle Bultos: {json.dumps(bultos)}
+    - Checklist Seguridad: {json.dumps(payload.get('chk'))}
 
-    # 3. Validación de Naturalezas Múltiples
-    # Si es DGR o Dry Ice, verificar si el usuario marcó el checklist de seguridad
-    if ("DGR" in tipos_carga or "ICE" in tipos_carga):
-        if not payload.get('chk', {}).get('dgr', False):
-            msg = "Falta Declaración DGR / MSDS" if lang == "es" else "Missing DGR Declaration / MSDS"
-            alertas.append(f"⚠️ {msg}")
-            status = "PENDIENTE" if lang == "es" else "PENDING"
-
-    # 4. Procesamiento de Fotos de Referencia (Sin guardado en disco)
-    fotos_validas = 0
-    if fotos:
-        for f in fotos:
-            try:
-                content = await f.read()
-                # Python "lee" los bytes para validar que sea una imagen real
-                img = Image.open(io.BytesIO(content))
-                img.verify() 
-                fotos_validas += 1
-            except Exception:
-                continue
-
-    # 5. Construcción del Reporte Técnico (Tabla HTML para el Front-end)
-    # Se genera dinámicamente según el idioma
-    labels = {
-        "es": ["Parámetro", "Estado/Valor", "Instrucción Técnica", "Proceder al despacho"],
-        "en": ["Parameter", "State/Value", "Technical Instruction", "Proceed to dispatch"]
-    }[lang]
-
-    tabla_html = f"""
-    <table style="width:100%; border-collapse:collapse; margin-top:10px; font-family:sans-serif;">
-        <tr style="background:#0a3d62; color:white;">
-            <th style="padding:8px; border:1px solid #ddd;">{labels[0]}</th>
-            <th style="padding:8px; border:1px solid #ddd;">{labels[1]}</th>
-        </tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">AWB</td><td style="padding:8px; border:1px solid #ddd;">{payload.get('awb', 'N/A')}</td></tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">STATUS</td><td style="padding:8px; border:1px solid #ddd; font-weight:bold;">{status}</td></tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">AIRCRAFT</td><td style="padding:8px; border:1px solid #ddd;">{vuelo}</td></tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">CHARGEABLE WT</td><td style="padding:8px; border:1px solid #ddd;">{peso_tasable:.2f} KG</td></tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">ULD/PALLET</td><td style="padding:8px; border:1px solid #ddd;">{tipo_pallet}</td></tr>
-        <tr><td style="padding:8px; border:1px solid #ddd;">EVIDENCE</td><td style="padding:8px; border:1px solid #ddd;">{fotos_validas} Files OK</td></tr>
-    </table>
-    
-    <div style="margin-top:15px; padding:10px; border-left:4px solid #0a3d62; background:#f4f4f4;">
-        <strong>{labels[2]}:</strong><br>
-        {labels[3] if status in ["APROBADO", "APPROVED"] else "STOP: Correct discrepancies highlighted in red."}
-    </div>
+    REGLAS DE RESPUESTA:
+    1. Responde con una TABLA de cumplimiento técnica.
+    2. Dictamina si vuela o no y bajo qué condiciones.
+    3. Si hay imagen, describe etiquetas de seguridad (DGR, Orientación) visibles.
+    4. Da una INSTRUCCIÓN DIRECTA (ej: 'Rechazar por falta de fleje' o 'Proceder a Bellies').
+    5. Prohibido mencionar IA o modelos de lenguaje.
+    6. Idioma: Español.
     """
 
+    res_ia = ""
+    metodo = "Gemini"
+
+    try:
+        # Intento primario con Gemini
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        if img_optimizada:
+            contenido = [prompt_tecnico, {"mime_type": "image/jpeg", "data": img_optimizada}]
+        else:
+            contenido = [prompt_tecnico]
+        
+        response = model.generate_content(contenido)
+        res_ia = response.text
+    except Exception as e:
+        print(f"Falla Gemini: {e}")
+        # Salto a OpenAI (Backup)
+        try:
+            metodo = "OpenAI (Backup)"
+            messages = [{"role": "user", "content": [{"type": "text", "text": prompt_tecnico}]}]
+            if img_optimizada:
+                b64 = base64.b64encode(img_optimizada).decode('utf-8')
+                messages[0]["content"].append({
+                    "type": "image_url", 
+                    "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
+                })
+            
+            chat_res = client_openai.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                max_tokens=800
+            )
+            res_ia = chat_res.choices[0].message.content
+        except Exception as e2:
+            print(f"Falla OpenAI: {e2}")
+            res_ia = "Error en los sistemas de asesoría. Revise las API Keys o créditos."
+            metodo = "Ninguno"
+
     return {
-        "status": status,
-        "asesoria_tecnica": tabla_html,
+        "status": "COMPLETO",
+        "asesoria_tecnica": res_ia,
         "peso_tasable": round(peso_tasable, 2),
-        "alertas": alertas,
-        "fuente": "AL CIELO Core Engine (Python)"
+        "fuente": metodo
     }
 
 if __name__ == "__main__":
-    # Render usa la variable de entorno PORT
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
