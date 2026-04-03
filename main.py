@@ -1,12 +1,14 @@
-import os, re, json
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+import uvicorn
+import os
+import re
 
-app = FastAPI(title="AL CIELO - SmartCargo Advisory")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory by May Roga")
 
-# Crear carpeta para archivos estáticos si no existe
-if not os.path.exists("static"): 
+# Configuración de carpetas estáticas para la interfaz
+if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -19,67 +21,88 @@ async def home():
     return HTMLResponse("<h1>Error: app.html no encontrado en /static</h1>")
 
 @app.post("/api/evaluar")
-async def api_evaluar_carga(request: Request):
-    data = await request.json()
+async def api_evaluar_carga(data: dict):
+    # Diccionario de respuesta
     errores = []
     soluciones = []
     lang = data.get("lang", "es")
     
-    # Análisis del Cuadro de Texto Inteligente (Pre-chequeo)
+    # 1. Extracción de datos del formulario y análisis
     texto_analisis = data.get("analisisTexto", "").upper()
-    es_consolidado = any(word in texto_analisis for word in ["CONSOLIDADO", "CONSOLIDATED", "CONSOL"])
-    es_peligrosa = any(word in texto_analisis for word in ["DGR", "PELIGROSA", "HAZMAT", "UN3481", "BATERIA"])
-
-    # Datos Técnicos
-    awb = data.get("awb", "").strip()
     codigo = data.get("codigoCarga", "")
-    alto = float(data.get("alto") or 0)
-    peso_total = float(data.get("pesoTotal") or 0)
+    awb = data.get("awb", "").strip()
     piezas = int(data.get("piezas") or 0)
-
-    # 1. Validación de Documentación de Counter (Sobres y Manifiestos)
-    if es_consolidado:
-        msg_err = "Carga Consolidada: Requiere revisión de HAWBs." if lang=="es" else "Consolidated Cargo: HAWB review required."
-        msg_sol = "💡 Tip de Counter: Sobres con Originales DENTRO y Copias FUERA, ordenadas." if lang=="es" else "💡 Counter Tip: Envelopes with Originals INSIDE and Copies OUTSIDE, sorted."
-        errores.append(msg_err)
-        soluciones.append(msg_sol)
-
-    # 2. Validación AWB (IATA)
-    if not re.match(r"^\d{3}-\d{8}$", awb):
-        errores.append("AWB Incorrecto (Formato XXX-XXXXXXXX)." if lang=="es" else "Invalid AWB (Format XXX-XXXXXXXX).")
-        soluciones.append("💡 Corregir guía aérea antes de procesar." if lang=="es" else "💡 Correct air waybill before processing.")
-
-    # 3. Aeronavegabilidad (Dimensiones/Peso)
-    if alto > 160:
-        msg = "Dimensiones: Solo Avión Carguero (Main Deck)." if lang=="es" else "Dimensions: Freighter Only (Main Deck)."
-        errores.append(msg)
-        soluciones.append("💡 Verificar disponibilidad en Boeing 767F/A330F." if lang=="es" else "💡 Check availability on B767F/A330F.")
+    peso = float(data.get("pesoTotal") or 0)
+    alto = float(data.get("alto") or 0)
     
-    if alto > 244:
-        errores.append("ERROR CRÍTICO: Excede altura máxima de 244cm." if lang=="es" else "CRITICAL ERROR: Exceeds 244cm height limit.")
+    # Checkboxes de seguridad y counter
+    chk_seguridad = data.get("chkSeguridad", False) # TSA Screening
+    chk_sobres = data.get("chkSobres", False)       # Envelopes
+    chk_manifiesto = data.get("chkManifiesto", False) # Ground Manifest
+    chk_wood = data.get("chkWood", False)           # NIMF-15
+    chk_dgr = data.get("chkDGR", False)             # DGD Present
+    
+    # 2. LÓGICA DE ASESORÍA Y RESOLUCIÓN (Protocolo Avianca/IATA/CBP)
 
-    # 4. Seguridad (TSA / CBP)
-    if es_peligrosa and codigo != "DGR":
-        errores.append("Inconsistencia: Texto detecta DGR pero código es GEN." if lang=="es" else "Inconsistency: Text detects DGR but code is GEN.")
-        soluciones.append("💡 Cambiar tipo de carga a DGR y adjuntar DGD." if lang=="es" else "💡 Change cargo type to DGR and attach DGD.")
+    # Situación: Identificación AWB
+    if not re.match(r"^\d{3}-\d{8}$", awb):
+        errores.append("AWB con formato incorrecto o ausente." if lang=="es" else "Invalid or missing AWB.")
+        soluciones.append("📞 Sugerencia: Contactar al Forwarder para rectificar la guía física. No se puede procesar en sistema sin 11 dígitos válidos.")
 
-    if not data.get("chkSeguridad"):
-        errores.append("Falta Inspección TSA / Rayos X." if lang=="es" else "TSA Screening / X-Ray Missing.")
+    # Situación: Dimensiones en Bellies (PAX) vs Carguero
+    if alto > 160 and alto <= 244:
+        # Altura de carguero
+        errores.append("Carga excede altura para aviones de pasajeros (Bellies)." if lang=="es" else "Height exceeds passenger aircraft limit.")
+        soluciones.append("✈️ Acción: Verificar disponibilidad en B767F (Carguero). Si el vuelo es PAX, se sugiere re-estibar la carga o cambiar a pallet PMC para Main Deck.")
+    elif alto > 244:
+        # Exceso total
+        errores.append("Altura fuera de rango operativo (Excede 244cm)." if lang=="es" else "Height out of operational range.")
+        soluciones.append("🛠️ Solución técnica: Realizar 'Breakdown' inmediato. Desarmar el pallet y re-estibar en unidades más pequeñas para cumplir con el contorno del avión.")
 
-    # Estado Final
-    if lang == "es":
-        status = "RECHAZADO" if errores else "LISTO PARA VUELO"
+    # Situación: Seguridad TSA / Screening
+    if not chk_seguridad:
+        errores.append("Falta validación de Known Shipper / TSA Screening." if lang=="es" else "Missing TSA Screening / Known Shipper validation.")
+        soluciones.append("🛡️ Acción: Mover carga al área de inspección (Rayos X / ETD) antes de ingresar a zona estéril. Cumplir con norma TSA.")
+
+    # Situación: Madera y Aduana (CBP)
+    if not chk_wood:
+        errores.append("Madera sin sello NIMF-15 detectada." if lang=="es" else "Non-treated wood (ISPM-15) detected.")
+        soluciones.append("🪵 Acción preventiva: Para evitar multas de CBP, se sugiere cambiar por pallet de plástico o llevar a fumigación certificada antes del despacho.")
+
+    # Situación: Mercancía Peligrosa (DGR) - MSDS y DGD
+    if codigo == "DGR" or "DRY ICE" in texto_analisis or "LITHIUM" in texto_analisis:
+        if not chk_dgr:
+            errores.append("Alerta DGR: Falta Declaración de Mercancías Peligrosas (DGD)." if lang=="es" else "DGR Alert: Missing Shipper's Declaration.")
+            soluciones.append("🚨 Resolución: No recibir carga. Solicitar al Shipper 3 copias originales con borde rojo y verificar que el UN Number coincida con el MSDS.")
+
+    # Situación: Consolidado y Manejo de Sobres (Avianca Standard)
+    if "CONSOL" in texto_analisis or "CONSOLIDADO" in texto_analisis:
+        if not chk_sobres:
+            errores.append("Inconsistencia en documentos de consolidado." if lang=="es" else "Consolidated documentation inconsistency.")
+            soluciones.append("📂 Instrucción: Organizar sobres. HAWBs originales dentro del sobre de Avianca; copias pegadas al pallet en sobre canguro visible.")
+
+    # Situación: Peso de Pallet
+    if peso > 6800:
+        errores.append("Peso excede la capacidad máxima estructural del pallet (6800kg)." if lang=="es" else "Weight exceeds pallet structural capacity.")
+        soluciones.append("⚖️ Sugerencia: Dividir la carga en dos unidades (Pallets PMC/PAG) para no comprometer la seguridad del vuelo.")
+
+    # Situación: INTERLINES / TRANSFER / COMAT (Detección por texto)
+    if any(x in texto_analisis for x in ["INTERLINE", "TRANSFER", "COMAT"]):
+        soluciones.append("🔄 Nota de Asesoría: Verificar que la transferencia tenga el sello de 'Transfer' y el manifiesto de conexión actualizado.")
+
+    # 3. Estado Final de la Asesoría
+    if not errores:
+        status = "VUELO AUTORIZADO (FLY READY)" if lang=="es" else "FLIGHT AUTHORIZED (FLY READY)"
     else:
-        status = "REJECTED" if errores else "FLY READY"
+        status = "CARGA EN RETENCIÓN (ON HOLD)" if lang=="es" else "CARGO ON HOLD"
 
     return {
         "status": status,
         "errores": errores,
-        "soluciones": soluciones,
-        "es_consolidado": es_consolidado,
-        "peso_tasable": max(peso_total, (float(data.get("largo",0))*float(data.get("ancho",0))*alto/6000))
+        "soluciones": soluciones
     }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    # Puerto configurado para despliegue
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
