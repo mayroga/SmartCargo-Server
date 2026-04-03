@@ -6,155 +6,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0a3d62; --danger: #e11a22; --success: #27ae60; --light: #f4f6f8; }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:10px; color: #333; }
-        .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        :root { --primary: #0a3d62; --danger: #e11a22; --success: #27ae60; --light: #f4f6f8; --dark: #1e272e; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:10px; color: var(--dark); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Lang Bar */
-        .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
-        .lang-btn { padding: 10px 25px; cursor: pointer; border: 2px solid var(--primary); border-radius: 30px; font-weight: bold; background: white; }
-        .lang-btn.active { background: var(--primary); color: white; }
-
-        h1 { color: var(--primary); text-align: center; border-bottom: 4px solid var(--danger); padding-bottom: 10px; text-transform: uppercase; }
-        h3 { background: #0a3d6211; padding: 12px; border-left: 6px solid var(--primary); color: var(--primary); font-size: 16px; margin-top: 25px; }
+        /* Header & Control */
+        .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--danger); margin-bottom: 20px; padding-bottom: 10px; }
+        .btn-clear { background: #636e72; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        h3 { background: #0a3d6211; padding: 12px; border-left: 6px solid var(--primary); color: var(--primary); font-size: 15px; margin-top: 20px; text-transform: uppercase; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         label { display: block; margin: 10px 0 5px; font-weight: 600; font-size: 13px; }
-        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
 
         /* Chips IATA */
-        .nature-container { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
-        .nature-chip { padding: 10px 18px; border: 2px solid #ddd; border-radius: 25px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; }
+        .nature-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .nature-chip { padding: 8px 15px; border: 2px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; background: white; }
         .nature-chip.selected { background: var(--danger); color: white; border-color: var(--danger); }
 
-        /* Fotos por Mercancía */
-        .photo-section { border: 2px dashed #ccc; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; }
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
-        .photo-card { position: relative; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; height: 120px; }
-        .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+        /* Asesoría Result Table */
+        .result-box { margin-top: 30px; padding: 20px; border-radius: 12px; border: 1px solid #ddd; display: none; background: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th { background: var(--primary); color: white; padding: 12px; text-align: left; }
+        td { padding: 12px; border: 1px solid #eee; vertical-align: top; }
 
-        /* Pre-chequeo por Voz */
-        .precheck-box { background: #fffde7; border: 1px solid #fbc02d; padding: 20px; border-radius: 10px; margin: 25px 0; }
-        .mic-btn { background: var(--danger); color: white; border: none; padding: 12px 25px; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-
-        .btn-eval { background: var(--primary); color: white; border: none; padding: 22px; width: 100%; border-radius: 12px; font-size: 20px; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        .result-box { margin-top: 30px; padding: 25px; border-radius: 12px; border-left: 12px solid #ccc; display: none; }
+        .btn-eval { background: var(--primary); color: white; border: none; padding: 20px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .mic-btn { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        
+        @media print { .btn-eval, .mic-btn, .btn-clear, .nature-container, .photo-section, h3, .grid, .lang-bar { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="lang-bar">
-        <button class="lang-btn active" id="btn-es" onclick="setLang('es')">ESPAÑOL</button>
-        <button class="lang-btn" id="btn-en" onclick="setLang('en')">ENGLISH</button>
+    <div class="header-box">
+        <h1 id="t-title" style="margin:0; font-size: 22px; color: var(--primary);">AURA BY MAY ROGA - AL CIELO</h1>
+        <button class="btn-clear" onclick="location.reload()">BORRAR TODO</button>
     </div>
 
-    <h1 id="t-title">AL CIELO - SmartCargo Advisory</h1>
-
-    <h3 id="t-sec1">I. Identificación y Control de Acceso</h3>
     <div class="grid">
-        <div><label id="l-role">Rol Operativo:</label>
-            <select id="rolUsuario">
-                <option value="Counter">Agente de Counter</option>
-                <option value="Forwarder">Forwarder / Agente</option>
-                <option value="Driver">Chofer / Transportista</option>
+        <div><label id="l-awb">Master AWB (045-):</label><input type="text" id="awb" placeholder="Ej: 045-12345678"></div>
+        <div><label id="l-driver">ID Chofer / Licencia:</label><input type="text" id="idChofer" placeholder="Número de Identificación"></div>
+        <div><label>Destino Final:</label>
+            <select id="destino">
+                <option value="USA">USA (Miami / JFK)</option>
+                <option value="COL">Colombia (Bogotá)</option>
+                <option value="MEX">México (Felipe Ángeles)</option>
+                <option value="ESP">España (Madrid)</option>
+                <option value="BRA">Brasil (Sao Paulo)</option>
             </select>
         </div>
-        <div><label id="l-awb">Master AWB (045-):</label><input type="text" id="awb" placeholder="045-12345678"></div>
-        <div><label id="l-driver">ID/Licencia Chofer:</label><input type="text" id="idChofer" placeholder="ID Number"></div>
     </div>
 
-    <h3 id="t-sec2">II. Naturaleza de la Carga (Múltiple)</h3>
+    <h3 id="t-sec2">Naturaleza de la Carga (Múltiple)</h3>
     <div class="nature-container" id="natureContainer">
-        <div class="nature-chip" onclick="toggleNature(this, 'GEN')">GEN</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'PER')">PER</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'DGR')">DGR</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'AVI')">AVI</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'VAL')">VAL</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'HUM')">HUM</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'GEN')">GEN (General)</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'PER')">PER (Perecederos)</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'DGR')">DGR (Peligrosa)</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'AVI')">AVI (Animales)</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'HUM')">HUM (Restos)</div>
+        <div class="nature-chip" onclick="toggleNature(this, 'VAL')">VAL (Valores)</div>
     </div>
 
-    <h3 id="t-sec3">III. Equipo y Soporte Sugerido</h3>
-    <label id="l-uld">Tipo de ULD / Embalaje:</label>
-    <select id="uldSugerido">
-        <option value="PMC">Pallet PMC (Apto Avianca)</option>
-        <option value="PAG">Pallet PAG</option>
-        <option value="LD3">Contenedor LD3 (Belly)</option>
-        <option value="SKIPS">Skips / Plataformas</option>
-        <option value="CRATE">Crate / Huacales</option>
-        <option value="DRUMS">Drums / Tambores</option>
-        <option value="LOOSE">Loose / Carga Suelta</option>
-    </select>
-
-    <h3 id="t-sec4">IV. Evidencia Visual (Foto por Carga)</h3>
-    <div class="photo-section">
-        <input type="file" id="fileInput" accept="image/*" multiple onchange="previewPhotos()">
-        <div class="gallery" id="photoGallery"></div>
-    </div>
-
-    <div class="precheck-box">
-        <h4 id="t-pre">V. Pre-Chequeo y Dictado (Voz a Escritura)</h4>
-        <textarea id="prechequeo" rows="4" placeholder="Dictado o escritura sobre documentos, legibilidad y estado..."></textarea>
-        <button class="mic-btn" onclick="startDictation()" id="btn-mic">🎤 COMENZAR DICTADO</button>
-    </div>
-
+    <h3 id="t-sec3">Soporte y Embalaje</h3>
     <div class="grid">
-        <label><input type="checkbox" id="chkDGR"> DGD Original OK</label>
-        <label><input type="checkbox" id="chkFacturas"> Facturas (3 Copias)</label>
-        <label><input type="checkbox" id="chkEmbalaje" checked> Embalaje NIMF-15</label>
+        <div><label>Tipo de ULD:</label>
+            <select id="uldSugerido">
+                <option value="PMC">Pallet PMC (Apto Avianca)</option>
+                <option value="LD3">Contenedor LD3 (Belly)</option>
+                <option value="PAG">Pallet PAG</option>
+                <option value="LOOSE">Carga Suelta</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding-top: 35px;">
+            <label><input type="checkbox" id="chkDGR"> DGD Original</label>
+            <label><input type="checkbox" id="chkFacturas"> Facturas (3 Copias)</label>
+        </div>
     </div>
 
-    <button class="btn-eval" onclick="evaluar()" id="btn-eval">GENERAR ASESORÍA TÉCNICA</button>
-    
+    <h3 id="t-sec4">Pre-Chequeo Técnico (Voz/Texto)</h3>
+    <textarea id="prechequeo" rows="3" placeholder="Describa el estado de los bultos, marcas, etiquetas visibles..."></textarea>
+    <button class="mic-btn" onclick="startDictation()" id="btn-mic">🎤 ACTIVAR DICTADO DE VOZ</button>
+
+    <button class="btn-eval" onclick="evaluar()" id="btn-eval">GENERAR ASESORÍA DE COUNTER</button>
+
     <div id="resultado" class="result-box"></div>
+    
+    <div id="print-area" style="display:none; margin-top:20px;">
+        <button onclick="window.print()" class="btn-eval" style="background:var(--success);">🖨️ DESCARGAR REPORTE PDF</button>
+    </div>
 </div>
 
 <script>
-let currentLang = 'es';
 let selectedNatures = [];
-
-const content = {
-    es: {
-        title: "AL CIELO - SmartCargo Advisory",
-        sec1: "I. Identificación y Control de Acceso",
-        sec2: "II. Naturaleza de la Carga (Múltiple)",
-        sec3: "III. Equipo y Soporte Sugerido",
-        sec4: "IV. Evidencia Visual (Foto por Carga)",
-        pre: "V. Pre-Chequeo y Dictado (Voz a Escritura)",
-        role: "Rol Operativo:", awb: "Master AWB (045-):", driver: "ID/Licencia Chofer:",
-        uld: "Tipo de ULD / Embalaje:", mic: "🎤 COMENZAR DICTADO", eval: "GENERAR ASESORÍA TÉCNICA"
-    },
-    en: {
-        title: "SKY BOUND - SmartCargo Advisory",
-        sec1: "I. Identification & Access Control",
-        sec2: "II. Cargo Nature (Multi-select)",
-        sec3: "III. Suggested Equipment & Support",
-        sec4: "IV. Visual Evidence (Photo per Cargo)",
-        pre: "V. Technical Pre-Check (Voice to Text)",
-        role: "Operating Role:", awb: "Master AWB (045-):", driver: "Driver ID/License:",
-        uld: "ULD / Packaging Type:", mic: "🎤 START DICTATION", eval: "GENERATE TECHNICAL ADVISORY"
-    }
-};
-
-function setLang(lang) {
-    currentLang = lang;
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn-' + lang).classList.add('active');
-    
-    const d = content[lang];
-    document.getElementById('t-title').innerText = d.title;
-    document.getElementById('t-sec1').innerText = d.sec1;
-    document.getElementById('t-sec2').innerText = d.sec2;
-    document.getElementById('t-sec3').innerText = d.sec3;
-    document.getElementById('t-sec4').innerText = d.sec4;
-    document.getElementById('t-pre').innerText = d.pre;
-    document.getElementById('l-role').innerText = d.role;
-    document.getElementById('l-awb').innerText = d.awb;
-    document.getElementById('l-driver').innerText = d.driver;
-    document.getElementById('l-uld').innerText = d.uld;
-    document.getElementById('btn-mic').innerText = d.mic;
-    document.getElementById('btn-eval').innerText = d.eval;
-}
 
 function toggleNature(el, code) {
     el.classList.toggle('selected');
@@ -165,56 +110,67 @@ function toggleNature(el, code) {
     }
 }
 
-function previewPhotos() {
-    const gallery = document.getElementById('photoGallery');
-    gallery.innerHTML = "";
-    const files = document.getElementById('fileInput').files;
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            gallery.innerHTML += `<div class="photo-card"><img src="${e.target.result}"></div>`;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
 function startDictation() {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = currentLang === 'es' ? 'es-ES' : 'en-US';
-    recognition.onresult = (event) => {
-        document.getElementById('prechequeo').value += event.results[0][0].transcript + " ";
-    };
+    recognition.lang = 'es-ES';
+    recognition.onresult = (e) => { document.getElementById('prechequeo').value += e.results[0][0].transcript + " "; };
     recognition.start();
 }
 
 async function evaluar() {
     const resDiv = document.getElementById('resultado');
     resDiv.style.display = 'block';
-    resDiv.innerHTML = "Analizando bultos y documentación...";
+    resDiv.innerHTML = "<p style='text-align:center;'>Procesando normativa Avianca...</p>";
 
     const payload = {
         awb: document.getElementById('awb').value,
         idChofer: document.getElementById('idChofer').value,
+        destino: document.getElementById('destino').value,
         codigos: selectedNatures,
+        uldSugerido: document.getElementById('uldSugerido').value,
         chkDGR: document.getElementById('chkDGR').checked,
         chkFacturas: document.getElementById('chkFacturas').checked,
         prechequeo: document.getElementById('prechequeo').value
     };
 
-    const response = await fetch('/api/evaluar', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-    });
-    
-    const res = await response.json();
-    let html = `<h2>${res.status}</h2>`;
-    html += `<h3>RESULTADO DE REVISIÓN:</h3><ul>` + res.errores.map(e => `<li style="color:red">❌ ${e}</li>`).join('') + `</ul>`;
-    html += `<h3>ACCIONES CORRECTIVAS:</h3><ul>` + res.soluciones.map(s => `<li>✅ ${s}</li>`).join('') + `</ul>`;
-    if(res.prechequeo) html += `<hr><p><strong>Nota Técnica:</strong> ${res.prechequeo}</p>`;
-    
-    resDiv.innerHTML = html;
-    resDiv.style.borderColor = res.errores.length > 0 ? 'var(--danger)' : 'var(--success)';
+    try {
+        const response = await fetch('/api/evaluar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        const res = await response.json();
+        
+        let html = `<h2 style="text-align:center; color:${res.errores.length > 0 ? 'var(--danger)' : 'var(--success)'}">${res.status}</h2>`;
+        
+        html += `<table>
+                    <tr><th>DISCREPANCIAS / ALERTAS</th><th>ACCIONES RESOLUTIVAS</th></tr>`;
+        
+        const rows = Math.max(res.errores.length, res.soluciones.length);
+        if(rows === 0) {
+            html += `<tr><td colspan="2" style="text-align:center;">Documentación y Carga cumplen con el estándar inicial.</td></tr>`;
+        } else {
+            for(let i=0; i<rows; i++) {
+                html += `<tr>
+                            <td style="color:var(--danger)">${res.errores[i] || '✔ Sin discrepancias'}</td>
+                            <td>${res.soluciones[i] || '-'}</td>
+                         </tr>`;
+            }
+        }
+        html += `</table>`;
+
+        if(res.prechequeo) {
+            html += `<div style="margin-top:15px; padding:10px; background:#f4f6f8; border-radius:5px;">
+                        <strong>NOTA DEL ASESOR:</strong> ${res.prechequeo}
+                     </div>`;
+        }
+
+        resDiv.innerHTML = html;
+        document.getElementById('print-area').style.display = 'block';
+    } catch (error) {
+        resDiv.innerHTML = "<p style='color:red'>Error de conexión con el servidor de asesoría.</p>";
+    }
 }
 </script>
 </body>
