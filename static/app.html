@@ -6,319 +6,254 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-h1 { text-align:center; color:#0a3d62; margin-bottom:20px; }
-.collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
-.active, .collapsible:hover { background-color:#062c47; }
-.content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
-label { display:block; margin:8px 0 4px; font-weight:500; }
-input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
-.docs, .tip, .checklist { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
-.tip { font-style:italic; color:#555; }
-.result { font-size:18px; font-weight:bold; margin-top:15px; white-space:pre-wrap; }
-.alert { color:red; font-weight:bold; margin:5px 0; }
-img.example { max-width:100%; margin:5px 0; border-radius:5px; }
-.checklist input { margin-right:8px; }
+    body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
+    h1 { text-align:center; color:#0a3d62; margin-bottom:20px; }
+    .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:10px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; }
+    .active, .collapsible:hover { background-color:#062c47; }
+    .content { padding:0 15px; display:none; overflow:hidden; background-color:#f9f9f9; border-radius:5px; margin-bottom:10px; }
+    label { display:block; margin:8px 0 4px; font-weight:500; }
+    input, select { padding:8px; width:100%; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; }
+    .docs, .tip, .checklist { background:#eef; padding:8px; margin:5px 0; border-radius:4px; font-size:14px; }
+    .tip { font-style:italic; color:#555; }
+    .result { font-size:16px; margin-top:15px; white-space:pre-wrap; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+    .alert { color:red; font-weight:bold; margin:5px 0; }
+    .checklist input { margin-right:8px; width: auto; }
+    .btn-evaluar { background-color:#0a3d62; color:white; font-weight:bold; cursor:pointer; border:none; padding:15px; width:100%; border-radius:5px; margin-top:10px; }
+    .btn-borrar { background-color:#eb4d4b; color:white; font-weight:bold; cursor:pointer; border:none; padding:10px; width:100%; border-radius:5px; margin-top:10px; }
 </style>
 </head>
 <body>
 
 <h1>SMARTGOSERVER - Asesoría Completa de Carga Aérea</h1>
 
-<!-- FASE I: Identificación -->
 <button class="collapsible">I. Identificación y Rol</button>
-<div class="content" id="faseUniversal">
-<label for="rolUsuario">Rol del Usuario:</label>
-<select id="rolUsuario" onchange="updateRolFields()">
-<option value="">Seleccione</option>
-<option value="Dueño">Dueño</option>
-<option value="Forwarder">Forwarder</option>
-<option value="Chofer">Chofer / Camionero</option>
-<option value="AgenteWarehouse">Agente Warehouse</option>
-<option value="CounterAgent">Counter Agent</option>
-</select>
-<p id="avisoRol" class="tip"></p>
+<div class="content">
+    <label for="rolUsuario">Rol del Usuario:</label>
+    <select id="rolUsuario" onchange="updateRolFields()">
+        <option value="">Seleccione</option>
+        <option value="Dueño">Dueño</option>
+        <option value="Forwarder">Forwarder</option>
+        <option value="Chofer">Chofer / Camionero</option>
+        <option value="AgenteWarehouse">Agente Warehouse</option>
+        <option value="CounterAgent">Counter Agent</option>
+    </select>
+    <p id="avisoRol" class="tip"></p>
 
-<label for="awb">Número de Guía Aérea (AWB):</label>
-<input type="text" id="awb" placeholder="XXX-12345675">
-<p class="tip">Formato obligatorio para seguimiento y reserva. Ejemplo: 123-12345675</p>
-
-<label for="forwarder">Forwarder / Agente de Carga:</label>
-<input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
-<p class="tip">Importante para coordinación y documentación.</p>
-
-<label for="origen">Origen:</label>
-<input type="text" id="origen" placeholder="Ej: MIA">
-<label for="destino">Destino:</label>
-<input type="text" id="destino" placeholder="Ej: BOG, MDE, LIM, SJO">
+    <label for="awb">Número de Guía Aérea (AWB):</label>
+    <input type="text" id="awb" placeholder="XXX-12345675">
+    
+    <label for="forwarder">Forwarder / Agente de Carga:</label>
+    <input type="text" id="forwarder" placeholder="Ej: DHL, Kuehne + Nagel">
+    
+    <label for="origen">Origen:</label>
+    <input type="text" id="origen" placeholder="Ej: MIA">
+    <label for="destino">Destino:</label>
+    <input type="text" id="destino" placeholder="Ej: BOG, LIM, SJO">
 </div>
 
-<!-- FASE II: Tipo de Carga -->
 <button class="collapsible">II. Tipo de Carga y Documentos</button>
-<div class="content" id="faseTipoCarga">
-<label for="codigoCarga">Código IATA:</label>
-<select id="codigoCarga" onchange="mostrarDocumentos()">
-<option value="">Seleccione</option>
-<option value="GEN">GEN - General cargo</option>
-<option value="PER">PER - Perecedero</option>
-<option value="HUM">HUM - Human remains</option>
-<option value="VAL">VAL - Valores</option>
-<option value="AVI">AVI - Animales</option>
-<option value="DGR">DGR - Mercancía peligrosa</option>
-</select>
-<div id="documentosObligatorios" class="docs tip">Seleccione un tipo de carga para ver documentos.</div>
+<div class="content">
+    <label for="codigoCarga">Código IATA:</label>
+    <select id="codigoCarga" onchange="mostrarDocumentos()">
+        <option value="">Seleccione</option>
+        <option value="GEN">GEN - General cargo</option>
+        <option value="PER">PER - Perecedero</option>
+        <option value="HUM">HUM - Human remains</option>
+        <option value="VAL">VAL - Valores</option>
+        <option value="AVI">AVI - Animales</option>
+        <option value="DGR">DGR - Mercancía peligrosa</option>
+    </select>
+    <div id="documentosObligatorios" class="docs tip">Seleccione un tipo de carga para ver documentos.</div>
 </div>
 
-<!-- FASE III: Dimensiones y Peso -->
 <button class="collapsible">III. Dimensiones, Peso y Pallets</button>
-<div class="content" id="faseDimensiones">
-<label for="piezas">Número de piezas:</label>
-<input type="number" id="piezas" min="1" value="1">
+<div class="content">
+    <label for="piezas">Número de piezas:</label>
+    <input type="number" id="piezas" min="1" value="1">
+    <label for="pesoTotal">Peso Total (kg):</label>
+    <input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
+    <label for="largo">Largo (cm):</label>
+    <input type="number" id="largo" min="0" oninput="calcularVolumen()">
+    <label for="ancho">Ancho (cm):</label>
+    <input type="number" id="ancho" min="0" oninput="calcularVolumen()">
+    <label for="alto">Alto (cm):</label>
+    <input type="number" id="alto" min="0" oninput="calcularVolumen()">
+    
+    <label for="volumen">Volumen (m³):</label>
+    <input type="text" id="volumen" readonly>
+    <label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
+    <input type="text" id="pesoVolumetrico" readonly>
 
-<label for="pesoTotal">Peso Total (kg):</label>
-<input type="number" id="pesoTotal" min="0" oninput="calcularVolumen()">
-
-<label for="pesoPieza">Peso por Pieza (kg):</label>
-<input type="number" id="pesoPieza" min="0" oninput="calcularVolumen()">
-
-<label for="largo">Largo (cm):</label>
-<input type="number" id="largo" min="0" oninput="calcularVolumen()">
-
-<label for="ancho">Ancho (cm):</label>
-<input type="number" id="ancho" min="0" oninput="calcularVolumen()">
-
-<label for="alto">Alto (cm):</label>
-<input type="number" id="alto" min="0" oninput="calcularVolumen()">
-
-<label for="volumen">Volumen (m³):</label>
-<input type="text" id="volumen" readonly>
-
-<label for="pesoVolumetrico">Peso Volumétrico (kg):</label>
-<input type="text" id="pesoVolumetrico" readonly>
-
-<label for="tipoPallet">Tipo de Pallet / ULD:</label>
-<select id="tipoPallet" onchange="mostrarEmbalaje()">
-<option value="">Seleccione</option>
-<option value="Loose">Loose Cargo</option>
-<option value="PMC">PMC Pallet</option>
-<option value="PAG">PAG Pallet</option>
-<option value="Contenedor">Contenedor</option>
-</select>
-
-<div id="infoEmbalaje" class="tip">Seleccione un tipo de pallet para ver detalles de embalaje, labels y orientación.</div>
-
-<p id="alertDimensiones" class="alert"></p>
+    <label for="tipoPallet">Tipo de Pallet / ULD:</label>
+    <select id="tipoPallet" onchange="mostrarEmbalaje()">
+        <option value="">Seleccione</option>
+        <option value="Loose">Loose Cargo</option>
+        <option value="PMC">PMC Pallet</option>
+        <option value="PAG">PAG Pallet</option>
+        <option value="Contenedor">Contenedor</option>
+    </select>
+    <div id="infoEmbalaje" class="tip">Seleccione pallet para detalles.</div>
+    <p id="alertDimensiones" class="alert"></p>
 </div>
 
-<!-- FASE IV: Seguridad, Dry Ice, DGR -->
-<button class="collapsible">IV. Seguridad, Dry Ice, DGR y Checklist</button>
-<div class="content" id="faseSeguridad">
-<label for="knownShipper">Known Shipper:</label>
-<select id="knownShipper">
-<option value="">Seleccione</option>
-<option value="Sí">Sí</option>
-<option value="No">No</option>
-</select>
+<button class="collapsible">IV. Evidencia Visual y Seguridad</button>
+<div class="content">
+    <label for="fotoCarga">Subir Foto de la Carga / Etiquetas (Opcional):</label>
+    <input type="file" id="fotoCarga" accept="image/*">
+    
+    <label for="knownShipper">Known Shipper:</label>
+    <select id="knownShipper">
+        <option value="">Seleccione</option>
+        <option value="Sí">Sí</option>
+        <option value="No">No</option>
+    </select>
 
-<label for="horaCamion">Hora estimada de llegada del camión:</label>
-<input type="time" id="horaCamion">
-
-<label for="cutoff">Hora de cutoff del vuelo:</label>
-<input type="time" id="cutoff" value="18:00">
-
-<h3>Checklist de Seguridad, Embalaje y Orientación</h3>
-<div class="checklist">
-<label><input type="checkbox" id="chkDryIce"> Dry Ice correctamente declarado</label>
-<label><input type="checkbox" id="chkDGR"> Mercancía peligrosa DGR</label>
-<label><input type="checkbox" id="chkAnimales"> Animales vivos certificados</label>
-<label><input type="checkbox" id="chkPerecederos"> Perecederos embalados y refrigerados</label>
-<label><input type="checkbox" id="chkEmbalaje"> Embalaje adecuado</label>
-<label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles (FRÁGIL, DGR, Dry Ice, UPSIDE)</label>
-<label><input type="checkbox" id="chkFleje"> Mercancía con fleje seguro</label>
-<label><input type="checkbox" id="chkOrientacion"> Orientación correcta de la carga</label>
-</div>
+    <h3>Checklist de Rectificación</h3>
+    <div class="checklist">
+        <label><input type="checkbox" id="chkDryIce"> Dry Ice Declarado</label>
+        <label><input type="checkbox" id="chkDGR"> Mercancía DGR</label>
+        <label><input type="checkbox" id="chkEmbalaje"> Embalaje Adecuado</label>
+        <label><input type="checkbox" id="chkEtiquetas"> Etiquetas Visibles</label>
+        <label><input type="checkbox" id="chkFleje"> Fleje Seguro</label>
+        <label><input type="checkbox" id="chkOrientacion"> Orientación Correcta</label>
+    </div>
 </div>
 
-<!-- FASE V: Resultado -->
 <button class="collapsible">V. Validación Final y Resultado</button>
 <div class="content" id="faseFinal">
-<button onclick="evaluarCarga()">Evaluar Carga</button>
-<p id="resultadoFinal" class="result"></p>
+    <button class="btn-evaluar" onclick="evaluarCarga()">EVALUAR ASESORÍA TÉCNICA</button>
+    <button class="btn-borrar" onclick="borrarTodo()">BORRAR DATOS</button>
+    <div id="resultadoFinal" class="result" style="display:none;"></div>
 </div>
 
-<!-- FASE VI: Desglose Técnico de Documentos -->
-<button class="collapsible">VI. Desglose Técnico de Documentos</button>
-<div class="content" id="faseDocumentos">
-  <button onclick="mostrarDocumentosDetallados()">Mostrar y Escuchar Desglose</button>
-  <div id="documentosDetallados" class="docs" style="display:none; margin-top:10px;"></div>
+<button class="collapsible">VI. Desglose de Documentos</button>
+<div class="content">
+    <button onclick="mostrarDocumentosDetallados()">Mostrar y Escuchar Desglose</button>
+    <div id="documentosDetallados" class="docs" style="display:none; margin-top:10px;"></div>
 </div>
 
 <script>
-// Collapsibles
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".collapsible").forEach(btn=>{
-        btn.addEventListener("click",()=>{
-            btn.classList.toggle("active"); 
-            let c = btn.nextElementSibling;
-            c.style.display = (c.style.display==='block')?'none':'block';
-        });
+// Manejo de secciones colapsables
+document.querySelectorAll(".collapsible").forEach(btn => {
+    btn.addEventListener("click", function() {
+        this.classList.toggle("active");
+        let content = this.nextElementSibling;
+        content.style.display = (content.style.display === "block") ? "none" : "block";
     });
 });
 
-// Mostrar documentos según tipo de carga
-function mostrarDocumentos(){
+function updateRolFields() {
+    const rol = document.getElementById('rolUsuario').value;
+    const aviso = document.getElementById('avisoRol');
+    aviso.innerText = (rol === "Chofer" || rol === "AgenteWarehouse") ? "Tip: Revise sellos y manifiestos." :
+                      (rol === "Forwarder") ? "Tip: Validar documentación y AWB." : "";
+}
+
+function mostrarDocumentos() {
     const tipo = document.getElementById('codigoCarga').value;
     const docs = {
         "GEN":"AWB, Packing List, Invoice, Known Shipper",
-        "PER":"AWB, Packing List, Certificado Fitosanitario, FDA, Known Shipper",
-        "HUM":"AWB, Death Certificate, Embalming Certificate, Funeral Letter",
-        "VAL":"AWB, Invoice, Seguro / Declaración de valor",
-        "AVI":"AWB, Certificado sanitario animal, Known Shipper",
+        "PER":"AWB, Packing List, Fitosanitario, FDA, Known Shipper",
+        "HUM":"AWB, Death Certificate, Embalming Certificate",
+        "VAL":"AWB, Invoice, Declaración de valor",
+        "AVI":"AWB, Certificado Sanitario, Known Shipper",
         "DGR":"AWB, Shipper Declaration x2, MSDS, Known Shipper"
     };
-    document.getElementById('documentosObligatorios').innerText = docs[tipo]||"Seleccione un tipo de carga";
+    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga";
 }
 
-// Mostrar embalaje, labels y orientación
-function mostrarEmbalaje(){
-    const tipo=document.getElementById('tipoPallet').value;
-    let info="";
-    switch(tipo){
-        case "Loose":
-            info="Cargue en: DRUMS, BOXES, SKIPS, ENGINE, CRATE, OTROS. Verifique fleje, etiquetas visibles, Fragile, DGR, Dry Ice, Upside.";
-            break;
-        case "PMC":
-            info="Palet PMC: Usar fleje, DRUMS y SKIPS asegurados, labels visibles, orientación correcta, Fragile y DGR hacia afuera.";
-            break;
-        case "PAG":
-            info="Palet PAG: Similar a PMC, revisar DRUMS, BOXES, SKIPS, etiquetas, fleje y orientación.";
-            break;
-        case "Contenedor":
-            info="Contenedor: Distribuir carga uniforme, DRUMS, BOXES, CRATE, labels visibles, DGR, Dry Ice, Fragile, UPSIDE, fleje seguro, orientación correcta.";
-            break;
-        default:
-            info="Seleccione un tipo de pallet para ver detalles de embalaje.";
-    }
-    document.getElementById('infoEmbalaje').innerText=info;
-}
-
-// Calcular volumen y peso volumétrico
-function calcularVolumen(){
-    const L=+document.getElementById('largo').value||0;
-    const W=+document.getElementById('ancho').value||0;
-    const H=+document.getElementById('alto').value||0;
-    const pesoTotal=+document.getElementById('pesoTotal').value||0;
-    const volumen=(L*W*H)/1000000;
-    document.getElementById('volumen').value = volumen.toFixed(3)+' m³';
-    document.getElementById('pesoVolumetrico').value = (volumen*167).toFixed(2);
-    let msg="";
-    if(H>244) msg+="⚠ Alto excede carguero. ";
-    else if(H>160) msg+="⚠ Solo Main Deck. ";
-    if(L>318 || W>244) msg+="⚠ Dimensiones exceden. ";
-    if(pesoTotal>6800) msg+="⚠ Peso excede límite.";
+function calcularVolumen() {
+    const L = +document.getElementById('largo').value || 0;
+    const W = +document.getElementById('ancho').value || 0;
+    const H = +document.getElementById('alto').value || 0;
+    const vol = (L * W * H) / 1000000;
+    document.getElementById('volumen').value = vol.toFixed(3) + ' m³';
+    document.getElementById('pesoVolumetrico').value = (vol * 167).toFixed(2);
+    
+    let msg = "";
+    if(H > 160) msg = "⚠ Solo Main Deck.";
+    if(H > 244) msg = "⚠ Excede altura máxima.";
     document.getElementById('alertDimensiones').innerText = msg;
 }
 
-// Evaluar carga con backend
-async function evaluarCarga(){
-    const resDiv=document.getElementById('resultadoFinal');
-    resDiv.innerHTML="Cargando asesoría...";
-    const data={
-        rolUsuario:document.getElementById('rolUsuario').value,
-        awb:document.getElementById('awb').value,
-        codigoCarga:document.getElementById('codigoCarga').value,
-        piezas:document.getElementById('piezas').value,
-        pesoTotal:document.getElementById('pesoTotal').value,
-        alto:document.getElementById('alto').value,
-        pesoVolumetrico:document.getElementById('pesoVolumetrico').value,
-        knownShipper:document.getElementById('knownShipper').value,
-        horaCamion:document.getElementById('horaCamion').value,
-        cutoff:document.getElementById('cutoff').value,
-        chkDryIce:document.getElementById('chkDryIce').checked,
-        chkDGR:document.getElementById('chkDGR').checked,
-        chkAnimales:document.getElementById('chkAnimales').checked,
-        chkPerecederos:document.getElementById('chkPerecederos').checked,
-        chkEmbalaje:document.getElementById('chkEmbalaje').checked,
-        chkEtiquetas:document.getElementById('chkEtiquetas').checked,
-        chkFleje:document.getElementById('chkFleje').checked,
-        chkOrientacion:document.getElementById('chkOrientacion').checked
+function mostrarEmbalaje() {
+    const tipo = document.getElementById('tipoPallet').value;
+    const info = {
+        "Loose": "Cargue en BOXES/CRATES. Fleje y etiquetas obligatorias.",
+        "PMC": "Palet PMC: Etiquetas hacia afuera, red de seguridad tensa.",
+        "PAG": "Palet PAG: Verificar fleje y orientación UPSIDE.",
+        "Contenedor": "Contenedor: Carga uniforme, asegurar DGR por separado."
     };
-    try{
-        const res=await fetch('/api/evaluar',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(data)
+    document.getElementById('infoEmbalaje').innerText = info[tipo] || "Seleccione un tipo de pallet.";
+}
+
+// ENVÍO DE DATOS AL SERVIDOR (SmartCargo-Server)
+async function evaluarCarga() {
+    const resDiv = document.getElementById('resultadoFinal');
+    resDiv.style.display = "block";
+    resDiv.innerHTML = "Analizando carga con especialistas de AL CIELO...";
+
+    const formData = new FormData();
+    const payload = {
+        rolUsuario: document.getElementById('rolUsuario').value,
+        awb: document.getElementById('awb').value,
+        codigoCarga: document.getElementById('codigoCarga').value,
+        piezas: document.getElementById('piezas').value,
+        pesoTotal: document.getElementById('pesoTotal').value,
+        alto: document.getElementById('alto').value,
+        pesoVolumetrico: document.getElementById('pesoVolumetrico').value,
+        knownShipper: document.getElementById('knownShipper').value,
+        chkDGR: document.getElementById('chkDGR').checked,
+        chkEmbalaje: document.getElementById('chkEmbalaje').checked
+    };
+
+    formData.append("data", JSON.stringify(payload));
+    const fotoFile = document.getElementById('fotoCarga').files[0];
+    if (fotoFile) {
+        formData.append("foto", fotoFile);
+    }
+
+    try {
+        const response = await fetch('/api/evaluar', {
+            method: 'POST',
+            body: formData // Importante: No poner headers de JSON aquí
         });
-        const result=await res.json();
-        let html=`<div style="padding:15px; border-radius:10px; background:${result.status==='READY'?'#dff9fb':'#ffbe76'}">`;
-        html+=`<h2>Estado: ${result.status}</h2>`;
-        if(result.errores.length>0){
-            html+="<ul>"+result.errores.map(e=>`<li style='color:red'>${e}</li>`).join('')+"</ul>";
-            if(result.soluciones.length>0){
-                html+="<h3>Acciones Correctivas:</h3><ul>"+result.soluciones.map(s=>`<li>${s}</li>`).join('')+"</ul>";
-            }
-        } else html+="<p>🟢 Todo en orden. Puede proceder al counter.</p>";
-        html+="</div>";
-        resDiv.innerHTML=html;
-    } catch(err){
-        resDiv.innerHTML="❌ Error de conexión con el asesor virtual.";
+        const result = await response.json();
+        
+        let html = `<div style="border-left: 5px solid #0a3d62; padding-left: 10px;">`;
+        html += `<h3>Estado Final: ${result.status}</h3>`;
+        if (result.errores.length > 0) {
+            html += `<ul style="color:red;">${result.errores.map(e => `<li>${e}</li>`).join('')}</ul>`;
+        }
+        html += `<div class="docs" style="background:#fff; border:1px solid #ccc; white-space: pre-wrap;">${result.asesoria_tecnica}</div>`;
+        html += `<p style="font-size:10px; color:#888; margin-top:10px;">Procesado vía: ${result.fuente}</p>`;
+        html += `</div>`;
+        resDiv.innerHTML = html;
+    } catch (err) {
+        resDiv.innerHTML = "❌ Error al conectar con SmartCargo-Server.";
     }
 }
 
-// Tips dinámicos por rol
-function updateRolFields(){
-    const rol=document.getElementById('rolUsuario').value;
-    document.getElementById('avisoRol').innerText =
-        (rol==="Chofer" || rol==="AgenteWarehouse") ? "Tip: Revise sellos y manifiestos." :
-        (rol==="Forwarder") ? "Tip: Validar documentación y AWB." : "";
+function borrarTodo() {
+    if(confirm("¿Seguro que desea limpiar todos los campos?")) {
+        document.querySelectorAll('input').forEach(i => i.value = '');
+        document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+        document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+        document.getElementById('resultadoFinal').innerHTML = '';
+        document.getElementById('resultadoFinal').style.display = 'none';
+        window.speechSynthesis.cancel();
+    }
 }
-
-// FASE VI: Desglose Técnico de Documentos
-const textoDocumentos = `Aquí tienes el desglose técnico de todos los documentos obligatorios, desde lo más básico hasta lo más específico, que deben ser rectificados antes de llegar al aeropuerto:
-
-1. Documentación de Identidad y Acceso (El factor humano)
-- ID Original Vigente: El chofer o forwarder debe presentar licencia de conducir o pasaporte original. No se aceptan copias ni fotos en el celular.
-- Manifiesto de Carga Terrestre: Documento que vincula al camión con las piezas que entrega. Debe coincidir el número de placa con el vehículo físico.
-
-2. Documentos Base de la Carga (Universales)
-- Air Waybill (AWB) - Guía Aérea: Error común: Tachaduras o correcciones con corrector líquido. Rechazo automático.
-- Peso/Piezas: Debe coincidir exactamente con lo que se pesa en la báscula del counter. Una diferencia mayor al 2% puede detener el despacho.
-- Commercial Invoice (Factura Comercial): Debe detallar valor, descripción clara e Incoterms.
-- Packing List (Lista de Empaque): Debe especificar qué hay dentro de cada bulto. Si el bulto dice "1 de 5", el Packing List debe decir exactamente qué contiene ese bulto "1".
-
-3. Documentos de Seguridad (TSA / Estándar Internacional)
-- Known Shipper Verification: Si el remitente no está en la base de datos de "Embarcador Conocido", la carga debe ir a Screening obligatorio.
-- Security Declaration: Documento donde se declara que la carga no contiene artículos prohibidos y ha sido protegida de interferencias no autorizadas.
-
-4. Documentación Específica por Tipo de Carga (Los "Olvidados")
-- DGR: Shipper's Declaration (DGD) con borde rojo, firma original; MSDS actualizada.
-- PER: Certificado Fitosanitario válido y Prior Notice (FDA) con código de confirmación.
-- AVI: Certificado Veterinario dentro de los tiempos permitidos.
-- HUM: Certificado de Embalsamamiento + acta de defunción.
-
-5. Errores de "Forma" que causan Rechazo
-- Inconsistencia de Nombres, Descripción Vaga, Falta de Copias.
-
-Resolución Proactiva de SMARTGOSERVER:
-- Antes de salir hacia el aeropuerto, asegúrese de tener 3 copias físicas de la DGD con borde rojo visible. ¿Las tiene en mano? [SÍ] [NO]`;
 
 function mostrarDocumentosDetallados() {
     const cont = document.getElementById('documentosDetallados');
     cont.style.display = 'block';
-    cont.innerText = textoDocumentos;
-
-    // Leer en voz
-    const utterance = new SpeechSynthesisUtterance(textoDocumentos);
+    const texto = "Rectificación de documentos: AWB sin tachaduras, Packing List detallado, Shipper Declaration original. Verifique etiquetas DGR y fitosanitarios.";
+    cont.innerText = texto;
+    const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = 'es-ES';
-    speechSynthesis.cancel(); // Cancelar si ya hay lectura
     speechSynthesis.speak(utterance);
-
-    // Desaparecer después de 45 segundos
-    setTimeout(() => {
-        cont.style.display = 'none';
-    }, 45000);
 }
 </script>
-
 </body>
 </html>
