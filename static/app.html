@@ -1,140 +1,161 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL CIELO - AURA BY MAY ROGA</title>
+    <title>AL CIELO | SMARTCARGO ADVISORY</title>
     <style>
-        :root { --blue: #00d4ff; --bg: #0b1220; --panel: #111a2e; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; }
-        .container { max-width: 900px; margin: auto; }
-        .section { background: var(--panel); padding: 25px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #1e2a44; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        h2, h3 { color: var(--blue); text-transform: uppercase; letter-spacing: 1px; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #070d19; border: 1px solid #334466; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { background: var(--blue); color: #0b1220; border: none; padding: 18px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
-        button:hover { filter: brightness(1.2); }
-        .grid-header { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; font-weight: bold; color: var(--blue); font-size: 12px; margin-bottom: 5px; }
-        .piece-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #2a3a5a; }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; }
-        .hidden { display: none; }
-        .alert-box { border-left: 6px solid #ff4d4d; background: rgba(255,77,77,0.1); padding: 20px; border-radius: 8px; }
-        .success-box { border-left: 6px solid #4dff88; background: rgba(77,255,136,0.1); padding: 20px; border-radius: 8px; }
-        .btn-delete { background: #ff4d4d; color: white; width: auto; padding: 10px 20px; margin-bottom: 20px; }
+        :root { --avianca-red: #e11a22; --black: #000000; --gold: #d4a017; --gray: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: #ddd; margin: 0; padding: 10px; }
+        .container { max-width: 1400px; margin: auto; background: white; border: 4px solid var(--black); box-shadow: 10px 10px 0px rgba(0,0,0,0.2); }
+        .header { background: var(--black); color: white; padding: 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--avianca-red); }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+        .section { border: 1px solid #ccc; padding: 20px; border-radius: 4px; background: white; }
+        h3 { background: var(--black); color: white; padding: 10px; margin-top: 0; font-size: 14px; text-transform: uppercase; border-left: 10px solid var(--avianca-red); }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; font-weight: bold; box-sizing: border-box; }
+        .piece-table { width: 100%; border-collapse: collapse; }
+        .piece-table th { background: #eee; padding: 10px; font-size: 11px; border: 1px solid #ccc; }
+        .piece-row td { border: 1px solid #ccc; padding: 5px; }
+        .btn-group { padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .btn { padding: 15px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn-red { background: var(--avianca-red); color: white; }
+        .btn-black { background: var(--black); color: white; }
+        .result-panel { display: none; padding: 25px; background: #fff; border: 5px solid var(--black); margin: 20px; }
+        .alert-item { background: #fff1f1; border-left: 5px solid var(--avianca-red); padding: 15px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="display:flex; justify-content: space-between; align-items:center;">
-        <h2>✈️ AL CIELO</h2>
-        <button class="btn-delete" onclick="location.reload()">BORRAR TODO</button>
-    </div>
-
-    <div class="section">
-        <h3>📋 Datos del Envío</h3>
-        <input id="awb" placeholder="Número de Guía (ej: 729-3126250)">
-        <select id="tipo">
-            <option value="GENERAL">CARGA GENERAL</option>
-            <option value="PHARMA">PHARMA / COLD CHAIN</option>
-            <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
-            <option value="PER">PERECEDEROS</option>
-        </select>
-        <button onclick="document.getElementById('auditBox').classList.remove('hidden')">INICIAR ASESORÍA FÍSICA</button>
-    </div>
-
-    <div class="section hidden" id="auditBox">
-        <h3>📦 Auditoría de Piezas (Manual)</h3>
-        <div class="grid-header">
-            <span>CANT</span><span>LARGO(in)</span><span>ANCHO(in)</span><span>ALTO(in)</span><span>PESO(kg)</span>
+    <div class="header">
+        <div>
+            <h1 style="margin:0; letter-spacing:2px;">AL CIELO | ASESORÍA SMARTCARGO</h1>
+            <small>ESTACIÓN: MIAMI FL (MIA) | GATEWAY: AVIANCA CARGO (045)</small>
         </div>
-        <div id="listaPiezas"></div>
-        <button style="background:#1a2742; color:var(--blue); margin-top:10px;" onclick="addPiece()">+ AGREGAR PIEZA</button>
-        
-        <h3 style="margin-top:30px;">🎤 Reporte del Inspector</h3>
-        <textarea id="obs" rows="3" placeholder="Indique si hay daños visibles, fugas o falta de sellos..."></textarea>
-        <button onclick="enviarValidacion()">EJECUTAR PRE-CHEQUEO FINAL</button>
+        <button class="btn btn-black" onclick="location.reload()">BORRAR DATOS</button>
     </div>
 
-    <div class="section hidden" id="resultBox">
-        <div id="statusContainer"></div>
-        <div id="alertasLista" style="margin-top:20px;"></div>
-        <button style="margin-top:20px; background:#4dff88" onclick="window.print()">GENERAR PDF PARA WHATSAPP</button>
+    <div class="main-grid">
+        <div class="left-col">
+            <div class="section">
+                <h3>I. Identificación y Seguridad (TSA/IATA)</h3>
+                <input type="text" id="awb" placeholder="GUÍA AÉREA (045-XXXXXXXX)">
+                <input type="text" id="descripcion_carga" placeholder="DESCRIPCIÓN ESPECÍFICA (EJ: REPUESTOS AERONÁUTICOS)">
+                <select id="known_shipper">
+                    <option value="true">SHIPPER CONOCIDO</option>
+                    <option value="false">SHIPPER DESCONOCIDO</option>
+                </select>
+                <select id="naturaleza" onchange="actualizarChecks()">
+                    <option value="GENERAL">CARGA GENERAL (GEN)</option>
+                    <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
+                    <option value="PER">PERECEDEROS (PER)</option>
+                    <option value="VAL">VALORES (VAL)</option>
+                </select>
+            </div>
+            <div class="section" style="margin-top:20px;">
+                <h3>II. Auditoría de Documentos</h3>
+                <div id="check_area" style="background:#f9f9f9; padding:10px; border:1px dashed #999; margin-bottom:10px;"></div>
+                <textarea id="docs_texto" placeholder="Notas adicionales del Pouch..."></textarea>
+            </div>
+        </div>
+
+        <div class="right-col">
+            <div class="section">
+                <h3>III. Auditoría Física (Entrada Manual)</h3>
+                <table class="piece-table">
+                    <thead>
+                        <tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO (LB)</th><th>FOTO</th></tr>
+                    </thead>
+                    <tbody id="piezas_body"></tbody>
+                </table>
+                <button class="btn btn-black" style="width:100%; margin-top:10px;" onclick="addPiece()">+ AGREGAR ESTIBA / PIEZA</button>
+            </div>
+            <div class="section" style="margin-top:20px;">
+                <h3>IV. Reporte del Inspector</h3>
+                <textarea id="voz_texto" rows="4" placeholder="Reporte de daños, sellos o discrepancias físicas..."></textarea>
+                <input type="file" id="bulk_photo" style="font-size:10px;">
+            </div>
+        </div>
     </div>
+
+    <div class="btn-group">
+        <button class="btn btn-black" onclick="window.print()">GENERAR PDF REPORTE</button>
+        <button class="btn btn-red" onclick="procesar()">ASESORAR Y VALIDAR</button>
+        <button class="btn btn-black">BORRAR / RESET</button>
+    </div>
+
+    <div id="resultados" class="result-panel"></div>
 </div>
 
 <script>
-    let piezas = [];
+function addPiece() {
+    const tr = document.createElement('tr');
+    tr.className = 'piece-row';
+    tr.innerHTML = `
+        <td><input type="number" class="p_cant" value="1"></td>
+        <td><input type="number" class="p_l" placeholder="L"></td>
+        <td><input type="number" class="p_w" placeholder="W"></td>
+        <td><input type="number" class="p_h" placeholder="H"></td>
+        <td><input type="number" class="p_real" placeholder="LB"></td>
+        <td><input type="file" capture="environment" accept="image/*" style="width:80px; font-size:9px;"></td>
+    `;
+    document.getElementById('piezas_body').appendChild(tr);
+}
 
-    function addPiece() {
-        const p = { cant: 1, l: 0, w: 0, h: 0, peso: 0 };
-        piezas.push(p);
-        render();
-    }
+function actualizarChecks() {
+    const nat = document.getElementById('naturaleza').value;
+    const area = document.getElementById('check_area');
+    const docs = {
+        "GENERAL": ["Factura Original", "Packing List", "AWB Firmada"],
+        "DGR": ["Shipper's Declaration", "MSDS", "Etiquetas Clase"],
+        "PER": ["Cert. Fitosanitario", "Instrucción Temp"],
+        "VAL": ["Manifiesto VAL", "Custodia Armada"]
+    };
+    area.innerHTML = docs[nat].map(d => `<label><input type="checkbox" class="doc_check" value="${d}"> ${d}</label><br>`).join('');
+}
 
-    function render() {
-        const container = document.getElementById("listaPiezas");
-        container.innerHTML = piezas.map((p, i) => `
-            <div class="piece-row">
-                <div class="grid-inputs">
-                    <input type="number" value="${p.cant}" onchange="update(${i},'cant',this.value)">
-                    <input type="number" placeholder="L" onchange="update(${i},'l',this.value)">
-                    <input type="number" placeholder="W" onchange="update(${i},'w',this.value)">
-                    <input type="number" placeholder="H" onchange="update(${i},'h',this.value)">
-                    <input type="number" placeholder="KG" onchange="update(${i},'peso',this.value)">
-                </div>
-                <div style="margin-top:10px">
-                    <label style="font-size:12px; color:var(--blue)">SUBIR FOTO / CÁMARA:</label>
-                    <input type="file" accept="image/*" capture="environment">
-                </div>
-            </div>
-        `).join("");
-    }
-
-    function update(i, k, v) { piezas[i][k] = v; }
-
-    async function enviarValidacion() {
-        const data = {
-            awb: document.getElementById("awb").value,
-            naturaleza: document.getElementById("tipo").value,
-            piezas: piezas,
-            observaciones: document.getElementById("obs").value
-        };
-
-        const res = await fetch('/api/validar_precheck', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+async function procesar() {
+    const piezas = [];
+    document.querySelectorAll('.piece-row').forEach(r => {
+        piezas.push({
+            cant: r.querySelector('.p_cant').value,
+            l: r.querySelector('.p_l').value,
+            w: r.querySelector('.p_w').value,
+            h: r.querySelector('.p_h').value,
+            p_real: r.querySelector('.p_real').value
         });
+    });
 
-        const result = await res.json();
-        mostrar(result);
-    }
+    const payload = {
+        awb: document.getElementById('awb').value,
+        naturaleza: document.getElementById('naturaleza').value,
+        known_shipper: document.getElementById('known_shipper').value === "true",
+        descripcion_carga: document.getElementById('descripcion_carga').value,
+        docs_texto: document.getElementById('docs_texto').value,
+        docs_check: Array.from(document.querySelectorAll('.doc_check:checked')).map(c => c.value),
+        piezas: piezas
+    };
 
-    function mostrar(res) {
-        document.getElementById("resultBox").classList.remove("hidden");
-        const isOk = res.status === "READY TO FLY";
-        
-        document.getElementById("statusContainer").innerHTML = `
-            <div class="${isOk ? 'success-box' : 'alert-box'}">
-                <h1 style="margin:0">${res.status}</h1>
-                <p style="font-size:20px">Peso Cobrable: <strong>${res.p_cobrable} KG</strong></p>
-            </div>
-        `;
+    const res = await fetch('/api/validar_carga', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    const resDiv = document.getElementById('resultados');
+    resDiv.style.display = 'block';
+    let html = `<h2 style="color:var(--avianca-red)">ESTADO: ${data.status}</h2>`;
+    html += `<h4>COBRABLE: ${data.p_cobrable} LBS | EQUIPO: ${data.recomendacion_vuelo}</h4><hr>`;
+    data.alertas.forEach((a, i) => {
+        html += `<div class="alert-item"><strong>⚠️ ${a}</strong><br><small>${data.explicaciones[i]}</small><br><i>Riesgo: ${data.riesgos[i]}</i></div>`;
+    });
+    resDiv.innerHTML = html;
+    resDiv.scrollIntoView();
+}
 
-        let html = "";
-        res.alertas.forEach((a, i) => {
-            html += `
-                <div style="border-bottom: 1px solid #334466; padding: 10px 0;">
-                    <strong style="color:#ff4d4d">⚠ ${a}</strong><br>
-                    <small>${res.explicaciones[i]}</small><br>
-                    <em style="color:var(--blue)">Riesgo: ${res.riesgos[i]}</em>
-                </div>
-            `;
-        });
-        document.getElementById("alertasLista").innerHTML = html || "✅ Carga verificada sin discrepancias.";
-        window.scrollTo(0, document.body.scrollHeight);
-    }
+addPiece();
+actualizarChecks();
 </script>
-
 </body>
 </html>
