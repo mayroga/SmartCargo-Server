@@ -1,73 +1,57 @@
-import os, json, io, base64
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import os, json, base64
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn
 
-app = FastAPI(title="AL CIELO - SmartCargo Advisory")
+app = FastAPI()
 
 if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        return f.read()
 
-@app.post("/api/diagnostico")
-async def diagnosticar(data: str = Form(...), fotos: list[UploadFile] = File(None)):
+@app.post("/api/evaluar")
+async def evaluar(data: str = Form(...), fotos: list[UploadFile] = File(None)):
     payload = json.loads(data)
-    texto_analizar = payload.get("dictado", "").upper()
+    texto = payload.get("dictado", "").upper()
     bultos = payload.get("detalle_bultos", [])
-    docs = payload.get("docs", {})
     
     alertas = []
     soluciones = []
     
-    # --- FISCALIZACIÓN DE SEGURIDAD Y DOCUMENTACIÓN ---
-    
-    # Análisis de Carga Consolidada (IATA/TSA)
-    if any(word in texto_analizar for word in ["CONSOLIDADO", "CONSOL", "HAWB"]):
-        if not docs.get('manifiesto'):
-            alertas.append("❌ ERROR CRÍTICO: Carga consolidada detectada sin Manifiesto HAWB.")
-            soluciones.append("💡 ACCIÓN: Exigir Manifiesto. Verificar sobres: Originales fuera, copias dentro.")
+    # --- ASESORÍA TÉCNICA (DOT/IATA/CBP) ---
+    # Seguridad y Mercancías Peligrosas
+    if any(w in texto for w in ["BATTERY", "BATERIA", "LITHIUM", "DGR", "PELIGROSA"]):
+        if not payload['docs'].get('msds'):
+            alertas.append("❌ Carga DGR detectada sin MSDS/DGD.")
+            soluciones.append("💡 Solicitar Declaración de Mercancías Peligrosas y MSDS actualizada.")
 
-    # Análisis de Mercancía Peligrosa (DGR/IATA)
-    if any(word in texto_analizar for word in ["DGR", "PELIGROSA", "BATTERY", "UN3481", "LITHIUM", "QUIMICOS"]):
-        if not docs.get('msds'):
-            alertas.append("❌ RIESGO DGR: Detectada posible mercancía peligrosa sin MSDS/DGD.")
-            soluciones.append("💡 ACCIÓN: Retener carga. Solicitar Declaración de Mercancía Peligrosa (DGD) firmada.")
+    # Embalaje (CBP/Aduana)
+    if payload.get("tipo_pallet") == "Wood" and not payload['chk'].get('fumigado'):
+        alertas.append("❌ Pallet de madera sin sello NIMF-15 visible.")
+        soluciones.append("💡 Rectificar: Cambiar por pallet plástico o madera certificada antes del ingreso.")
 
-    # Análisis de Perecederos (Avianca Cargo)
-    if any(word in texto_analizar for word in ["PER", "FRESH", "FRUTA", "PESCADO", "PERISHABLE", "ICE"]):
-        alertas.append("⚠️ PRIORIDAD PER: Carga perecedera detectada.")
-        soluciones.append("💡 ACCIÓN: Priorizar en Bellies. Revisar fitosanitarios originales y cadena de frío.")
-
-    # --- VALIDACIÓN TÉCNICA DE MEDIDAS ---
+    # --- CÁLCULOS Y AERONAVEGABILIDAD ---
+    rows_html = ""
+    total_kg = 0
     max_h = 0
-    t_peso = 0
-    t_vol = 0
-    
     for b in bultos:
         try:
-            h = float(b['h'])
-            cant = int(b['cant'])
-            t_peso += (cant * float(b['p']))
-            t_vol += (cant * float(b['l']) * float(b['w']) * h / 1000000)
+            c, l, w, h, p = int(b['cant']), float(b['l']), float(b['w']), float(b['h']), float(b['p'])
+            total_kg += (c * p)
             if h > max_h: max_h = h
+            rows_html += f"<tr><td>{c}</td><td>{l}x{w}x{h}</td><td>{p}</td></tr>"
         except: continue
 
-    # Determinación de Aeronave
-    vuelo = "PAX (BELLY)" if max_h <= 160 else "FREIGHTER (MAIN DECK)"
-    
+    equipo = "PAX (BELLY)" if max_h <= 160 else "FREIGHTER (MAIN DECK)"
     if max_h > 244:
-        alertas.append("❌ RECHAZO TÉCNICO: Altura excede límite de aeronavegabilidad (244cm).")
-        soluciones.append("💡 ACCIÓN: Solicitar re-paletización inmediata o despiece para Main Deck.")
-    elif max_h > 160:
-        alertas.append("📝 NOTA: Altura superior a 160cm. Solo apto para avión CARGUERO.")
-        soluciones.append("💡 ACCIÓN: Confirmar disponibilidad de espacio en Main Deck.")
+        alertas.append("❌ Altura excede límites de bodega (Max 244cm).")
+        soluciones.append("💡 Re-paletizar para bajar altura o coordinar carga sobredimensionada.")
 
-    # --- PROCESAMIENTO DE IMÁGENES ---
+    # Procesar Fotos
     img_data = []
     if fotos:
         for f in fotos:
@@ -75,17 +59,22 @@ async def diagnosticar(data: str = Form(...), fotos: list[UploadFile] = File(Non
             encoded = base64.b64encode(content).decode('utf-8')
             img_data.append(f"data:image/jpeg;base64,{encoded}")
 
-    status = "STOP / RECHAZADO" if any("❌" in a for a in alertas) else "LISTO PARA VUELO"
+    status = "RECHAZADO / HOLD" if alertas else "LISTO PARA VUELO"
     
+    tabla = f"""
+    <table>
+        <tr><th>PCS</th><th>DIMS (cm)</th><th>KG/U</th></tr>
+        {rows_html}
+    </table>
+    <div style='margin-top:10px; background:#f1f5f9; padding:10px; border-radius:5px;'>
+        <strong>TOTAL:</strong> {total_kg} KG | <strong>EQUIPO:</strong> {equipo}
+    </div>
+    """
+
     return {
         "status": status,
-        "vuelo": vuelo,
+        "tabla": tabla,
         "alertas": alertas,
         "soluciones": soluciones,
-        "fotos": img_data,
-        "resumen": {"peso": round(t_peso, 2), "vol": round(t_vol, 3)}
+        "fotos": img_data
     }
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
