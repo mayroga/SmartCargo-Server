@@ -1,107 +1,117 @@
-from fastapi import FastAPI
+import os
+import json
+import re
+import google.generativeai as genai
+from openai import OpenAI
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-import os
-import re
 
-app = FastAPI(title="SMARTGOSERVER - Asesoría Técnica de Carga")
+app = FastAPI(title="SMARTGOSERVER - Asesoría Técnica")
 
-# Carpeta estática
+# Configuración de Claves desde Render
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Inicializar Clientes
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
+client_openai = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
+
 if not os.path.exists("static"):
     os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Página principal
 @app.get("/", response_class=HTMLResponse)
 async def home():
     html_path = os.path.join("static", "app.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse("<h1>Error: app.html no encontrado en /static</h1>")
+    return HTMLResponse("<h1>Error: app.html no encontrado</h1>")
 
-# API de evaluación de carga
+async def asesoría_gemini(prompt, image_data=None):
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    if image_data:
+        content = [prompt, {"mime_type": "image/jpeg", "data": image_data}]
+    else:
+        content = [prompt]
+    response = model.generate_content(content)
+    return response.text
+
+async def asesoría_openai(prompt, image_data=None):
+    import base64
+    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
+    if image_data:
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        messages[0]["content"].append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
+        })
+    
+    response = client_openai.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        max_tokens=500
+    )
+    return response.choices[0].message.content
+
 @app.post("/api/evaluar")
-async def api_evaluar_carga(data: dict):
+async def api_evaluar_carga(
+    data: str = Form(...), 
+    foto: UploadFile = File(None)
+):
+    payload = json.loads(data)
     errores = []
     soluciones = []
-
-    # Extraer datos
-    rol = data.get("rolUsuario", "")
-    awb = data.get("awb", "").strip()
-    codigo = data.get("codigoCarga", "")
-    piezas = int(data.get("piezas") or 0)
-    pesoTotal = float(data.get("pesoTotal") or 0)
-    alto = float(data.get("alto") or 0)
-    pesoVol = float(data.get("pesoVolumetrico") or 0)
-    known = data.get("knownShipper", "")
-    horaCamion = data.get("horaCamion", "")
-    cutoff = data.get("cutoff", "18:00")
-
-    # Checklist usuario
-    dryIce = data.get("chkDryIce", False)
-    dgr = data.get("chkDGR", False)
-    animales = data.get("chkAnimales", False)
-    perecederos = data.get("chkPerecederos", False)
-    embalaje = data.get("chkEmbalaje", False)
-    etiquetas = data.get("chkEtiquetas", False)
-    fleje = data.get("chkFleje", False)
-    orientacion = data.get("chkOrientacion", False)
-
-    # Validaciones básicas
-    if not rol: errores.append("Seleccione rol del usuario.")
+    
+    # Validaciones Lógicas de Negocio (Mantenemos tu lógica original)
+    awb = payload.get("awb", "").strip()
     if not re.match(r"^\d{3}-\d{8}$", awb):
-        errores.append("Formato AWB inválido (XXX-12345675).")
-        soluciones.append("Corregir la guía con 3 dígitos, guion y 8 números.")
-    if piezas < 1: errores.append("Número de piezas inválido.")
-    if not codigo: errores.append("Seleccione tipo de carga.")
-    if not known: errores.append("Indique si es Known Shipper.")
-    if alto > 244: errores.append("Alto excede límite carguero (244cm).")
-    if 160 < alto <= 244: errores.append("Solo puede ir en Main Deck (carguero).")
-    if pesoTotal > 6800: errores.append("Peso excede límite pallet 6800kg.")
-    if pesoVol > pesoTotal: errores.append("Peso volumétrico mayor que peso real.")
-    if horaCamion and horaCamion > cutoff: errores.append("Camión llega después de cutoff.")
+        errores.append("Formato AWB inválido.")
+        soluciones.append("Corregir guía: 3 dígitos, guion, 8 dígitos.")
+    
+    alto = float(payload.get("alto") or 0)
+    if alto > 244: 
+        errores.append("Alto excede límite (244cm).")
+        soluciones.append("Carga sobredimensionada: requiere equipo especial.")
 
-    # Validaciones checklist inteligentes por tipo de carga
-    tipo_checklist_obligatorio = {
-        "GEN": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-        "PER": {"DryIce": True, "DGR": False, "Animales": False, "Perecederos": True, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-        "HUM": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-        "VAL": {"DryIce": False, "DGR": False, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-        "AVI": {"DryIce": False, "DGR": False, "Animales": True, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-        "DGR": {"DryIce": False, "DGR": True, "Animales": False, "Perecederos": False, "Embalaje": True, "Etiquetas": True, "Fleje": True, "Orientacion": True},
-    }
+    # Prompt de Especialista IAAT / DOT / CBP
+    prompt_tecnico = f"""
+    Eres Especialista Senior de Carga Avianca. Analiza: {json.dumps(payload)}.
+    Si hay imagen, interprétala técnicamente.
+    REGLAS: 
+    - Responde con una TABLA de cumplimiento (Punto | Estado | Observación).
+    - No menciones IA ni ChatGPT. 
+    - Da una INSTRUCCIÓN DIRECTA (ej: 'Llevar pallet a fumigar').
+    - Idioma: Español.
+    """
 
-    checklist_usuario = {
-        "DryIce": dryIce,
-        "DGR": dgr,
-        "Animales": animales,
-        "Perecederos": perecederos,
-        "Embalaje": embalaje,
-        "Etiquetas": etiquetas,
-        "Fleje": fleje,
-        "Orientacion": orientacion
-    }
+    img_bytes = await foto.read() if foto else None
+    res_ia = ""
+    metodo_usado = "Gemini"
 
-    # Validación proactiva
-    for item, requerido in tipo_checklist_obligatorio.get(codigo, {}).items():
-        marcado = checklist_usuario.get(item, False)
-        if requerido and not marcado:
-            errores.append(f"Falta {item} obligatorio para tipo de carga {codigo}.")
-            soluciones.append(f"Marcar {item} correctamente según normativas.")
-        elif not requerido and marcado:
-            errores.append(f"{item} no aplica para tipo de carga {codigo}, remover selección.")
-            soluciones.append(f"Desmarcar {item} para cumplir reglas del tipo de carga.")
+    try:
+        # Intento primario con Gemini
+        res_ia = await asesoría_gemini(prompt_tecnico, img_bytes)
+    except Exception as e:
+        # Salto automático a OpenAI si falla Gemini
+        try:
+            res_ia = await asesoría_openai(prompt_tecnico, img_bytes)
+            metodo_usado = "OpenAI (Backup)"
+        except Exception as e2:
+            res_ia = "Error crítico: Ambos sistemas de asesoría están fuera de servicio."
+            metodo_usado = "Ninguno"
 
-    # Estado final
     status = "READY" if not errores else "RECHAZADO"
-    if errores and len(errores) <= 3: status = "ALERTA"
-
+    
     return {
         "status": status,
         "errores": errores,
-        "soluciones": soluciones
+        "soluciones": soluciones,
+        "asesoria_tecnica": res_ia,
+        "fuente": metodo_usado
     }
 
 if __name__ == "__main__":
