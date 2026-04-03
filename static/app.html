@@ -1,266 +1,157 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>AL CIELO - SmartCargo Advisory</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-    body { font-family: 'Inter', Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; color:#111; }
-    h1 { text-align:center; color:#0a3d62; margin-bottom:20px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-    .collapsible { background-color:#0a3d62; color:white; cursor:pointer; padding:12px; width:100%; border:none; text-align:left; outline:none; font-size:16px; border-radius:5px; margin-bottom:5px; font-weight: 600; transition: 0.3s; }
-    .active, .collapsible:hover { background-color:#062c47; }
-    .content { padding:15px; display:none; overflow:hidden; background-color:#ffffff; border: 1px solid #ddd; border-radius:5px; margin-bottom:10px; }
-    label { display:block; margin:8px 0 4px; font-weight:500; font-size: 14px; }
-    input, select { padding:10px; width:100%; box-sizing: border-box; margin-bottom:10px; border-radius:4px; border:1px solid #ccc; font-size: 14px; }
-    .docs, .tip, .checklist { background:#eef; padding:12px; margin:5px 0; border-radius:4px; font-size:14px; border-left: 4px solid #0a3d62; }
-    .result { font-size:15px; margin-top:15px; white-space:pre-wrap; background: #fff; padding: 20px; border-radius: 8px; border: 2px solid #0a3d62; line-height: 1.5; }
-    .alert { color:#e74c3c; font-weight:bold; margin:10px 0; padding: 10px; background: #fdf2f2; border-radius: 4px; display: none; font-size: 13px; }
-    .btn-evaluar { background-color:#0a3d62; color:white; font-weight:bold; cursor:pointer; border:none; padding:18px; width:100%; border-radius:5px; margin-top:10px; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .btn-borrar { background-color:#eb4d4b; color:white; font-weight:bold; cursor:pointer; border:none; padding:12px; width:100%; border-radius:5px; margin-top:10px; opacity: 0.9; }
-    .btn-add { background-color:#27ae60; color:white; border:none; padding:10px; border-radius:4px; cursor:pointer; width:100%; margin: 10px 0; font-weight: bold; }
-    
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th { background: #0a3d62; color: white; padding: 10px; text-align: center; }
-    td { border: 1px solid #ddd; padding: 5px; text-align: center; }
-    .input-tabla { width: 100%; border: 1px solid #eee; padding: 5px; text-align: center; border-radius: 3px; }
-    .resumen-box { background: #dff9fb; padding: 15px; border-radius: 5px; margin-top: 15px; border: 1px solid #c7ecee; font-size: 14px; color: #0a3d62; }
-    .resumen-box span { font-weight: bold; }
-</style>
+    <meta charset="UTF-8">
+    <title>AL CIELO - SmartCargo Advisory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0a3d62; --danger: #e11a22; --success: #27ae60; --light: #f4f6f8; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:15px; color: #333; }
+        .container { max-width: 700px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; border-bottom: 3px solid var(--danger); padding-bottom: 10px; font-size: 22px; }
+        .collapsible { background: var(--primary); color: white; cursor: pointer; padding: 12px; width: 100%; border: none; text-align: left; border-radius: 8px; margin-top: 10px; font-weight: 600; transition: 0.3s; }
+        .content { padding: 15px; display: none; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; }
+        label { display: block; margin: 12px 0 5px; font-weight: 600; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .tip { font-size: 12px; color: #666; font-style: italic; margin-top: 4px; }
+        .btn-eval { background: var(--danger); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .result-box { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; }
+        .checklist { display: grid; grid-template-columns: 1fr; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .checklist label { font-weight: 400; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .checklist input { width: auto; }
+    </style>
 </head>
 <body>
 
-<h1>AL CIELO - SmartCargo Advisory</h1>
+<div class="container">
+    <h1>AL CIELO - SmartCargo Advisory</h1>
 
-<button class="collapsible">I. Identificación y Destino</button>
-<div class="content">
-    <label for="rolUsuario">Rol en la Operación:</label>
-    <select id="rolUsuario">
-        <option value="Forwarder">Forwarder / Agente de Carga</option>
-        <option value="Dueño">Dueño de Carga (Shipper)</option>
-        <option value="Chofer">Chofer / Camionero</option>
-        <option value="AgenteWarehouse">Agente de Bodega (Warehouse)</option>
-        <option value="CounterAgent">Agente de Counter (Aerolínea)</option>
-    </select>
-    <label for="awb">Número de Guía (AWB):</label>
-    <input type="text" id="awb" placeholder="045-12345678">
-    <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
-            <label>Origen (IATA):</label>
-            <input type="text" id="origen" placeholder="MIA">
+    <button class="collapsible">I. IDENTIFICACIÓN Y ROL</button>
+    <div class="content">
+        <label>Rol:</label>
+        <select id="rolUsuario">
+            <option value="Forwarder">Forwarder</option>
+            <option value="Chofer">Chofer / Camionero</option>
+            <option value="Warehouse">Agente Warehouse</option>
+            <option value="Counter">Counter Agent</option>
+        </select>
+        <label>AWB:</label>
+        <input type="text" id="awb" placeholder="045-12345678">
+        <p class="tip">Obligatorio: Formato 3 dígitos - 8 dígitos.</p>
+    </div>
+
+    <button class="collapsible">II. CARGA Y DOCUMENTOS</button>
+    <div class="content">
+        <label>Tipo de Carga (IATA):</label>
+        <select id="codigoCarga">
+            <option value="GEN">GEN - Carga General</option>
+            <option value="PER">PER - Perecederos</option>
+            <option value="DGR">DGR - Mercancía Peligrosa</option>
+            <option value="AVI">AVI - Animales Vivos</option>
+            <option value="VAL">VAL - Valores</option>
+        </select>
+        <div id="docsHint" class="tip" style="background:#eef; padding:10px; margin-top:10px; border-radius:5px;"></div>
+    </div>
+
+    <button class="collapsible">III. MEDIDAS Y PESO</button>
+    <div class="content">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>Piezas:</label><input type="number" id="piezas" value="1"></div>
+            <div><label>Peso Real (kg):</label><input type="number" id="pesoTotal" oninput="calcular()"></div>
         </div>
-        <div style="flex: 1;">
-            <label>Destino (IATA):</label>
-            <input type="text" id="destino" placeholder="BOG">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div><label>L (cm):</label><input type="number" id="largo" oninput="calcular()"></div>
+            <div><label>W (cm):</label><input type="number" id="ancho" oninput="calcular()"></div>
+            <div><label>H (cm):</label><input type="number" id="alto" oninput="calcular()"></div>
+        </div>
+        <label>Peso Volumétrico (kg):</label>
+        <input type="text" id="pesoVolumetrico" readonly style="background:#eee">
+    </div>
+
+    <button class="collapsible">IV. CHECKLIST TÉCNICO</button>
+    <div class="content">
+        <div class="checklist">
+            <label><input type="checkbox" id="chkDGR"> DGD firmada / MSDS</label>
+            <label><input type="checkbox" id="chkPerecederos"> Certificado Fitosanitario</label>
+            <label><input type="checkbox" id="chkAnimales"> Certificado Veterinario</label>
+            <label><input type="checkbox" id="chkEmbalaje"> Fleje y Sello NIMF-15</label>
+            <label><input type="checkbox" id="chkEtiquetas"> Etiquetas visibles (Fragile/Orientation)</label>
         </div>
     </div>
-</div>
 
-<button class="collapsible">II. Naturaleza de la Carga</button>
-<div class="content">
-    <label for="codigoCarga">Código de Carga IATA:</label>
-    <select id="codigoCarga" onchange="mostrarDocumentos()">
-        <option value="">-- Seleccione --</option>
-        <option value="GEN">GEN - Carga General</option>
-        <option value="PER">PER - Perecederos</option>
-        <option value="DGR">DGR - Mercancía Peligrosa</option>
-        <option value="AVI">AVI - Animales Vivos</option>
-        <option value="HUM">HUM - Restos Humanos</option>
-        <option value="VAL">VAL - Carga de Valor</option>
-    </select>
-    <div id="documentosObligatorios" class="docs">Seleccione el tipo de carga para ver los requisitos documentales.</div>
-</div>
+    <button class="btn-eval" onclick="evaluar()">ASESORAR: ¿VUELA?</button>
+    <button class="collapsible" style="background:#64748b; margin-top:10px;" onclick="explicarDocs()">VOZ: DESGLOSE DE DOCUMENTOS</button>
 
-<button class="collapsible">III. Dimensiones y Pesos (Desglose)</button>
-<div class="content">
-    <p class="tip">Ingrese cada partida de carga. El sistema calculará el peso tasable (Real vs Volumétrico 1:6).</p>
-    <table>
-        <thead>
-            <tr>
-                <th>Cant.</th>
-                <th>L(cm)</th>
-                <th>W(cm)</th>
-                <th>H(cm)</th>
-                <th>Kg/u</th>
-                <th>X</th>
-            </tr>
-        </thead>
-        <tbody id="listaBultos">
-            <tr>
-                <td><input type="number" class="p-cant input-tabla" value="1"></td>
-                <td><input type="number" class="p-l input-tabla" placeholder="L"></td>
-                <td><input type="number" class="p-w input-tabla" placeholder="W"></td>
-                <td><input type="number" class="p-h input-tabla" placeholder="H"></td>
-                <td><input type="number" class="p-p input-tabla" placeholder="Kg"></td>
-                <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
-            </tr>
-        </tbody>
-    </table>
-    <button class="btn-add" onclick="agregarFila()">+ AGREGAR OTRA PARTIDA</button>
-
-    <div class="resumen-box">
-        <strong>RESUMEN TOTAL:</strong><br>
-        Piezas: <span id="totalPiezas">0</span> | Peso Real: <span id="totalPesoR">0.00</span> kg<br>
-        Volumen: <span id="totalVol">0.000</span> m³ | Peso Vol: <span id="totalPesoV">0.00</span> kg
-    </div>
-    
-    <label style="margin-top:10px;">Pallet / ULD Sugerido:</label>
-    <select id="tipoPallet">
-        <option value="Loose">Loose Cargo (Suelto)</option>
-        <option value="PMC">Pallet PMC (Apto Main Deck/Bellies)</option>
-        <option value="PAG">Pallet PAG (Apto Main Deck/Bellies)</option>
-        <option value="LD3">Contenedor LD3 (Belly)</option>
-    </select>
-    <div id="alertDimensiones" class="alert"></div>
-</div>
-
-<button class="collapsible">IV. Evidencia y Seguridad</button>
-<div class="content">
-    <label>Captura de Carga / Etiquetas (Opcional):</label>
-    <input type="file" id="fotoCarga" accept="image/*" capture="environment">
-    
-    <label>Seguridad (TSA/CBP):</label>
-    <select id="knownShipper">
-        <option value="No">Unknown Shipper (Requiere Inspección)</option>
-        <option value="Sí">Known Shipper</option>
-    </select>
-
-    <div class="checklist">
-        <label><input type="checkbox" id="chkDGR"> Mercancía Peligrosa Declarada</label><br>
-        <label><input type="checkbox" id="chkEmbalaje"> Embalaje en Buen Estado</label><br>
-        <label><input type="checkbox" id="chkEtiquetas"> Etiquetas de Orientación/Riesgo Visibles</label><br>
-        <label><input type="checkbox" id="chkFleje"> Fleje y Seguridad Correcta</label>
-    </div>
-</div>
-
-<button class="collapsible">V. Generar Asesoría Técnica</button>
-<div class="content">
-    <button class="btn-evaluar" onclick="evaluarCarga()">GENERAR REPORTE AL CIELO</button>
-    <button class="btn-borrar" onclick="borrarTodo()">LIMPIAR TODO</button>
-    <div id="resultadoFinal" class="result" style="display:none;"></div>
+    <div id="resultado" class="result-box"></div>
 </div>
 
 <script>
-// Acordeón
+// Collapsibles
 document.querySelectorAll(".collapsible").forEach(btn => {
-    btn.addEventListener("click", function() {
+    btn.onclick = function() {
         this.classList.toggle("active");
         let content = this.nextElementSibling;
-        content.style.display = (content.style.display === "block") ? "none" : "block";
-    });
+        content.style.display = content.style.display === "block" ? "none" : "block";
+    }
 });
 
-// Lógica de Tabla Dinámica
-function agregarFila() {
-    const html = `<tr>
-        <td><input type="number" class="p-cant input-tabla" value="1"></td>
-        <td><input type="number" class="p-l input-tabla"></td>
-        <td><input type="number" class="p-w input-tabla"></td>
-        <td><input type="number" class="p-h input-tabla"></td>
-        <td><input type="number" class="p-p input-tabla"></td>
-        <td><button onclick="eliminarFila(this)" style="background:none; border:none; color:red; cursor:pointer;">✖</button></td>
-    </tr>`;
-    document.getElementById('listaBultos').insertAdjacentHTML('beforeend', html);
-    conectarListeners();
+function calcular() {
+    let l = +document.getElementById('largo').value || 0;
+    let w = +document.getElementById('ancho').value || 0;
+    let h = +document.getElementById('alto').value || 0;
+    let vol = (l * w * h) / 6000; // Estándar IATA
+    document.getElementById('pesoVolumetrico').value = vol.toFixed(2);
 }
 
-function eliminarFila(btn) {
-    btn.closest('tr').remove();
-    calcularTotales();
-}
+async function evaluar() {
+    const resDiv = document.getElementById('resultado');
+    resDiv.style.display = 'block';
+    resDiv.style.background = '#f1f5f9';
+    resDiv.innerHTML = "Consultando base de datos técnica...";
 
-function calcularTotales() {
-    let tPiezas = 0, tPesoR = 0, tVol = 0;
-    let alertMsg = "";
-    
-    document.querySelectorAll('#listaBultos tr').forEach(fila => {
-        const cant = +fila.querySelector('.p-cant').value || 0;
-        const l = +fila.querySelector('.p-l').value || 0;
-        const w = +fila.querySelector('.p-w').value || 0;
-        const h = +fila.querySelector('.p-h').value || 0;
-        const peso = +fila.querySelector('.p-p').value || 0;
-
-        tPiezas += cant;
-        tPesoR += (cant * peso);
-        tVol += (cant * (l * w * h)) / 1000000;
-        
-        if (h > 160 && h <= 244) alertMsg = "⚠️ Bultos sobre 160cm: Solo Avión Carguero.";
-        if (h > 244) alertMsg = "❌ ERROR: Altura máxima excedida (244cm).";
-    });
-
-    document.getElementById('totalPiezas').innerText = tPiezas;
-    document.getElementById('totalPesoR').innerText = tPesoR.toFixed(2);
-    document.getElementById('totalVol').innerText = tVol.toFixed(3);
-    document.getElementById('totalPesoV').innerText = (tVol * 167).toFixed(2);
-    
-    const alertDiv = document.getElementById('alertDimensiones');
-    if(alertMsg) { alertDiv.innerText = alertMsg; alertDiv.style.display = "block"; }
-    else { alertDiv.style.display = "none"; }
-}
-
-function conectarListeners() {
-    document.querySelectorAll('.input-tabla').forEach(i => i.oninput = calcularTotales);
-}
-conectarListeners();
-
-function mostrarDocumentos() {
-    const tipo = document.getElementById('codigoCarga').value;
-    const docs = {
-        "GEN": "AWB, Packing List, Factura Comercial, SLI.",
-        "PER": "AWB, Packing List, Certificado Fitosanitario, FDA (si aplica).",
-        "DGR": "AWB, Shipper's Declaration (DGD) por duplicado, MSDS.",
-        "AVI": "AWB, Certificado de Salud, IATA Live Animals Form.",
-        "HUM": "AWB, Certificado de Defunción, Permiso de Sanidad.",
-        "VAL": "AWB, Factura, Manifiesto de Seguridad Especial."
-    };
-    document.getElementById('documentosObligatorios').innerText = docs[tipo] || "Seleccione un tipo de carga.";
-}
-
-// Envío al Servidor
-async function evaluarCarga() {
-    const resDiv = document.getElementById('resultadoFinal');
-    resDiv.style.display = "block";
-    resDiv.innerHTML = "Analizando con especialistas de AL CIELO...";
-
-    const bultos = [];
-    document.querySelectorAll('#listaBultos tr').forEach(f => {
-        bultos.push({
-            cant: f.querySelector('.p-cant').value,
-            l: f.querySelector('.p-l').value,
-            w: f.querySelector('.p-w').value,
-            h: f.querySelector('.p-h').value,
-            p: f.querySelector('.p-p').value
-        });
-    });
-
-    const payload = {
-        rol: document.getElementById('rolUsuario').value,
+    const data = {
         awb: document.getElementById('awb').value,
-        tipo: document.getElementById('codigoCarga').value,
-        detalle_bultos: bultos,
-        chk: {
-            dgr: document.getElementById('chkDGR').checked,
-            embalaje: document.getElementById('chkEmbalaje').checked,
-            etiquetas: document.getElementById('chkEtiquetas').checked
-        }
+        codigoCarga: document.getElementById('codigoCarga').value,
+        piezas: document.getElementById('piezas').value,
+        pesoTotal: document.getElementById('pesoTotal').value,
+        alto: document.getElementById('alto').value,
+        pesoVolumetrico: document.getElementById('pesoVolumetrico').value,
+        chkDGR: document.getElementById('chkDGR').checked,
+        chkPerecederos: document.getElementById('chkPerecederos').checked,
+        chkAnimales: document.getElementById('chkAnimales').checked,
+        chkEmbalaje: document.getElementById('chkEmbalaje').checked
     };
-
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(payload));
-    const foto = document.getElementById('fotoCarga').files[0];
-    if (foto) formData.append("foto", foto);
 
     try {
-        const response = await fetch('/api/evaluar', { method: 'POST', body: formData });
-        const result = await response.json();
-        resDiv.innerHTML = `<h3>REPORTE TÉCNICO</h3>${result.asesoria_tecnica}<p style="font-size:10px; color:gray; margin-top:10px;">Validación: ${result.fuente}</p>`;
-    } catch (err) {
-        resDiv.innerHTML = "❌ Error crítico de comunicación con el servidor.";
+        const response = await fetch('/api/evaluar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const res = await response.json();
+        
+        let html = `<h2 style="color:${res.status === 'READY' ? 'var(--success)' : 'var(--danger)'}">${res.status}</h2>`;
+        if(res.errores.length > 0) {
+            html += "<ul>" + res.errores.map(e => `<li style="color:red"><b>RECHAZO:</b> ${e}</li>`).join('') + "</ul>";
+            html += "<h3>ACCIONES CORRECTIVAS:</h3><ul>" + res.soluciones.map(s => `<li>${s}</li>`).join('') + "</ul>";
+        } else {
+            html += "<p>✅ Carga cumple con estándares. Proceder a pesaje y aceptación.</p>";
+        }
+        resDiv.style.background = res.status === 'READY' ? '#dff9fb' : '#fff5f5';
+        resDiv.innerHTML = html;
+        resDiv.scrollIntoView({behavior: 'smooth'});
+    } catch(e) {
+        resDiv.innerHTML = "❌ Error en el servidor de asesoría.";
     }
 }
 
-function borrarTodo() {
-    if(confirm("¿Seguro que desea limpiar todos los datos?")) location.reload();
+function explicarDocs() {
+    const texto = "Recuerde: Air Waybill sin tachaduras, Factura con Incoterms claros y Packing List detallado. Si es madera, el sello NIMF-15 debe estar legible. Verifique peso real contra reserva.";
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'es-ES';
+    speechSynthesis.speak(u);
+    alert(texto);
 }
 </script>
 </body>
