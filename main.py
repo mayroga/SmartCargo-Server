@@ -1,164 +1,80 @@
-import os
-import json
-import io
-import re
-import base64
-from PIL import Image  # El "Cerebro" que procesa los bytes
-import google.generativeai as genai
-from openai import OpenAI
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import HTMLResponse
+import os, re, json
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn
 
-app = FastAPI(title="AL CIELO - SmartCargo Advisory Server")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory")
 
-# Configuración de Claves (Render Environment)
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
-
-# Inicialización de Clientes
-if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
-
-client_openai = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
-
-# Directorio estático
-if not os.path.exists("static"):
-    os.makedirs("static")
+if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# --- MOTOR DE PROCESAMIENTO DE IMAGEN (EL CEREBRO) ---
-def procesar_imagen_para_ia(file_bytes):
-    """
-    Optimiza la imagen para planes gratuitos:
-    Redimensiona a max 1024px y comprime a JPEG 70%
-    """
-    try:
-        img = Image.open(io.BytesIO(file_bytes))
-        # Convertir a RGB (evita errores con transparencias PNG)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        
-        # Redimensionar proporcionalmente
-        max_size = 1024
-        if max(img.size) > max_size:
-            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-        
-        # Guardar en buffer optimizado
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG", quality=70, optimize=True)
-        return buffer.getvalue()
-    except Exception as e:
-        print(f"Error en procesamiento de imagen: {e}")
-        return None
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    html_path = os.path.join("static", "app.html")
-    if os.path.exists(html_path):
-        with open(html_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse("<h1>AL CIELO: Error - app.html no encontrado</h1>")
+    with open("static/app.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 @app.post("/api/evaluar")
-async def api_evaluar_carga(
-    data: str = Form(...), 
-    foto: UploadFile = File(None)
-):
-    payload = json.loads(data)
+async def api_evaluar_carga(data: dict):
+    errores = []
+    soluciones = []
     
-    # 1. Procesar Detalle de Bultos (Multi-partida)
-    bultos = payload.get("detalle_bultos", [])
-    t_piezas = 0
-    t_peso_real = 0
-    t_volumen = 0
-    analisis_dimensiones = ""
+    # Datos Técnicos
+    awb = data.get("awb", "").strip()
+    codigo = data.get("codigoCarga", "")
+    piezas = int(data.get("piezas") or 0)
+    peso_total = float(data.get("pesoTotal") or 0)
+    alto = float(data.get("alto") or 0)
+    peso_vol = float(data.get("pesoVolumetrico") or 0)
+    cutoff = data.get("cutoff", "18:00")
+    hora_camion = data.get("horaCamion", "")
 
-    for b in bultos:
-        c = int(b.get('cant', 0))
-        l, w, h = float(b.get('l', 0)), float(b.get('w', 0)), float(b.get('h', 0))
-        p = float(b.get('p', 0))
-        
-        t_piezas += c
-        t_peso_real += (c * p)
-        t_volumen += (c * (l * w * h) / 1000000)
-        
-        if h > 160: analisis_dimensiones = "⚠️ REQUIERE CARGUERO (Main Deck)."
-        if h > 244: analisis_dimensiones = "❌ RECHAZADO: Excede altura máxima."
+    # 1. Validación de Guía (AWB)
+    if not re.match(r"^\d{3}-\d{8}$", awb):
+        errores.append("Formato AWB inválido (Debe ser XXX-XXXXXXXX).")
+        soluciones.append("💡 Rectificar: Use 3 dígitos del transportista, guion y 8 correlativos.")
 
-    peso_volumetrico = t_volumen * 167
-    peso_tasable = max(t_peso_real, peso_volumetrico)
+    # 2. Límites de Aeronavegabilidad (Avianca/General)
+    if alto > 244:
+        errores.append("Altura crítica: Excede el límite de carguero (244cm).")
+        soluciones.append("💡 Rectificar: Re-paletizar o desglosar bultos para bajar la altura.")
+    elif alto > 160:
+        errores.append("Restricción de Equipo: Solo apto para MAIN DECK (Carguero).")
+        soluciones.append("💡 Consultar: Verificar disponibilidad en avión carguero, no cabe en PAX.")
 
-    # 2. El "Cerebro" procesa la foto si existe
-    img_optimizada = None
-    if foto:
-        raw_bytes = await foto.read()
-        img_optimizada = procesar_imagen_para_ia(raw_bytes)
+    if peso_total > 6800:
+        errores.append("Exceso de peso: Límite estructural de pallet PMC/PAG (6800kg).")
+        soluciones.append("💡 Solución: Dividir la carga en dos pallets independientes.")
 
-    # 3. Prompt de Especialista Avianca (IAAT/DOT/CBP)
-    prompt_tecnico = f"""
-    Actúa como Especialista Senior de Carga Avianca. 
-    Analiza esta solicitud de "AL CIELO":
-    - Rol: {payload.get('rol')} | Guía: {payload.get('awb')} | Tipo: {payload.get('tipo')}
-    - Totales: {t_piezas} piezas | {t_peso_real:.2f}kg Real | {peso_volumetrico:.2f}kg Vol.
-    - Peso Tasable: {peso_tasable:.2f} kg.
-    - Detalle Bultos: {json.dumps(bultos)}
-    - Checklist Seguridad: {json.dumps(payload.get('chk'))}
+    # 3. Lógica de Checklist por Tipo de Carga
+    checks = {
+        "DGR": (data.get("chkDGR"), "Declaración Shipper (DGD) x2 firmada y MSDS."),
+        "PER": (data.get("chkPerecederos"), "Certificado Fitosanitario y etiquetas de 'Perishable'."),
+        "AVI": (data.get("chkAnimales"), "Certificado Veterinario y contenedor reglamentario IATA LAR."),
+        "GEN": (data.get("chkEmbalaje"), "Inspección de flejes y sellos de seguridad.")
+    }
 
-    REGLAS DE RESPUESTA:
-    1. Responde con una TABLA de cumplimiento técnica.
-    2. Dictamina si vuela o no y bajo qué condiciones.
-    3. Si hay imagen, describe etiquetas de seguridad (DGR, Orientación) visibles.
-    4. Da una INSTRUCCIÓN DIRECTA (ej: 'Rechazar por falta de fleje' o 'Proceder a Bellies').
-    5. Prohibido mencionar IA o modelos de lenguaje.
-    6. Idioma: Español.
-    """
+    if codigo in checks:
+        marcado, consejo = checks[codigo]
+        if not marcado:
+            errores.append(f"Falta validación obligatoria para carga {codigo}.")
+            soluciones.append(f"💡 Documentación: Asegurar {consejo}")
 
-    res_ia = ""
-    metodo = "Gemini"
+    # 4. Tiempo de Entrega (Logística)
+    if hora_camion and hora_camion > cutoff:
+        errores.append("Riesgo de Offload: El camión llega después del Cut-Off.")
+        soluciones.append("💡 Acción: Solicitar extensión de horario o reprogramar reserva.")
 
-    try:
-        # Intento primario con Gemini
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        if img_optimizada:
-            contenido = [prompt_tecnico, {"mime_type": "image/jpeg", "data": img_optimizada}]
-        else:
-            contenido = [prompt_tecnico]
-        
-        response = model.generate_content(contenido)
-        res_ia = response.text
-    except Exception as e:
-        print(f"Falla Gemini: {e}")
-        # Salto a OpenAI (Backup)
-        try:
-            metodo = "OpenAI (Backup)"
-            messages = [{"role": "user", "content": [{"type": "text", "text": prompt_tecnico}]}]
-            if img_optimizada:
-                b64 = base64.b64encode(img_optimizada).decode('utf-8')
-                messages[0]["content"].append({
-                    "type": "image_url", 
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
-                })
-            
-            chat_res = client_openai.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=800
-            )
-            res_ia = chat_res.choices[0].message.content
-        except Exception as e2:
-            print(f"Falla OpenAI: {e2}")
-            res_ia = "Error en los sistemas de asesoría. Revise las API Keys o créditos."
-            metodo = "Ninguno"
+    # Estado Final
+    status = "RECHAZADO" if errores else "LISTO PARA VUELO"
+    if 0 < len(errores) <= 2: status = "ALERTA / REVISIÓN"
 
     return {
-        "status": "COMPLETO",
-        "asesoria_tecnica": res_ia,
-        "peso_tasable": round(peso_tasable, 2),
-        "fuente": metodo
+        "status": status,
+        "errores": errores,
+        "soluciones": soluciones,
+        "peso_tasable": max(peso_total, peso_vol)
     }
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=10000)
