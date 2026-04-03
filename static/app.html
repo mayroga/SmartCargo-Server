@@ -2,110 +2,83 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL CIELO | SMARTCARGO ADVISORY</title>
+    <title>AL CIELO | SMARTCARGO SERVER</title>
     <style>
-        :root { --avianca-red: #e11a22; --black: #000000; --gold: #d4a017; --gray: #f8f9fa; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #ddd; margin: 0; padding: 10px; }
-        .container { max-width: 1400px; margin: auto; background: white; border: 4px solid var(--black); box-shadow: 10px 10px 0px rgba(0,0,0,0.2); }
-        
-        /* Header Profesional */
-        .header { background: var(--black); color: white; padding: 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--avianca-red); }
-        .header h1 { margin: 0; font-size: 28px; letter-spacing: 2px; }
-        
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
-        .section { border: 1px solid #ccc; padding: 20px; border-radius: 4px; background: white; }
-        h3 { background: var(--black); color: white; padding: 10px; margin-top: 0; font-size: 16px; text-transform: uppercase; border-left: 10px solid var(--avianca-red); }
-
-        /* Inputs y Tablas */
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; font-weight: bold; }
-        input:focus { border-color: var(--avianca-red); outline: none; }
-        
-        .piece-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .piece-table th { background: #eee; padding: 10px; font-size: 12px; border: 1px solid #ccc; }
-        .piece-row td { border: 1px solid #ccc; padding: 5px; }
-
-        /* Botonera */
-        .btn-group { padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-        .btn { padding: 20px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; text-transform: uppercase; transition: 0.3s; }
-        .btn-red { background: var(--avianca-red); color: white; }
+        :root { --red: #e11a22; --black: #1a1a1a; --gray: #f4f4f4; --gold: #d4a017; }
+        body { font-family: 'Courier New', Courier, monospace; background: var(--gray); margin: 0; padding: 10px; font-weight: bold; }
+        .app-container { max-width: 1400px; margin: auto; background: white; border: 3px solid var(--black); padding: 20px; }
+        .header { background: var(--black); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .section { border: 2px solid #ccc; padding: 15px; margin-bottom: 15px; }
+        h3 { background: var(--red); color: white; padding: 8px; margin: -15px -15px 15px -15px; text-transform: uppercase; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid var(--black); box-sizing: border-box; font-weight: bold; }
+        .btn { padding: 15px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 10px; }
+        .btn-red { background: var(--red); color: white; width: 100%; font-size: 20px; border: 2px solid var(--black); }
         .btn-black { background: var(--black); color: white; }
-        .btn-gold { background: var(--gold); color: white; }
-        .btn:hover { opacity: 0.8; transform: scale(0.98); }
-
-        /* Resultados */
-        .result-panel { display: none; padding: 25px; background: #fff; border: 5px solid var(--black); margin: 20px; }
-        .alert-item { background: #fff1f1; border-left: 5px solid var(--avianca-red); padding: 15px; margin-bottom: 15px; }
-        .law-item { background: #eef; border-left: 5px solid blue; padding: 10px; font-size: 13px; font-style: italic; }
+        .piece-table { width: 100%; border-collapse: collapse; }
+        .piece-table th { background: #eee; border: 1px solid #000; font-size: 12px; padding: 5px; }
+        .piece-table td { border: 1px solid #000; padding: 2px; }
+        .result-box { display: none; border: 5px solid var(--red); padding: 20px; margin-top: 20px; background: #fff1f1; }
+        .alert-card { border-left: 10px solid var(--red); background: white; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app-container">
     <div class="header">
         <div>
-            <h1>AL CIELO | ASESORÍA SMARTCARGO</h1>
-            <small>Estación: MIAMI FL (MIA) | Gateway: AVIANCA CARGO</small>
+            <span style="font-size: 24px;">AL CIELO | SMARTCARGO ADVISORY</span><br>
+            <small>ESTACIÓN: MIAMI (MIA) | GATEWAY: AVIANCA CARGO</small>
         </div>
-        <button class="btn btn-black" onclick="location.reload()">BORRAR TODO</button>
+        <button class="btn btn-red" style="width: auto; font-size: 14px;" onclick="location.reload()">BORRAR TODO (RESET)</button>
     </div>
 
-    <div class="main-grid">
+    <div class="grid">
         <div>
             <div class="section">
-                <h3>I. Identificación de Carga y Seguridad TSA</h3>
-                <input type="text" id="awb" placeholder="GUÍA AÉREA (045-XXXXXXXX)">
-                <input type="text" id="descripcion_carga" placeholder="DESCRIPCIÓN COMERCIAL (Ej: Flores Frescas - Rosas)">
+                <h3>I. Viabilidad y Seguridad TSA</h3>
+                <input type="text" id="awb" placeholder="AWB (045-XXXXXXXX)">
                 <select id="known_shipper">
-                    <option value="true">SHIPPER CONOCIDO (KNOWN SHIPPER)</option>
-                    <option value="false">SHIPPER DESCONOCIDO (UNIDENTIFIED)</option>
+                    <option value="true">KNOWN SHIPPER (CONOCIDO)</option>
+                    <option value="false">UNKNOWN SHIPPER (DESCONOCIDO - REQUIERE SCREENING)</option>
                 </select>
                 <select id="naturaleza" onchange="actualizarChecks()">
                     <option value="GENERAL">CARGA GENERAL (GEN)</option>
-                    <option value="DGR">MERCANCÍA PELIGROSA (DGR)</option>
+                    <option value="DGR">DANGEROUS GOODS (DGR)</option>
                     <option value="PER">PERECEDEROS (PER)</option>
                     <option value="VAL">VALORES (VAL)</option>
                     <option value="HUM">RESTOS HUMANOS (HUM)</option>
                 </select>
-            </div>
-
-            <div class="section" style="margin-top:20px;">
-                <h3>II. Auditoría de Documentos (Pouch)</h3>
-                <div id="check_area" style="background: #f9f9f9; padding: 15px; border: 1px dashed #999;">
-                    </div>
-                <textarea id="docs_texto" placeholder="Notas adicionales del Pouch..."></textarea>
+                <textarea id="docs_texto" placeholder="Escriba aquí los documentos físicos que tiene en mano (Ej: Factura, Packing List...)"></textarea>
+                <div id="check_area" style="font-size: 12px; background: #ffffcc; padding: 10px;"></div>
             </div>
         </div>
 
         <div>
             <div class="section">
-                <h3>III. Auditoría Física (Dim & Weight)</h3>
+                <h3>II. Auditoría Física (Pieza por Pieza)</h3>
                 <table class="piece-table">
                     <thead>
                         <tr>
-                            <th>Cant</th><th>L</th><th>W</th><th>H</th><th>Peso (Lb)</th><th>Acción</th>
+                            <th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO (LB)</th><th>FOTO/FILE</th>
                         </tr>
                     </thead>
                     <tbody id="piezas_body"></tbody>
                 </table>
-                <button class="btn btn-black" style="width:100%; margin-top:10px;" onclick="addPiece()">+ AGREGAR PIEZAS</button>
+                <button class="btn btn-black" onclick="addPiece()">+ AGREGAR PIEZA / PALLET</button>
             </div>
 
-            <div class="section" style="margin-top:20px; background: #eef1f6;">
-                <h3>IV. Reporte del Inspector (Voz/Texto)</h3>
-                <textarea id="voz_texto" rows="5" placeholder="Reporte de daños, sellos, olores o discrepancias físicas..."></textarea>
-                <button class="btn btn-gold" style="width:100%" onclick="toggleVoz()">🎤 ACTIVAR DICTADO TÉCNICO</button>
+            <div class="section" style="background: #eef;">
+                <h3>III. Reporte del Inspector (Voz/Dictado)</h3>
+                <textarea id="voz_texto" rows="5" placeholder="Reporte daños, sellos, olores, discrepancias físicas..."></textarea>
+                <button class="btn btn-black" style="width: 100%; background: var(--gold);" onclick="toggleVoz()">🎤 ACTIVAR DICTADO TÉCNICO</button>
             </div>
         </div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn btn-black" onclick="generarPDF()">GENERAR REPORTE PDF</button>
-        <button class="btn btn-red" onclick="procesar()">ASESORAR Y VALIDAR DESPACHO</button>
-        <button class="btn btn-black">IMPRIMIR ETIQUETAS</button>
-    </div>
+    <button class="btn btn-red" onclick="procesar()">VALIDAR Y ASESORAR DESPACHO</button>
 
-    <div id="resultados" class="result-panel"></div>
+    <div id="resultados" class="result-box"></div>
 </div>
 
 <script>
@@ -113,14 +86,13 @@ let recognition;
 
 function addPiece() {
     const tr = document.createElement('tr');
-    tr.className = 'piece-row';
     tr.innerHTML = `
-        <td><input type="number" class="p_cant" value="1"></td>
-        <td><input type="number" class="p_l" placeholder="0"></td>
-        <td><input type="number" class="p_w" placeholder="0"></td>
-        <td><input type="number" class="p_h" placeholder="0"></td>
-        <td><input type="number" class="p_real" placeholder="0"></td>
-        <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
+        <td><input type="number" class="p_cant" value="1" style="width:50px"></td>
+        <td><input type="number" class="p_l" placeholder="L" style="width:50px"></td>
+        <td><input type="number" class="p_w" placeholder="W" style="width:50px"></td>
+        <td><input type="number" class="p_h" placeholder="H" style="width:50px"></td>
+        <td><input type="number" class="p_real" placeholder="Lb" style="width:60px"></td>
+        <td><input type="file" accept="image/*" style="font-size:9px; width:100px"></td>
     `;
     document.getElementById('piezas_body').appendChild(tr);
 }
@@ -129,65 +101,13 @@ function actualizarChecks() {
     const nat = document.getElementById('naturaleza').value;
     const area = document.getElementById('check_area');
     const docs = {
-        "GENERAL": ["Factura Original", "Packing List", "AWB Firmada"],
-        "DGR": ["Shipper's Declaration", "MSDS", "Etiquetas de Riesgo"],
-        "PER": ["Certificado Fitosanitario", "Instrucción de Hielo"],
+        "GENERAL": ["Factura Original", "Packing List", "AWB Firmado"],
+        "DGR": ["Shipper's Declaration", "MSDS", "Etiqueta Riesgo"],
+        "PER": ["Certificado Fitosanitario", "Factura"],
         "VAL": ["Manifiesto VAL", "Custodia Armada"],
-        "HUM": ["Permiso Tránsito", "Acta Defunción"]
+        "HUM": ["Acta Defunción", "Permiso Tránsito"]
     };
-    area.innerHTML = docs[nat].map(d => `<label><input type="checkbox" class="doc_check" value="${d}"> ${d}</label><br>`).join('');
-}
-
-async function procesar() {
-    const piezas = [];
-    document.querySelectorAll('.piece-row').forEach(r => {
-        piezas.push({
-            cant: r.querySelector('.p_cant').value,
-            l: r.querySelector('.p_l').value,
-            w: r.querySelector('.p_w').value,
-            h: r.querySelector('.p_h').value,
-            p_real: r.querySelector('.p_real').value
-        });
-    });
-
-    const payload = {
-        awb: document.getElementById('awb').value,
-        naturaleza: document.getElementById('naturaleza').value,
-        known_shipper: document.getElementById('known_shipper').value === "true",
-        descripcion_carga: document.getElementById('descripcion_carga').value,
-        docs_texto: document.getElementById('docs_texto').value,
-        docs_check: Array.from(document.querySelectorAll('.doc_check:checked')).map(c => c.value),
-        piezas: piezas
-    };
-
-    const response = await fetch('/api/validar_carga', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-    });
-    
-    const data = await response.json();
-    mostrarResultados(data);
-}
-
-function mostrarResultados(data) {
-    const resDiv = document.getElementById('resultados');
-    resDiv.style.display = 'block';
-    let html = `<h2 style="color:var(--avianca-red)">ESTADO OPERATIVO: ${data.status}</h2>`;
-    html += `<h3>EQUIPO RECOMENDADO: ${data.recomendacion_vuelo}</h3>`;
-    html += `<p><strong>PESO COBRABLE TOTAL: ${data.p_cobrable} Lbs</strong></p><hr>`;
-    
-    data.alertas.forEach((alert, i) => {
-        html += `
-            <div class="alert-item">
-                <strong>⚠️ ${alert}</strong><br>
-                <small>${data.explicaciones[i]}</small>
-                <div class="law-item">⚖️ Riesgo Legal: ${data.riesgos[i] || 'N/A'}</div>
-            </div>
-        `;
-    });
-    resDiv.innerHTML = html;
-    resDiv.scrollIntoView();
+    area.innerHTML = "<strong>REQ. MÍNIMOS:</strong><br>" + docs[nat].map(d => `<label><input type="checkbox" class="doc_check" value="${d}"> ${d}</label> `).join('');
 }
 
 function toggleVoz() {
@@ -196,17 +116,59 @@ function toggleVoz() {
         recognition.lang = 'es-ES';
         recognition.continuous = true;
         recognition.onresult = (e) => {
-            const text = e.results[e.results.length - 1][0].transcript;
-            document.getElementById('voz_texto').value += text + " ";
+            document.getElementById('voz_texto').value += e.results[e.results.length - 1][0].transcript + " ";
         };
     }
     recognition.start();
 }
 
-// Inicialización
+async function procesar() {
+    const piezas = [];
+    document.querySelectorAll('#piezas_body tr').forEach(tr => {
+        piezas.push({
+            cant: tr.querySelector('.p_cant').value,
+            l: tr.querySelector('.p_l').value,
+            w: tr.querySelector('.p_w').value,
+            h: tr.querySelector('.p_h').value,
+            p_real: tr.querySelector('.p_real').value
+        });
+    });
+
+    const payload = {
+        awb: document.getElementById('awb').value,
+        known_shipper: document.getElementById('known_shipper').value === "true",
+        naturaleza: document.getElementById('naturaleza').value,
+        docs_texto: document.getElementById('docs_texto').value,
+        docs_check: Array.from(document.querySelectorAll('.doc_check:checked')).map(c => c.value),
+        piezas: piezas,
+        reporte_voz: document.getElementById('voz_texto').value
+    };
+
+    const res = await fetch('/api/validar_carga', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    
+    const div = document.getElementById('resultados');
+    div.style.display = 'block';
+    let h = `<h1 style="color:var(--red)">ESTADO: ${data.status}</h1>`;
+    h += `<h2>PESO COBRABLE: ${data.p_cobrable} LBS</h2><hr>`;
+    
+    data.alertas.forEach((alert, i) => {
+        h += `<div class="alert-card">
+                <div style="font-size:18px">⚠️ ${alert}</div>
+                <p>${data.explicaciones[i]}</p>
+                <div style="color:blue">⚖️ RIESGO: ${data.riesgos[i]}</div>
+              </div>`;
+    });
+    div.innerHTML = h;
+    div.scrollIntoView();
+}
+
 addPiece();
 actualizarChecks();
 </script>
-
 </body>
 </html>
