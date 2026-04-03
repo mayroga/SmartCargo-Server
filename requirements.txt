@@ -7,3 +7,4 @@ python-dotenv
 python-multipart
 requests
 json5
+google-generativeai
