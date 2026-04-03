@@ -1,78 +1,63 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 
-app = FastAPI(title="AURA SMARTCARGO ADVISORY")
+app = FastAPI(title="SMARTCARGO OS")
 
-# Crear carpeta static si no existe y montar para archivos CSS/JS/IMG
-if not os.path.exists("static"): 
+if not os.path.exists("static"):
     os.makedirs("static")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# --- PROTOCOLO DE ASESORÍA MIA-AVIANCA ---
+REGLAS = {
+    "RATIO_VOL": 166,
+    "MAX_H_PAX": 63
+}
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/index.html", "r", encoding="utf-8") as f:
+    with open("static/app.html", "r", encoding="utf-8") as f:
         return f.read()
 
-@app.post("/api/asesorar")
-async def asesorar(data: dict):
-    # 1. Extracción de datos enviados por el HTML
-    awb = data.get("awb", "").strip()
-    naturaleza = data.get("naturaleza", "GEN")
-    tipo_vuelo = data.get("tipo_vuelo", "PAX")
-    piezas = data.get("piezas", [])
-    pouch = data.get("pouch", [])
-    
-    soluciones = []
-    acciones = []
-    
-    # 2. Validación de Prefijo (045 Avianca / 729 Tampa)
-    prefix = awb[:3]
-    if prefix not in ["045", "729"]:
-        soluciones.append(f"PREFIJO {prefix} AJENO A RED AVIANCA.")
-        acciones.append("ASESORÍA: Verificar si es carga INTERLINE o COMAT. De lo contrario, solicitar re-emisión de AWB.")
+@app.post("/api/validar")
+async def validar(data: dict):
 
-    # 3. Validación de Dimensiones y Equipo (Belly vs CAO)
+    alertas = []
+    explicaciones = []
+    riesgos = []
+
+    piezas = data.get("piezas", [])
+
     total_real = 0
     total_vol = 0
-    max_h = 0
-    
-    for i, p in enumerate(piezas):
-        try:
-            l, w, h = float(p['l']), float(p['w']), float(p['h'])
-            c = int(p['cant'])
-            p_r = float(p['p_real'])
-            
-            total_real += p_r * c
-            total_vol += (l * w * h * c) / 166
-            if h > max_h: max_h = h
-            
-            if h > 63 and tipo_vuelo == "PAX":
-                soluciones.append(f"PIEZA {i+1} CON ALTURA DE {h}in EXCEDE LIMITE PAX.")
-                acciones.append("SOLUCIÓN: La carga no cabe en avión de pasajeros. Solicitar reserva en CARGUERO (CAO).")
-        except: continue
 
-    # 4. Validación de Papelería (Pouch)
-    docs_minimos = {
-        "DGR": ["DGD", "MSDS", "CHECKLIST"],
-        "PER": ["PHITO", "SANITARY"],
-        "GEN": ["INVOICE", "PACKING LIST"]
-    }
-    
-    faltantes = [d for d in docs_minimos.get(naturaleza, []) if d not in pouch]
-    if faltantes:
-        soluciones.append(f"FALTAN DOCUMENTOS CRÍTICOS EN POUCH.")
-        acciones.append(f"ACCIÓN: Solicitar urgentemente: {', '.join(faltantes)} para evitar retención en Aduana.")
+    for i, p in enumerate(piezas):
+        l = float(p.get("l",0))
+        w = float(p.get("w",0))
+        h = float(p.get("h",0))
+        peso = float(p.get("peso",0))
+        cant = int(p.get("cant",1))
+
+        total_real += peso * cant
+        total_vol += (l*w*h*cant)/REGLAS["RATIO_VOL"]
+
+        if h > REGLAS["MAX_H_PAX"]:
+            alertas.append(f"EXCESO ALTURA PIEZA {i+1}")
+            explicaciones.append("Excede límite belly aircraft")
+            riesgos.append("Reubicación a carguero o rechazo")
+
+    p_cobrable = max(total_real, total_vol)
 
     return {
-        "status": "PLAN DE VUELO GENERADO",
-        "p_cobrable": round(max(total_real, total_vol), 2),
-        "equipo": "CAO" if max_h > 63 else "PAX/CAO OK",
-        "soluciones": soluciones,
-        "acciones": acciones
+        "status": "FLY READY (ASESORADO)" if not alertas else "CONDICIONAL (REVISAR)",
+        "peso_real": round(total_real,2),
+        "peso_vol": round(total_vol,2),
+        "peso_cobrable": round(p_cobrable,2),
+        "alertas": alertas,
+        "explicaciones": explicaciones,
+        "riesgos": riesgos
     }
 
 if __name__ == "__main__":
