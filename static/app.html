@@ -2,175 +2,190 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>AL CIELO - SmartCargo Advisory</title>
+    <title>AURA - SmartCargo Advisory System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0a3d62; --danger: #e11a22; --success: #27ae60; --light: #f4f6f8; --dark: #1e272e; }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin:0; padding:10px; color: var(--dark); }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        :root { --avianca-red: #e11a22; --navy: #0a3d62; --gold: #fbc02d; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .app-container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.2); border-top: 8px solid var(--avianca-red); }
         
-        /* Header & Control */
-        .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--danger); margin-bottom: 20px; padding-bottom: 10px; }
-        .btn-clear { background: #636e72; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .btn-reset { background: #636e72; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
-        h3 { background: #0a3d6211; padding: 12px; border-left: 6px solid var(--primary); color: var(--primary); font-size: 15px; margin-top: 20px; text-transform: uppercase; }
+        h3 { background: var(--navy); color: white; padding: 10px 15px; border-radius: 5px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        label { display: block; margin: 10px 0 5px; font-weight: 600; font-size: 13px; }
-        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 13px; color: var(--navy); }
+        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #dcdde1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        
+        /* Tipos de Carga Chips */
+        .nature-box { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+        .chip { padding: 10px 15px; border: 2px solid #dcdde1; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.3s; background: white; }
+        .chip.active { background: var(--avianca-red); color: white; border-color: var(--avianca-red); }
 
-        /* Chips IATA */
-        .nature-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
-        .nature-chip { padding: 8px 15px; border: 2px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; background: white; }
-        .nature-chip.selected { background: var(--danger); color: white; border-color: var(--danger); }
+        /* Consola de Resultados */
+        .result-panel { margin-top: 30px; padding: 25px; border-radius: 12px; border: 2px solid #eee; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th { background: var(--navy); color: white; padding: 12px; text-align: left; border: 1px solid #ddd; }
+        td { padding: 12px; border: 1px solid #ddd; vertical-align: top; }
 
-        /* Asesoría Result Table */
-        .result-box { margin-top: 30px; padding: 20px; border-radius: 12px; border: 1px solid #ddd; display: none; background: #fff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th { background: var(--primary); color: white; padding: 12px; text-align: left; }
-        td { padding: 12px; border: 1px solid #eee; vertical-align: top; }
-
-        .btn-eval { background: var(--primary); color: white; border: none; padding: 20px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .mic-btn { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        .btn-main { background: var(--navy); color: white; border: none; padding: 20px; width: 100%; border-radius: 12px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-main:hover { background: #002b4d; transform: translateY(-2px); }
         
-        @media print { .btn-eval, .mic-btn, .btn-clear, .nature-container, .photo-section, h3, .grid, .lang-bar { display: none !important; } }
+        .voice-box { background: #fffde7; border: 1px dashed var(--gold); padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .btn-mic { background: var(--avianca-red); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+
+        @media print { .no-print { display: none !important; } .result-panel { display: block !important; border: none; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header-box">
-        <h1 id="t-title" style="margin:0; font-size: 22px; color: var(--primary);">AURA BY MAY ROGA - AL CIELO</h1>
-        <button class="btn-clear" onclick="location.reload()">BORRAR TODO</button>
+<div class="app-container">
+    <div class="header">
+        <h1 style="color: var(--navy); margin: 0; font-size: 24px;">AURA - SmartCargo Advisory</h1>
+        <button class="btn-reset no-print" onclick="location.reload()">🗑️ BORRAR SESIÓN</button>
     </div>
 
+    <h3>I. Control de Acceso y Seguridad TSA</h3>
     <div class="grid">
-        <div><label id="l-awb">Master AWB (045-):</label><input type="text" id="awb" placeholder="Ej: 045-12345678"></div>
-        <div><label id="l-driver">ID Chofer / Licencia:</label><input type="text" id="idChofer" placeholder="Número de Identificación"></div>
-        <div><label>Destino Final:</label>
-            <select id="destino">
-                <option value="USA">USA (Miami / JFK)</option>
-                <option value="COL">Colombia (Bogotá)</option>
-                <option value="MEX">México (Felipe Ángeles)</option>
-                <option value="ESP">España (Madrid)</option>
-                <option value="BRA">Brasil (Sao Paulo)</option>
+        <div><label>Master AWB (045-):</label><input type="text" id="awb" placeholder="045-00000000"></div>
+        <div><label>ID Portador (Driver/Agent):</label><input type="text" id="idChofer" placeholder="ID / Licencia"></div>
+        <div><label>TSA Status:</label>
+            <select id="shipperStatus">
+                <option value="Known">Known Shipper (Seguro)</option>
+                <option value="Unknown">Unknown Shipper (Requiere Screening)</option>
             </select>
         </div>
     </div>
 
-    <h3 id="t-sec2">Naturaleza de la Carga (Múltiple)</h3>
-    <div class="nature-container" id="natureContainer">
-        <div class="nature-chip" onclick="toggleNature(this, 'GEN')">GEN (General)</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'PER')">PER (Perecederos)</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'DGR')">DGR (Peligrosa)</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'AVI')">AVI (Animales)</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'HUM')">HUM (Restos)</div>
-        <div class="nature-chip" onclick="toggleNature(this, 'VAL')">VAL (Valores)</div>
+    <h3>II. Naturaleza de Mercancía (IMP Codes)</h3>
+    <div class="nature-box" id="natureBox">
+        <div class="chip" onclick="sel(this, 'GEN')">GEN (General)</div>
+        <div class="chip" onclick="sel(this, 'DGR')">DGR (Peligrosa)</div>
+        <div class="chip" onclick="sel(this, 'PER')">PER (Perecederos)</div>
+        <div class="chip" onclick="sel(this, 'AVI')">AVI (Animales)</div>
+        <div class="chip" onclick="sel(this, 'VAL')">VAL (Valores)</div>
+        <div class="chip" onclick="sel(this, 'HUM')">HUM (Restos Humanos)</div>
+        <div class="chip" onclick="sel(this, 'PHR')">PHR (Farma)</div>
     </div>
 
-    <h3 id="t-sec3">Soporte y Embalaje</h3>
+    <h3>III. Auditoría Física (Weight & Balance)</h3>
     <div class="grid">
-        <div><label>Tipo de ULD:</label>
-            <select id="uldSugerido">
-                <option value="PMC">Pallet PMC (Apto Avianca)</option>
-                <option value="LD3">Contenedor LD3 (Belly)</option>
-                <option value="PAG">Pallet PAG</option>
-                <option value="LOOSE">Carga Suelta</option>
+        <div><label>Peso Real (Lbs):</label><input type="number" id="pesoReal" placeholder="0.0"></div>
+        <div><label>Dimensiones (L x W x H in):</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="L" placeholder="L">
+                <input type="number" id="W" placeholder="W">
+                <input type="number" id="H" placeholder="H">
+            </div>
+        </div>
+        <div><label>Tipo de ULD / Box:</label>
+            <select id="uld">
+                <option value="LD3">LD3 (Container Belly)</option>
+                <option value="PMC">PMC (Pallet 96x125)</option>
+                <option value="PAG">PAG (Pallet 88x125)</option>
+                <option value="LOOSE">Loose Cargo (Cajas)</option>
+                <option value="CRATE">Wooden Crate (Huacal)</option>
+                <option value="SKID">Skid / EuroPallet</option>
             </select>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; padding-top: 35px;">
-            <label><input type="checkbox" id="chkDGR"> DGD Original</label>
-            <label><input type="checkbox" id="chkFacturas"> Facturas (3 Copias)</label>
+    </div>
+
+    <div class="grid">
+        <div><label>Embalaje Material:</label>
+            <select id="tipoEmpaque">
+                <option value="CARTON">Cartón Corrugado</option>
+                <option value="WOOD">Madera (Madera Sólida)</option>
+                <option value="PLASTIC">Plástico / Film</option>
+                <option value="METAL">Metal / Drums</option>
+            </select>
+        </div>
+        <div style="padding-top: 30px;">
+            <label><input type="checkbox" id="chkNIMF"> Sello NIMF-15 / ISPM15 Visible</label>
+            <label><input type="checkbox" id="chkDGR"> DGD Original Firmada</label>
         </div>
     </div>
 
-    <h3 id="t-sec4">Pre-Chequeo Técnico (Voz/Texto)</h3>
-    <textarea id="prechequeo" rows="3" placeholder="Describa el estado de los bultos, marcas, etiquetas visibles..."></textarea>
-    <button class="mic-btn" onclick="startDictation()" id="btn-mic">🎤 ACTIVAR DICTADO DE VOZ</button>
-
-    <button class="btn-eval" onclick="evaluar()" id="btn-eval">GENERAR ASESORÍA DE COUNTER</button>
-
-    <div id="resultado" class="result-box"></div>
-    
-    <div id="print-area" style="display:none; margin-top:20px;">
-        <button onclick="window.print()" class="btn-eval" style="background:var(--success);">🖨️ DESCARGAR REPORTE PDF</button>
+    <div class="voice-box">
+        <label>IV. Pre-Chequeo Técnico de Muelle (Voz / Dictado):</label>
+        <textarea id="prechequeo" rows="4" placeholder="Interpretar estado: golpes, etiquetas, humedad, integridad del precinto..."></textarea>
+        <button class="btn-mic no-print" onclick="startVoice()">🎤 INICIAR DICTADO DE INSPECCIÓN</button>
     </div>
+
+    <button class="btn-main no-print" onclick="procesar()">GENERAR ASESORÍA TÉCNICA DE DESPACHO</button>
+
+    <div id="resultado" class="result-panel"></div>
 </div>
 
 <script>
-let selectedNatures = [];
+let codes = [];
+function sel(el, c) { el.classList.toggle('active'); if(codes.includes(c)) codes=codes.filter(x=>x!==c); else codes.push(c); }
 
-function toggleNature(el, code) {
-    el.classList.toggle('selected');
-    if(selectedNatures.includes(code)) {
-        selectedNatures = selectedNatures.filter(n => n !== code);
-    } else {
-        selectedNatures.push(code);
-    }
+function startVoice() {
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'es-ES';
+    rec.onresult = (e) => { document.getElementById('prechequeo').value += e.results[0][0].transcript + ". "; };
+    rec.start();
 }
 
-function startDictation() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'es-ES';
-    recognition.onresult = (e) => { document.getElementById('prechequeo').value += e.results[0][0].transcript + " "; };
-    recognition.start();
-}
-
-async function evaluar() {
+async function procesar() {
     const resDiv = document.getElementById('resultado');
     resDiv.style.display = 'block';
-    resDiv.innerHTML = "<p style='text-align:center;'>Procesando normativa Avianca...</p>";
+    resDiv.innerHTML = "Analizando bajo normativa IATA/Avianca...";
 
     const payload = {
         awb: document.getElementById('awb').value,
         idChofer: document.getElementById('idChofer').value,
-        destino: document.getElementById('destino').value,
-        codigos: selectedNatures,
-        uldSugerido: document.getElementById('uldSugerido').value,
+        shipperStatus: document.getElementById('shipperStatus').value,
+        codigos: codes,
+        pesoReal: document.getElementById('pesoReal').value,
+        length: document.getElementById('L').value,
+        width: document.getElementById('W').value,
+        height: document.getElementById('H').value,
+        uld: document.getElementById('uld').value,
+        tipoEmpaque: document.getElementById('tipoEmpaque').value,
+        chkNIMF: document.getElementById('chkNIMF').checked,
         chkDGR: document.getElementById('chkDGR').checked,
-        chkFacturas: document.getElementById('chkFacturas').checked,
         prechequeo: document.getElementById('prechequeo').value
     };
 
-    try {
-        const response = await fetch('/api/evaluar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        
-        const res = await response.json();
-        
-        let html = `<h2 style="text-align:center; color:${res.errores.length > 0 ? 'var(--danger)' : 'var(--success)'}">${res.status}</h2>`;
-        
-        html += `<table>
-                    <tr><th>DISCREPANCIAS / ALERTAS</th><th>ACCIONES RESOLUTIVAS</th></tr>`;
-        
-        const rows = Math.max(res.errores.length, res.soluciones.length);
-        if(rows === 0) {
-            html += `<tr><td colspan="2" style="text-align:center;">Documentación y Carga cumplen con el estándar inicial.</td></tr>`;
-        } else {
-            for(let i=0; i<rows; i++) {
-                html += `<tr>
-                            <td style="color:var(--danger)">${res.errores[i] || '✔ Sin discrepancias'}</td>
-                            <td>${res.soluciones[i] || '-'}</td>
-                         </tr>`;
-            }
+    const resp = await fetch('/api/evaluar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    
+    const data = await resp.json();
+    
+    let html = `<h2 style="color:var(--navy); text-align:center; border-bottom: 3px solid var(--avianca-red); padding-bottom:10px;">REPORTE DE ASESORÍA TÉCNICA SMARTCARGO</h2>`;
+    html += `<p><strong>ESTADO DE CARGA:</strong> <span style="color:white; background:${data.errores.length ? 'red' : 'green'}; padding:5px 10px; border-radius:5px;">${data.status}</span></p>`;
+    html += `<p><strong>PESO COBRABLE (Chargeable Weight):</strong> ${data.chargeable_weight} Lbs</p>`;
+    
+    html += `<table>
+                <tr><th>DISCREPANCIAS / RIESGOS</th><th>SOLUCIONES TÉCNICAS (COUNTER ADVISORY)</th></tr>`;
+    
+    const maxRows = Math.max(data.errores.length, data.soluciones.length);
+    if(maxRows === 0) {
+        html += `<tr><td colspan="2" style="text-align:center;">Carga cumple con estándares operativos para vuelo inmediato.</td></tr>`;
+    } else {
+        for(let i=0; i<maxRows; i++) {
+            html += `<tr>
+                <td style="color:red; font-weight:bold;">${data.errores[i] || '✔ Cumplido'}</td>
+                <td>${data.soluciones[i] || '-'}</td>
+            </tr>`;
         }
-        html += `</table>`;
-
-        if(res.prechequeo) {
-            html += `<div style="margin-top:15px; padding:10px; background:#f4f6f8; border-radius:5px;">
-                        <strong>NOTA DEL ASESOR:</strong> ${res.prechequeo}
-                     </div>`;
-        }
-
-        resDiv.innerHTML = html;
-        document.getElementById('print-area').style.display = 'block';
-    } catch (error) {
-        resDiv.innerHTML = "<p style='color:red'>Error de conexión con el servidor de asesoría.</p>";
     }
+    html += `</table>`;
+    
+    if(data.notas_finales) {
+        html += `<div style="margin-top:20px; background:#eee; padding:15px; border-left:5px solid var(--navy);">
+                    <strong>OBSERVACIONES DE INSPECCIÓN:</strong><br>${data.notas_finales}
+                 </div>`;
+    }
+
+    html += `<button onclick="window.print()" class="btn-main no-print" style="margin-top:20px; background:var(--avianca-red);">🖨️ IMPRIMIR REPORTE PARA ADUANA / MANIFIESTO</button>`;
+    
+    resDiv.innerHTML = html;
 }
 </script>
 </body>
