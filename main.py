@@ -1,63 +1,84 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn
-import os
+import uvicorn, os
 
-app = FastAPI(title="SMARTCARGO OS")
+app = FastAPI(title="SMARTCARGO CORE V3")
 
-if not os.path.exists("static"):
-    os.makedirs("static")
-
+if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-REGLAS = {
-    "RATIO_VOL": 166,
-    "MAX_H_PAX": 63
-}
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f:
+    with open("static/app.html", encoding="utf-8") as f:
         return f.read()
 
 @app.post("/api/validar")
 async def validar(data: dict):
 
     alertas = []
-    explicaciones = []
-    riesgos = []
+    soluciones = []
 
     piezas = data.get("piezas", [])
 
+    if len(piezas) == 0:
+        alertas.append("NO HAY PIEZAS REGISTRADAS")
+        soluciones.append("Debe ingresar al menos 1 pieza con peso y dimensiones.")
+        return {"status":"STOP", "alertas":alertas, "soluciones":soluciones}
+
     total_real = 0
     total_vol = 0
+    max_h = 0
 
-    for i, p in enumerate(piezas):
-        l = float(p.get("l",0))
-        w = float(p.get("w",0))
-        h = float(p.get("h",0))
-        peso = float(p.get("peso",0))
-        cant = int(p.get("cant",1))
+    for i,p in enumerate(piezas):
+        try:
+            l = float(p["l"])
+            w = float(p["w"])
+            h = float(p["h"])
+            peso = float(p["peso"])
 
-        total_real += peso * cant
-        total_vol += (l*w*h*cant)/REGLAS["RATIO_VOL"]
+            if l<=0 or w<=0 or h<=0 or peso<=0:
+                alertas.append(f"DATOS INVÁLIDOS PIEZA {i+1}")
+                soluciones.append("No se permiten valores 0. Verifique dimensiones reales.")
+                continue
 
-        if h > REGLAS["MAX_H_PAX"]:
-            alertas.append(f"EXCESO ALTURA PIEZA {i+1}")
-            explicaciones.append("Excede límite belly aircraft")
-            riesgos.append("Reubicación a carguero o rechazo")
+            vol = (l*w*h)/166
 
-    p_cobrable = max(total_real, total_vol)
+            total_real += peso
+            total_vol += vol
+
+            if h > max_h:
+                max_h = h
+
+            # ALTURA
+            if h > 63:
+                alertas.append(f"ALTURA EXCESIVA PIEZA {i+1}")
+                soluciones.append("Mover a vuelo carguero (CAO).")
+
+        except:
+            alertas.append(f"ERROR EN PIEZA {i+1}")
+            soluciones.append("Revisar datos numéricos.")
+
+    tipo = data.get("tipo")
+
+    # DGR
+    if tipo == "DGR":
+        alertas.append("CARGA DGR DETECTADA")
+        soluciones.append("Requiere Shipper Declaration + embalaje UN.")
+
+    # PER
+    if tipo == "PER":
+        alertas.append("CONTROL DE TEMPERATURA REQUERIDO")
+        soluciones.append("Agregar gel pack o dry ice certificado.")
+
+    status = "APROBADO" if len(alertas)==0 else "STOP / HOLD"
 
     return {
-        "status": "FLY READY (ASESORADO)" if not alertas else "CONDICIONAL (REVISAR)",
-        "peso_real": round(total_real,2),
-        "peso_vol": round(total_vol,2),
-        "peso_cobrable": round(p_cobrable,2),
+        "status": status,
+        "peso_cobrable": round(max(total_real,total_vol),2),
         "alertas": alertas,
-        "explicaciones": explicaciones,
-        "riesgos": riesgos
+        "soluciones": soluciones,
+        "tipo_avion": "CAO" if max_h>63 else "PAX"
     }
 
 if __name__ == "__main__":
