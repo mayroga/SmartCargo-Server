@@ -5,117 +5,145 @@
 <title>SMARTCARGO SERVER PRO</title>
 
 <style>
-body { font-family: Arial; background:#0b1220; color:white; }
-.section { background:#111a2e; padding:15px; margin:10px; border-radius:10px; }
-.hidden { display:none; }
-.red { color:#ff4d4d; }
-.green { color:#4dff88; }
-table { width:100%; }
-td,th { border:1px solid #333; padding:5px; }
-img { max-width:80px; }
+body{background:#0b1220;color:white;font-family:Arial}
+.section{background:#111a2e;padding:15px;margin:10px;border-radius:10px}
+.hidden{display:none}
+.red{color:#ff4d4d}
+.green{color:#4dff88}
+.yellow{color:#ffd24d}
+table{width:100%}
+td,th{border:1px solid #333;padding:5px}
+img{max-width:80px}
 </style>
 </head>
 
 <body>
 
-<h2>✈️ SMARTCARGO SERVER (PRE-CHECK REAL)</h2>
+<h2>✈️ SMARTCARGO SERVER – REAL COUNTER LOGIC</h2>
 
-<!-- CORTINA 1 -->
+<!-- ROL -->
 <div class="section">
-<h3>1. Datos Iniciales</h3>
-<input id="origen" placeholder="Origen">
-<input id="destino" placeholder="Destino">
-<button onclick="next(2)">Continuar</button>
-</div>
-
-<!-- CORTINA 2 -->
-<div class="section hidden" id="step2">
-<h3>2. Rol</h3>
-<select id="rol">
+<h3>1. ROL OPERATIVO</h3>
+<select id="rol" onchange="rolInfo()">
+<option value="">Selecciona</option>
 <option>SHIPPER</option>
 <option>FORWARDER</option>
 <option>WAREHOUSE</option>
 <option>TRUCKER</option>
 </select>
-<button onclick="next(3)">Continuar</button>
+<div id="rol_help" class="yellow"></div>
 </div>
 
-<!-- CORTINA 3 -->
-<div class="section hidden" id="step3">
-<h3>3. Tipo de carga</h3>
-<select id="tipo">
+<!-- TIPO -->
+<div class="section">
+<h3>2. TIPO DE CARGA</h3>
+<select id="tipo" onchange="tipoInfo()">
 <option>GENERAL</option>
 <option>DGR</option>
 <option>PER</option>
 <option>VAL</option>
-</select>
-<button onclick="next(4)">Continuar</button>
-</div>
-
-<!-- CORTINA 4 -->
-<div class="section hidden" id="step4">
-<h3>4. Embalaje</h3>
-<select id="embalaje">
-<option>CAJA</option>
-<option>PALLET</option>
-<option>TAMBOR</option>
-<option>CRATE</option>
+<option>HUM</option>
 </select>
 
-<select id="pallet">
-<option>LOOSE</option>
-<option>PMC</option>
-<option>PAG</option>
-</select>
-
-<button onclick="next(5)">Continuar</button>
+<div id="tipo_help"></div>
+<div id="docs_live"></div>
 </div>
 
 <!-- PIEZAS -->
-<div class="section hidden" id="step5">
-<h3>5. Auditoría Física</h3>
+<div class="section">
+<h3>3. AUDITORÍA FÍSICA</h3>
 
 <table id="tabla">
 <tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th></tr>
 </table>
 
 <button onclick="add()">+ PIEZA</button>
-<button onclick="validar()">VALIDAR</button>
 </div>
 
-<!-- RESULTADO -->
-<div class="section hidden" id="result"></div>
+<!-- VALIDACIÓN -->
+<div class="section">
+<button onclick="validar()">VALIDAR (SIMULACIÓN COUNTER)</button>
+<div id="resultado"></div>
+</div>
 
 <script>
 
-function next(n){
-document.getElementById("step"+n).classList.remove("hidden");
+// 🔵 ROL
+function rolInfo(){
+let r = rol.value;
+let msg = "";
+
+if(r==="SHIPPER") msg="Responsable de documentos originales.";
+if(r==="FORWARDER") msg="Coordina AWB y consolidación.";
+if(r==="WAREHOUSE") msg="Valida físico y discrepancias.";
+if(r==="TRUCKER") msg="Solo entrega, mínima documentación.";
+
+rol_help.innerHTML = msg;
 }
 
-function add(){
-let row = document.createElement("tr");
+// 🔵 TIPO
+function tipoInfo(){
 
-row.innerHTML = `
+let t = tipo.value;
+
+let docs = {
+GENERAL:["AWB (1 original + 2 copias)", "Factura (3 copias)"],
+DGR:["Shipper Declaration (3 originales)", "MSDS", "UN Packaging"],
+PER:["Certificado sanitario", "Control temperatura"],
+VAL:["Manifiesto VAL", "Custodia armada"],
+HUM:["Acta defunción", "Permiso tránsito"]
+};
+
+let info = {
+DGR:"⚠ Requiere especialista DG",
+PER:"⚠ Control de temperatura obligatorio",
+VAL:"⚠ Seguridad reforzada",
+HUM:"⚠ Manejo prioritario"
+};
+
+docs_live.innerHTML = docs[t].map(d=>`<div class='yellow'>📄 ${d}</div>`).join("");
+tipo_help.innerHTML = `<div class='yellow'>${info[t]||""}</div>`;
+}
+
+// 🔵 PIEZAS
+function add(){
+let tr = document.createElement("tr");
+
+tr.innerHTML = `
 <td><input class="cant"></td>
-<td><input class="l"></td>
-<td><input class="w"></td>
-<td><input class="h"></td>
-<td><input class="peso"></td>
+<td><input class="l" oninput="liveCheck(this)"></td>
+<td><input class="w" oninput="liveCheck(this)"></td>
+<td><input class="h" oninput="liveCheck(this)"></td>
+<td><input class="peso" oninput="liveCheck(this)"></td>
 <td><input type="file" onchange="preview(this)"></td>
 `;
 
-tabla.appendChild(row);
+tabla.appendChild(tr);
 }
 
+// 🔵 FOTO
 function preview(input){
 let img = document.createElement("img");
 img.src = URL.createObjectURL(input.files[0]);
 input.parentNode.appendChild(img);
 }
 
+// 🔴 VALIDACIÓN EN TIEMPO REAL
+function liveCheck(input){
+
+let val = input.value;
+
+if(val <= 0){
+input.style.border="2px solid red";
+}else{
+input.style.border="2px solid green";
+}
+}
+
+// 🔵 VALIDACIÓN FINAL
 async function validar(){
 
-let piezas = [];
+let piezas=[];
 
 document.querySelectorAll("#tabla tr").forEach((r,i)=>{
 if(i===0)return;
@@ -141,8 +169,14 @@ let d = await res.json();
 
 let html = `<h3>ESTADO: ${d.status}</h3>`;
 html += `<p>PESO COBRABLE: ${d.peso_cobrable}</p>`;
-html += `<p>TIPO AVIÓN: ${d.tipo_avion}</p>`;
+html += `<p>AVIÓN: ${d.avion}</p>`;
 
+html += "<h4>DOCUMENTOS:</h4>";
+d.documentos.forEach(doc=>{
+html += `<div class="yellow">${doc}</div>`;
+});
+
+html += "<h4>ALERTAS:</h4>";
 d.alertas.forEach((a,i)=>{
 html += `<div class="red">⚠ ${a}</div>`;
 html += `<div>✔ SOLUCIÓN: ${d.soluciones[i]}</div>`;
@@ -152,8 +186,7 @@ if(d.alertas.length===0){
 html += `<div class="green">✔ LISTO PARA COUNTER</div>`;
 }
 
-result.innerHTML = html;
-result.classList.remove("hidden");
+resultado.innerHTML = html;
 }
 
 </script>
