@@ -2,226 +2,158 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO OS</title>
+<title>SMARTCARGO SERVER PRO</title>
 
 <style>
-body { background:#0b1220; color:white; font-family:Arial; padding:20px; }
-h2 { color:#00d4ff; }
-
-.section { background:#111a2e; padding:15px; margin:10px 0; border-radius:10px; }
-.card { background:#1a2742; padding:10px; margin-top:10px; border-radius:8px; }
-
-input, select, textarea { width:100%; padding:8px; margin:5px 0; }
-button { background:#00d4ff; border:none; padding:10px; cursor:pointer; width:100%; }
-
-.step { border-left:3px solid #00d4ff; padding:5px; margin:5px 0; }
+body { font-family: Arial; background:#0b1220; color:white; }
+.section { background:#111a2e; padding:15px; margin:10px; border-radius:10px; }
+.hidden { display:none; }
 .red { color:#ff4d4d; }
 .green { color:#4dff88; }
-
-table { width:100%; border-collapse:collapse; }
-td, th { border:1px solid #333; padding:5px; text-align:center; }
-
-img { max-width:80px; margin-top:5px; }
-
-.hidden { display:none; }
+table { width:100%; }
+td,th { border:1px solid #333; padding:5px; }
+img { max-width:80px; }
 </style>
 </head>
 
 <body>
 
-<h2>✈️ SMARTCARGO OS - Asesor Logístico Inteligente</h2>
+<h2>✈️ SMARTCARGO SERVER (PRE-CHECK REAL)</h2>
 
-<!-- DATOS -->
+<!-- CORTINA 1 -->
 <div class="section">
-<h3>📋 Datos Iniciales</h3>
-
-<input id="name" placeholder="Nombre">
-<input id="origin" placeholder="Origen">
-<input id="destination" placeholder="Destino">
-
-<button onclick="next1()">Continuar</button>
+<h3>1. Datos Iniciales</h3>
+<input id="origen" placeholder="Origen">
+<input id="destino" placeholder="Destino">
+<button onclick="next(2)">Continuar</button>
 </div>
 
-<!-- ROL -->
+<!-- CORTINA 2 -->
 <div class="section hidden" id="step2">
-<h3>👤 Rol</h3>
-
-<select id="rol" onchange="rolInfo()">
+<h3>2. Rol</h3>
+<select id="rol">
 <option>SHIPPER</option>
 <option>FORWARDER</option>
 <option>WAREHOUSE</option>
 <option>TRUCKER</option>
-<option>CONSIGNEE</option>
 </select>
-
-<div id="rol_text"></div>
-
-<button onclick="next2()">Continuar</button>
+<button onclick="next(3)">Continuar</button>
 </div>
 
-<!-- CARGA -->
+<!-- CORTINA 3 -->
 <div class="section hidden" id="step3">
-<h3>📦 Tipo de Carga</h3>
-
-<select id="tipo" onchange="docsAuto()">
+<h3>3. Tipo de carga</h3>
+<select id="tipo">
 <option>GENERAL</option>
 <option>DGR</option>
 <option>PER</option>
 <option>VAL</option>
-<option>HUM</option>
-<option>AVI</option>
 </select>
-
-<div id="docs"></div>
-
-<button onclick="next3()">Continuar</button>
+<button onclick="next(4)">Continuar</button>
 </div>
 
-<!-- AUDITORIA -->
+<!-- CORTINA 4 -->
 <div class="section hidden" id="step4">
-<h3>📦 Auditoría Física</h3>
+<h3>4. Embalaje</h3>
+<select id="embalaje">
+<option>CAJA</option>
+<option>PALLET</option>
+<option>TAMBOR</option>
+<option>CRATE</option>
+</select>
+
+<select id="pallet">
+<option>LOOSE</option>
+<option>PMC</option>
+<option>PAG</option>
+</select>
+
+<button onclick="next(5)">Continuar</button>
+</div>
+
+<!-- PIEZAS -->
+<div class="section hidden" id="step5">
+<h3>5. Auditoría Física</h3>
 
 <table id="tabla">
-<tr>
-<th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th><th>VOL</th>
-</tr>
+<tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th></tr>
 </table>
 
 <button onclick="add()">+ PIEZA</button>
-
-<h3>🎤 Reporte</h3>
-<textarea id="voz"></textarea>
-
-<button onclick="next4()">Validar</button>
+<button onclick="validar()">VALIDAR</button>
 </div>
 
 <!-- RESULTADO -->
-<div class="section hidden" id="step5">
-<h3>⚖️ Resultado</h3>
-
-<div id="res"></div>
-</div>
+<div class="section hidden" id="result"></div>
 
 <script>
 
-let piezas = [];
-
-function next1(){
-step2.classList.remove("hidden");
+function next(n){
+document.getElementById("step"+n).classList.remove("hidden");
 }
 
-function next2(){
-step3.classList.remove("hidden");
-}
-
-function next3(){
-step4.classList.remove("hidden");
-}
-
-/* ROL INFO */
-function rolInfo(){
-let r = rol.value;
-let txt = {
-SHIPPER:"Dueño de carga",
-FORWARDER:"Consolidador",
-WAREHOUSE:"Inspector físico",
-TRUCKER:"Transportista",
-CONSIGNEE:"Receptor"
-};
-rol_text.innerHTML = txt[r];
-}
-
-/* DOCS AUTO */
-function docsAuto(){
-let t = tipo.value;
-
-let docs = ["AWB","Factura"];
-
-if(t==="DGR") docs.push("MSDS","DGR Declaration");
-if(t==="PER") docs.push("Certificado sanitario");
-if(t==="VAL") docs.push("Seguro");
-if(t==="HUM") docs.push("Permisos legales");
-
-docs.innerHTML = docs.map(d=>`<div class='step'>📄 ${d}</div>`).join("");
-}
-
-/* PIEZAS */
 function add(){
-
 let row = document.createElement("tr");
 
 row.innerHTML = `
-<td><input class="cant" value="1"></td>
+<td><input class="cant"></td>
 <td><input class="l"></td>
 <td><input class="w"></td>
 <td><input class="h"></td>
 <td><input class="peso"></td>
 <td><input type="file" onchange="preview(this)"></td>
-<td class="vol">0</td>
 `;
 
 tabla.appendChild(row);
 }
 
-/* FOTO */
 function preview(input){
-let file = input.files[0];
-if(file){
 let img = document.createElement("img");
-img.src = URL.createObjectURL(file);
+img.src = URL.createObjectURL(input.files[0]);
 input.parentNode.appendChild(img);
 }
+
+async function validar(){
+
+let piezas = [];
+
+document.querySelectorAll("#tabla tr").forEach((r,i)=>{
+if(i===0)return;
+
+piezas.push({
+l:r.querySelector(".l").value,
+w:r.querySelector(".w").value,
+h:r.querySelector(".h").value,
+peso:r.querySelector(".peso").value
+});
+});
+
+let res = await fetch("/api/validar",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+tipo:tipo.value,
+piezas:piezas
+})
+});
+
+let d = await res.json();
+
+let html = `<h3>ESTADO: ${d.status}</h3>`;
+html += `<p>PESO COBRABLE: ${d.peso_cobrable}</p>`;
+html += `<p>TIPO AVIÓN: ${d.tipo_avion}</p>`;
+
+d.alertas.forEach((a,i)=>{
+html += `<div class="red">⚠ ${a}</div>`;
+html += `<div>✔ SOLUCIÓN: ${d.soluciones[i]}</div>`;
+});
+
+if(d.alertas.length===0){
+html += `<div class="green">✔ LISTO PARA COUNTER</div>`;
 }
 
-/* VALIDACIÓN */
-async function next4(){
-
-let piezasData = [];
-
-document.querySelectorAll("#tabla tr").forEach((tr,i)=>{
-
-if(i===0) return;
-
-let l = parseFloat(tr.querySelector(".l").value)||0;
-let w = parseFloat(tr.querySelector(".w").value)||0;
-let h = parseFloat(tr.querySelector(".h").value)||0;
-let peso = parseFloat(tr.querySelector(".peso").value)||0;
-let cant = parseInt(tr.querySelector(".cant").value)||1;
-
-let vol = (l*w*h)/166;
-
-tr.querySelector(".vol").innerText = vol.toFixed(2);
-
-piezasData.push({l,w,h,peso,cant});
-});
-
-let resFetch = await fetch("/api/validar",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({piezas:piezasData})
-});
-
-let data = await resFetch.json();
-
-let html = `
-<div class="card">
-<div class="${data.alertas.length?'red':'green'}">${data.status}</div>
-<p>Peso Real: ${data.peso_real}</p>
-<p>Peso Vol: ${data.peso_vol}</p>
-<p>Peso Cobrable: ${data.peso_cobrable}</p>
-</div>
-`;
-
-data.alertas.forEach((a,i)=>{
-html += `
-<div class="step red">⚠ ${a}</div>
-<div>${data.explicaciones[i]}</div>
-<div>⚖️ ${data.riesgos[i]}</div>
-`;
-});
-
-res.innerHTML = html;
-step5.classList.remove("hidden");
+result.innerHTML = html;
+result.classList.remove("hidden");
 }
 
 </script>
