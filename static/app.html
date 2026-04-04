@@ -2,56 +2,67 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO SERVER PRO</title>
+<title>SMARTCARGO SERVER PRO FINAL</title>
 
 <style>
 body{background:#0b1220;color:white;font-family:Arial}
 .section{background:#111a2e;padding:15px;margin:10px;border-radius:10px}
-.hidden{display:none}
 .red{color:#ff4d4d}
 .green{color:#4dff88}
 .yellow{color:#ffd24d}
+input,textarea,select{width:100%;padding:8px;margin:5px}
+button{padding:10px;background:#00d4ff;border:none}
 table{width:100%}
 td,th{border:1px solid #333;padding:5px}
 img{max-width:80px}
+.hidden{display:none}
 </style>
-</head>
 
+</head>
 <body>
 
 <h2>✈️ SMARTCARGO SERVER – REAL COUNTER LOGIC</h2>
 
+<!-- INPUT INTELIGENTE -->
+<div class="section">
+<h3>🧠 CAPTURA INTELIGENTE (TIPO WHATSAPP)</h3>
+
+<textarea id="input_texto" rows="5" placeholder="Pegue, escriba o dicte toda la información de la carga..."></textarea>
+<button onclick="activarVoz()">🎤 Dictar</button>
+
+<div id="live_feedback" class="yellow"></div>
+</div>
+
 <!-- ROL -->
 <div class="section">
-<h3>1. ROL OPERATIVO</h3>
-<select id="rol" onchange="rolInfo()">
+<h3>👤 ROL</h3>
+<select id="rol">
 <option value="">Selecciona</option>
 <option>SHIPPER</option>
 <option>FORWARDER</option>
 <option>WAREHOUSE</option>
 <option>TRUCKER</option>
 </select>
-<div id="rol_help" class="yellow"></div>
 </div>
 
 <!-- TIPO -->
 <div class="section">
-<h3>2. TIPO DE CARGA</h3>
-<select id="tipo" onchange="tipoInfo()">
+<h3>📦 TIPO DE CARGA</h3>
+<select id="tipo">
 <option>GENERAL</option>
 <option>DGR</option>
 <option>PER</option>
 <option>VAL</option>
 <option>HUM</option>
+<option>AVI</option>
+<option>MED</option>
+<option>ICE</option>
 </select>
-
-<div id="tipo_help"></div>
-<div id="docs_live"></div>
 </div>
 
 <!-- PIEZAS -->
 <div class="section">
-<h3>3. AUDITORÍA FÍSICA</h3>
+<h3>📦 AUDITORÍA FÍSICA</h3>
 
 <table id="tabla">
 <tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th></tr>
@@ -62,85 +73,78 @@ img{max-width:80px}
 
 <!-- VALIDACIÓN -->
 <div class="section">
-<button onclick="validar()">VALIDAR (SIMULACIÓN COUNTER)</button>
+<button onclick="validar()">VALIDAR COUNTER</button>
 <div id="resultado"></div>
 </div>
 
 <script>
 
-// 🔵 ROL
-function rolInfo(){
-let r = rol.value;
-let msg = "";
+let recognition;
 
-if(r==="SHIPPER") msg="Responsable de documentos originales.";
-if(r==="FORWARDER") msg="Coordina AWB y consolidación.";
-if(r==="WAREHOUSE") msg="Valida físico y discrepancias.";
-if(r==="TRUCKER") msg="Solo entrega, mínima documentación.";
+// 🎤 VOZ CONTINUA
+function activarVoz(){
+recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang="es-ES";
+recognition.continuous=true;
 
-rol_help.innerHTML = msg;
-}
-
-// 🔵 TIPO
-function tipoInfo(){
-
-let t = tipo.value;
-
-let docs = {
-GENERAL:["AWB (1 original + 2 copias)", "Factura (3 copias)"],
-DGR:["Shipper Declaration (3 originales)", "MSDS", "UN Packaging"],
-PER:["Certificado sanitario", "Control temperatura"],
-VAL:["Manifiesto VAL", "Custodia armada"],
-HUM:["Acta defunción", "Permiso tránsito"]
+recognition.onresult = (e)=>{
+input_texto.value += e.results[e.results.length-1][0].transcript + " ";
+analizarTexto();
 };
 
-let info = {
-DGR:"⚠ Requiere especialista DG",
-PER:"⚠ Control de temperatura obligatorio",
-VAL:"⚠ Seguridad reforzada",
-HUM:"⚠ Manejo prioritario"
-};
-
-docs_live.innerHTML = docs[t].map(d=>`<div class='yellow'>📄 ${d}</div>`).join("");
-tipo_help.innerHTML = `<div class='yellow'>${info[t]||""}</div>`;
+recognition.start();
 }
 
-// 🔵 PIEZAS
+// 🔴 ANÁLISIS EN TIEMPO REAL
+function analizarTexto(){
+let t = input_texto.value.toUpperCase();
+
+let msg="";
+
+if(t.includes("DGR") || t.includes("CORROSIVO")){
+msg += "⚠ Detectado posible DGR → Requiere declaración DG<br>";
+}
+
+if(t.includes("FRIO") || t.includes("TEMPERATURA")){
+msg += "⚠ Detectado PER → Control temperatura<br>";
+}
+
+live_feedback.innerHTML = msg;
+}
+
+// ➕ PIEZAS
 function add(){
 let tr = document.createElement("tr");
 
 tr.innerHTML = `
 <td><input class="cant"></td>
-<td><input class="l" oninput="liveCheck(this)"></td>
-<td><input class="w" oninput="liveCheck(this)"></td>
-<td><input class="h" oninput="liveCheck(this)"></td>
-<td><input class="peso" oninput="liveCheck(this)"></td>
+<td><input class="l" oninput="validarCampo(this)"></td>
+<td><input class="w" oninput="validarCampo(this)"></td>
+<td><input class="h" oninput="validarCampo(this)"></td>
+<td><input class="peso" oninput="validarCampo(this)"></td>
 <td><input type="file" onchange="preview(this)"></td>
 `;
 
 tabla.appendChild(tr);
 }
 
-// 🔵 FOTO
+// 📷 FOTO
 function preview(input){
 let img = document.createElement("img");
 img.src = URL.createObjectURL(input.files[0]);
 input.parentNode.appendChild(img);
 }
 
-// 🔴 VALIDACIÓN EN TIEMPO REAL
-function liveCheck(input){
-
-let val = input.value;
-
-if(val <= 0){
-input.style.border="2px solid red";
+// VALIDACIÓN CAMPO
+function validarCampo(i){
+if(i.value<=0){
+i.style.border="2px solid red";
 }else{
-input.style.border="2px solid green";
+i.style.border="2px solid green";
 }
 }
 
-// 🔵 VALIDACIÓN FINAL
+// VALIDAR
 async function validar(){
 
 let piezas=[];
@@ -152,7 +156,8 @@ piezas.push({
 l:r.querySelector(".l").value,
 w:r.querySelector(".w").value,
 h:r.querySelector(".h").value,
-peso:r.querySelector(".peso").value
+peso:r.querySelector(".peso").value,
+foto:r.querySelector("input[type=file]").files.length>0
 });
 });
 
@@ -161,7 +166,8 @@ method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 tipo:tipo.value,
-piezas:piezas
+piezas:piezas,
+input_texto:input_texto.value
 })
 });
 
@@ -176,14 +182,15 @@ d.documentos.forEach(doc=>{
 html += `<div class="yellow">${doc}</div>`;
 });
 
-html += "<h4>ALERTAS:</h4>";
+html += "<h4>ALERTAS Y SOLUCIONES:</h4>";
 d.alertas.forEach((a,i)=>{
 html += `<div class="red">⚠ ${a}</div>`;
-html += `<div>✔ SOLUCIÓN: ${d.soluciones[i]}</div>`;
+html += `<div>✔ ${d.soluciones[i]}</div>`;
+html += `<div class="yellow">${d.explicaciones[i]}</div>`;
 });
 
 if(d.alertas.length===0){
-html += `<div class="green">✔ LISTO PARA COUNTER</div>`;
+html += `<div class="green">✔ LISTO PARA VOLAR</div>`;
 }
 
 resultado.innerHTML = html;
