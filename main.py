@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn, os
 
-app = FastAPI(title="SMARTCARGO CORE V3")
+app = FastAPI(title="SMARTCARGO SERVER PRO V4")
 
 if not os.path.exists("static"): os.makedirs("static")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -18,19 +18,24 @@ async def validar(data: dict):
 
     alertas = []
     soluciones = []
+    docs = []
 
     piezas = data.get("piezas", [])
+    tipo = data.get("tipo", "GENERAL")
 
     if len(piezas) == 0:
-        alertas.append("NO HAY PIEZAS REGISTRADAS")
-        soluciones.append("Debe ingresar al menos 1 pieza con peso y dimensiones.")
-        return {"status":"STOP", "alertas":alertas, "soluciones":soluciones}
+        return {
+            "status":"STOP",
+            "alertas":["NO HAY CARGA"],
+            "soluciones":["Debe registrar al menos una pieza"]
+        }
 
     total_real = 0
     total_vol = 0
     max_h = 0
 
     for i,p in enumerate(piezas):
+
         try:
             l = float(p["l"])
             w = float(p["w"])
@@ -38,8 +43,8 @@ async def validar(data: dict):
             peso = float(p["peso"])
 
             if l<=0 or w<=0 or h<=0 or peso<=0:
-                alertas.append(f"DATOS INVÁLIDOS PIEZA {i+1}")
-                soluciones.append("No se permiten valores 0. Verifique dimensiones reales.")
+                alertas.append(f"PIEZA {i+1} INVÁLIDA")
+                soluciones.append("Ingrese dimensiones reales (no 0)")
                 continue
 
             vol = (l*w*h)/166
@@ -47,29 +52,33 @@ async def validar(data: dict):
             total_real += peso
             total_vol += vol
 
-            if h > max_h:
-                max_h = h
+            if h > max_h: max_h = h
 
-            # ALTURA
             if h > 63:
-                alertas.append(f"ALTURA EXCESIVA PIEZA {i+1}")
-                soluciones.append("Mover a vuelo carguero (CAO).")
+                alertas.append(f"ALTURA EXCESIVA PZA {i+1}")
+                soluciones.append("Mover a carguero CAO")
 
         except:
-            alertas.append(f"ERROR EN PIEZA {i+1}")
-            soluciones.append("Revisar datos numéricos.")
+            alertas.append(f"ERROR PIEZA {i+1}")
+            soluciones.append("Verificar datos numéricos")
 
-    tipo = data.get("tipo")
-
-    # DGR
+    # 🔴 MOTOR POR TIPO DE CARGA
     if tipo == "DGR":
-        alertas.append("CARGA DGR DETECTADA")
-        soluciones.append("Requiere Shipper Declaration + embalaje UN.")
+        docs += ["Shipper Declaration (3 copias)", "MSDS", "UN Packaging Cert"]
+        alertas.append("CARGA DGR")
+        soluciones.append("Requiere especialista DG + etiquetas IATA")
 
-    # PER
     if tipo == "PER":
-        alertas.append("CONTROL DE TEMPERATURA REQUERIDO")
-        soluciones.append("Agregar gel pack o dry ice certificado.")
+        docs += ["Certificado sanitario", "Control temperatura"]
+        soluciones.append("Usar gel pack o dry ice certificado")
+
+    if tipo == "VAL":
+        docs += ["Manifiesto VAL", "Custodia armada"]
+        soluciones.append("Coordinación seguridad aeropuerto")
+
+    if tipo == "HUM":
+        docs += ["Acta defunción", "Permiso tránsito"]
+        soluciones.append("Manejo prioritario y respetuoso")
 
     status = "APROBADO" if len(alertas)==0 else "STOP / HOLD"
 
@@ -78,7 +87,8 @@ async def validar(data: dict):
         "peso_cobrable": round(max(total_real,total_vol),2),
         "alertas": alertas,
         "soluciones": soluciones,
-        "tipo_avion": "CAO" if max_h>63 else "PAX"
+        "documentos": docs,
+        "avion": "CAO" if max_h>63 else "PAX"
     }
 
 if __name__ == "__main__":
