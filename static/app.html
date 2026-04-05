@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AL CIELO - SmartCargo Advisory</title>
     <style>
         :root {
@@ -14,177 +14,167 @@
             --warning: #ffd24d;
             --text-muted: #a0aec0;
         }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; }
-        .container { max-width: 1100px; margin: auto; }
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
+        .container { max-width: 100%; margin: auto; padding-bottom: 50px; }
         
-        /* Header Profesional */
-        header { border-bottom: 2px solid var(--accent); padding: 15px 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .logo-text { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+        header { border-bottom: 2px solid var(--accent); padding: 10px 0; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+        .logo-text { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: var(--accent); }
 
-        /* Cortinas Inteligentes */
-        .collapsible { background: var(--card); color: white; cursor: pointer; padding: 18px; width: 100%; border: none; text-align: left; outline: none; font-size: 16px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); }
+        .collapsible { background: var(--card); color: white; cursor: pointer; padding: 15px; width: 100%; border: none; text-align: left; font-size: 15px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); transition: 0.3s; }
         .active, .collapsible:hover { background: #1a263f; }
-        .content { padding: 0 18px; display: none; overflow: hidden; background-color: #0d1629; border-radius: 0 0 8px 8px; margin-bottom: 15px; border: 1px solid #222; }
+        .content { padding: 15px; display: block; background-color: #0d1629; border-radius: 0 0 8px 8px; margin-bottom: 15px; border: 1px solid #222; }
 
-        /* Grid de Datos Generales */
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; padding: 20px 0; }
-        .input-group { display: flex; flex-direction: column; }
-        label { font-size: 12px; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
-        input, select, textarea { background: #1a263f; color: white; border: 1px solid #333; padding: 10px; border-radius: 5px; font-size: 14px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+        label { font-size: 11px; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
+        input, select, textarea { background: #1a263f; color: white; border: 1px solid #333; padding: 10px; border-radius: 5px; font-size: 14px; width: 100%; }
+        
+        /* ALERTAS EN TIEMPO REAL */
+        .live-error { color: var(--danger); background: rgba(255, 77, 77, 0.15); border: 1px solid var(--danger); padding: 10px; border-radius: 5px; margin-top: 10px; display: none; font-size: 13px; font-weight: bold; }
+        .live-error.visible { display: block; animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
 
-        /* Tablas de Cumplimiento */
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
-        th { background: #1a263f; color: var(--accent); padding: 12px; text-align: left; border-bottom: 2px solid var(--accent); }
-        td { padding: 10px; border-bottom: 1px solid #222; }
+        /* TABLA RESPONSIVA */
+        .table-wrapper { overflow-x: auto; width: 100%; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #1a263f; color: var(--accent); padding: 8px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid var(--accent); }
+        td { padding: 8px; border-bottom: 1px solid #222; text-align: center; }
 
-        /* Semáforo de Estado */
-        .status-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
+        .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; text-transform: uppercase; font-size: 12px; }
         .bg-red { background: var(--danger); color: white; }
         .bg-green { background: var(--success); color: black; }
         .bg-yellow { background: var(--warning); color: black; }
 
-        /* Botones de Acción */
-        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; }
-        .btn-validate { background: var(--accent); color: #000; font-size: 18px; }
-        .btn-clear { background: #333; color: white; margin-top: 40px; }
+        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; font-size: 16px; margin-top: 10px; text-transform: uppercase; }
+        .btn-validate { background: var(--accent); color: #000; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
+        .btn-mini { background: #1a263f; color: var(--accent); border: 1px solid var(--accent); padding: 8px; font-size: 12px; margin-top: 5px; }
+        .btn-clear { background: #333; color: white; margin-top: 30px; opacity: 0.7; }
         
-        .floating-summary { background: #070d1a; border: 2px solid var(--accent); padding: 20px; border-radius: 12px; margin-top: 30px; }
-        img { max-width: 60px; border-radius: 4px; }
-        .sol-box { background: rgba(77, 255, 136, 0.1); border-left: 4px solid var(--success); padding: 10px; margin-top: 5px; }
+        .floating-summary { background: #070d1a; border: 2px solid var(--accent); padding: 15px; border-radius: 12px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .vol-display { font-size: 10px; color: var(--warning); display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="logo-text">✈️ AL CIELO <span style="font-size: 12px; color: var(--text-muted);">| SmartCargo Advisory</span></div>
+        <div class="logo-text">✈️ AL CIELO | <small>ADVISORY</small></div>
         <div id="global_status" class="status-badge bg-yellow">ESPERANDO DATOS</div>
     </header>
 
-    <button class="collapsible">1. IDENTIFICACIÓN Y ROL DEL ACTOR <span>▼</span></button>
+    <button class="collapsible">1. ACTORES Y RUTA <span>▼</span></button>
     <div class="content">
         <div class="grid-inputs">
+            <div class="input-group"><label>Guía AWB</label><input type="text" id="awb" placeholder="000-00000000"></div>
+            <div class="input-group"><label>Dueño/Cliente</label><input type="text" id="cliente" placeholder="Nombre Empresa"></div>
             <div class="input-group">
-                <label>Número de Guía (AWB)</label>
-                <input type="text" id="awb" placeholder="000-00000000">
-            </div>
-            <div class="input-group">
-                <label>Dueño de Carga / Cliente</label>
-                <input type="text" id="cliente" placeholder="Nombre de la Empresa">
-            </div>
-            <div class="input-group">
-                <label>Rol en Operación</label>
+                <label>Tu Rol</label>
                 <select id="rol">
-                    <option value="TRUCKER">CAMIONERO (Entrega rápida)</option>
-                    <option value="FORWARDER">FORWARDER (Logística/Papelería)</option>
-                    <option value="SHIPPER">SHIPPER (Dueño/Origen)</option>
-                    <option value="COUNTER">AGENTE COUNTER (Aceptación)</option>
+                    <option value="TRUCKER">CAMIONERO</option>
+                    <option value="FORWARDER">FORWARDER</option>
+                    <option value="SHIPPER">SHIPPER</option>
+                    <option value="COUNTER">AGENTE COUNTER</option>
                 </select>
             </div>
-            <div class="input-group">
-                <label>Destino Final</label>
-                <input type="text" id="destino" placeholder="MIA, BOG, MEX...">
-            </div>
+            <div class="input-group"><label>Destino</label><input type="text" id="destino" placeholder="MIA / BOG"></div>
         </div>
     </div>
 
-    <button class="collapsible">2. CLASIFICACIÓN DE CARGA (IATA/DOT) <span>▼</span></button>
+    <button class="collapsible">2. INTERROGATORIO AURA SCAN <span>▼</span></button>
     <div class="content">
         <div class="grid-inputs">
             <div class="input-group">
-                <label>Naturaleza de Carga</label>
-                <select id="tipo">
+                <label>Tipo de Carga</label>
+                <select id="tipo" onchange="actualizarPapeleria()">
                     <option value="GENERAL">CARGA GENERAL</option>
-                    <option value="DGR">MERCANCÍA PELIGROSA (DG)</option>
-                    <option value="PER">PERECEDEROS (FRIO)</option>
+                    <option value="DGR">MERCANCÍA PELIGROSA</option>
+                    <option value="PER">PERECEDEROS</option>
                     <option value="AVI">ANIMALES VIVOS</option>
-                    <option value="HUM">RESTOS HUMANOS (HUM)</option>
-                    <option value="VAL">VALORES (VUL)</option>
-                    <option value="PHR">FARMACÉUTICOS</option>
-                    <option value="ICE">DRY ICE (HIELO SECO)</option>
-                    <option value="COMAT">COMAT (Material Aerolínea)</option>
+                    <option value="HUM">RESTOS HUMANOS</option>
+                    <option value="VAL">VALORES</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Tipo de Embalaje</label>
+                <label>Embalaje</label>
                 <select id="embalaje">
-                    <option>PALLET (Skids)</option>
-                    <option>BOXES (Cajas)</option>
-                    <option>CRATE (Huacal Madera)</option>
-                    <option>DRUMS (Tambores)</option>
-                    <option>ENGINE (Motor)</option>
-                    <option>CONSOL (Consolidado)</option>
+                    <option>PALLET / SKIDS</option>
+                    <option>CAJAS / BOXES</option>
+                    <option>HUACAL / CRATE</option>
+                    <option>TAMBOR / DRUM</option>
                 </select>
             </div>
-            <div class="input-group" style="grid-column: span 2;">
-                <label>Descripción Dictada / Observaciones (Aura Scan)</label>
-                <textarea id="input_texto" rows="3" placeholder="Dicte o escriba: 'Traigo 2 pallets de madera con repuestos, no tiene sello de fumigación...'"></textarea>
-                <button onclick="activarVoz()" style="margin-top:5px; background: #333; color: white; border: none; padding: 5px; cursor: pointer;">🎤 Iniciar Dictado Profesional</button>
-            </div>
+        </div>
+        <div class="input-group" style="margin-top:10px;">
+            <label>Descripción / Observaciones Críticas</label>
+            <textarea id="input_texto" rows="3" oninput="miniValidador()" placeholder="Describa: 'Pallets de madera, sin sello visible, carga mojada...'"></textarea>
+            <button class="btn-mini" onclick="activarVoz()">🎤 INICIAR DICTADO PROFESIONAL</button>
+            <button class="btn-mini" onclick="miniValidador()" style="background: var(--accent); color:black;">🔍 RECTIFICAR AHORA</button>
+            
+            <div id="mini_alertas" class="live-error"></div>
         </div>
     </div>
 
-    <button class="collapsible">3. AUDITORÍA FÍSICA Y DIMENSIONES <span>▼</span></button>
+    <button class="collapsible">3. AUDITORÍA FÍSICA (TIEMPO REAL) <span>▼</span></button>
     <div class="content">
-        <table id="tabla_piezas">
-            <thead>
-                <tr>
-                    <th>CANT</th>
-                    <th>LARGO (in)</th>
-                    <th>ANCHO (in)</th>
-                    <th>ALTO (in)</th>
-                    <th>PESO (kg)</th>
-                    <th>FOTO</th>
-                    <th>ULD SUGERIDO</th>
-                </tr>
-            </thead>
-            <tbody>
-                </tbody>
-        </table>
-        <button onclick="addPieza()" style="background:var(--accent); color:black; border:none; padding:10px; border-radius:5px; margin-bottom:15px; cursor:pointer;">+ Agregar Pieza/Pallet</button>
-    </div>
-
-    <button class="btn btn-validate" onclick="validarCarga()">VERIFICAR CUMPLIMIENTO TOTAL (COUNTER)</button>
-
-    <div id="diagnostico_final" class="floating-summary" style="display:none;">
-        <h2 id="final_status_text">DIAGNÓSTICO DE OPERACIÓN</h2>
-        
-        <div id="resumen_visual" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-            </div>
-
-        <div id="seccion_irregularidades">
-            <h3>🔍 HALLAZGOS Y ACCIONES CORRECTIVAS</h3>
-            <table id="tabla_errores">
+        <div class="table-wrapper">
+            <table id="tabla_piezas">
                 <thead>
-                    <tr><th>IRREGULARIDAD DETECTADA</th><th>INSTRUCCIÓN TÉCNICA PARA VOLAR</th></tr>
+                    <tr>
+                        <th>Cant</th>
+                        <th>L (in)</th>
+                        <th>W (in)</th>
+                        <th>H (in)</th>
+                        <th>Kg</th>
+                        <th>Vol/ULD</th>
+                    </tr>
                 </thead>
-                <tbody id="lista_errores"></tbody>
+                <tbody></tbody>
             </table>
         </div>
-
-        <div id="seccion_papeleria">
-            <h3>📋 PAPELERÍA COMPLETA NECESARIA (Pouch Check)</h3>
-            <div id="documentos_lista" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
-        </div>
-
-        <div style="margin-top:20px; border-top: 1px solid #333; padding-top: 20px;">
-            <p><b>Objetivo de Asesoría:</b> Prevención de rechazos en counter Avianca y cumplimiento con TSA / CBP / IATA.</p>
-            <button class="btn" style="background:#5cb85c; color:white;" onclick="window.print()">🖨️ GENERAR REPORTE PDF PARA WHATSAPP</button>
-        </div>
+        <button onclick="addPieza()" class="btn-mini">+ AÑADIR PIEZA</button>
     </div>
 
-    <button class="btn btn-clear" onclick="borrarTodo()">🗑️ LIMPIAR SISTEMA / NUEVA INSPECCIÓN</button>
+    <button class="btn btn-validate" onclick="validarCarga()">VALIDAR TODO Y VOLAR</button>
+
+    <div id="diagnostico_final" class="floating-summary" style="display:none;">
+        <h3 id="final_status_text">DIAGNÓSTICO FINAL AURA</h3>
+        <div id="resumen_visual" style="font-size:14px; line-height:1.6;"></div>
+        
+        <div id="seccion_papeleria" style="margin-top:15px;">
+            <label>PAPELERÍA OBLIGATORIA:</label>
+            <div id="documentos_lista" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
+        </div>
+
+        <button class="btn" style="background:var(--success); color:black;" onclick="window.print()">🖨️ GENERAR REPORTE PDF</button>
+    </div>
+
+    <button class="btn btn-clear" onclick="location.reload()">🗑️ NUEVA SESIÓN / BORRAR TODO</button>
 </div>
 
 <script>
-    // Lógica de Cortinas
-    var coll = document.getElementsByClassName("collapsible");
-    for (var i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            var content = this.nextElementSibling;
-            content.style.display = content.style.display === "block" ? "none" : "block";
-        });
+    // Cálculos y Alertas Instantáneas
+    function miniValidador() {
+        const t = document.getElementById("input_texto").value.toUpperCase();
+        const alerts = document.getElementById("mini_alertas");
+        let msg = "";
+
+        if ((t.includes("MADERA") || t.includes("PALLET")) && !t.includes("SELLO") && !t.includes("ISPM")) {
+            msg += "⚠ ERROR: MADERA DETECTADA SIN SELLO ISPM15. <br>SOLUCIÓN: FUMIGAR O CAMBIAR A PLÁSTICO AHORA.<br>";
+        }
+        if (t.includes("MOJADO") || t.includes("ROTO") || t.includes("DAÑADO")) {
+            msg += "⚠ ALERTA SEGURIDAD TSA: CARGA COMPROMETIDA. <br>SOLUCIÓN: RE-EMBALAR O ASEGURAR CON FILM ANTES DE LLEGAR.<br>";
+        }
+        if (t.includes("BATERIA") || t.includes("BATTERY") || t.includes("LI-ION")) {
+            msg += "⚠ REGLA IATA DGR: REQUIERE TEST SUMMARY Y ETIQUETADO DE BATERÍAS.<br>";
+        }
+
+        if (msg) {
+            alerts.innerHTML = msg;
+            alerts.classList.add("visible");
+        } else {
+            alerts.classList.remove("visible");
+        }
     }
 
     function addPieza() {
@@ -192,27 +182,35 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><input type="number" class="cant" value="1"></td>
-            <td><input type="number" class="l" placeholder="L"></td>
-            <td><input type="number" class="w" placeholder="W"></td>
-            <td><input type="number" class="h" placeholder="H"></td>
-            <td><input type="number" class="p" placeholder="kg"></td>
-            <td><input type="file" onchange="preview(this)"></td>
-            <td class="uld-sug">-</td>
+            <td><input type="number" class="l" oninput="calcVol(this)"></td>
+            <td><input type="number" class="w" oninput="calcVol(this)"></td>
+            <td><input type="number" class="h" oninput="calcVol(this)"></td>
+            <td><input type="number" class="p"></td>
+            <td class="vol-cell"><span class="vol-display">0 kgv</span></td>
         `;
         tbody.appendChild(tr);
     }
 
-    function preview(input) {
-        if (input.files && input.files[0]) {
-            let img = document.createElement("img");
-            img.src = URL.createObjectURL(input.files[0]);
-            input.parentNode.appendChild(img);
+    function calcVol(el) {
+        const tr = el.closest("tr");
+        const l = tr.querySelector(".l").value || 0;
+        const w = tr.querySelector(".w").value || 0;
+        const h = tr.querySelector(".h").value || 0;
+        const vol = Math.round((l * w * h) / 166);
+        tr.querySelector(".vol-display").innerText = vol + " kgv";
+        
+        // Alerta de Altura en vivo
+        if (h > 63) {
+            tr.querySelector(".h").style.color = "var(--danger)";
+            tr.querySelector(".vol-display").innerHTML += "<br><b style='color:red'>! CAO ONLY</b>";
+        } else {
+            tr.querySelector(".h").style.color = "white";
         }
     }
 
     async function validarCarga() {
-        const diagnostico = document.getElementById("diagnostico_final");
-        diagnostico.style.display = "block";
+        const d_final = document.getElementById("diagnostico_final");
+        d_final.style.display = "block";
         
         let piezas = [];
         document.querySelectorAll("#tabla_piezas tbody tr").forEach(tr => {
@@ -229,7 +227,6 @@
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
                 awb: document.getElementById("awb").value,
-                cliente: document.getElementById("cliente").value,
                 tipo: document.getElementById("tipo").value,
                 rol: document.getElementById("rol").value,
                 input_texto: document.getElementById("input_texto").value,
@@ -238,62 +235,44 @@
         });
 
         const d = await res.json();
-        
-        // Actualizar Global Status
         const gStatus = document.getElementById("global_status");
         gStatus.innerHTML = d.status;
         gStatus.className = "status-badge " + (d.status === "FLY READY" ? "bg-green" : "bg-red");
 
-        // Resumen Visual
         document.getElementById("resumen_visual").innerHTML = `
-            <div class="section"><b>PESO COBRABLE:</b><br>${d.peso_cobrable} kg</div>
-            <div class="section"><b>AERONAVE:</b><br>${d.avion}</div>
-            <div class="section"><b>DESTINO:</b><br>${document.getElementById("destino").value}</div>
-            <div class="section"><b>STATUS:</b><br>${d.status}</div>
+            <b>ESTADO FINAL:</b> <span style="color:${d.status === 'FLY READY' ? 'var(--success)' : 'var(--danger)'}">${d.status}</span><br>
+            <b>PESO COBRABLE TOTAL:</b> ${d.peso_cobrable} kg<br>
+            <b>EQUIPO REQUERIDO:</b> ${d.avion}<br>
+            <hr border="0" style="border-top:1px solid #333">
+            <p style="color:var(--warning)">${d.alertas.length > 0 ? "⚠️ ATENCIÓN: " + d.alertas.join(" | ") : "✅ TODO EN ORDEN PARA VOLAR"}</p>
         `;
 
-        // Tabla de Errores
-        let erroresHtml = "";
-        if(d.alertas.length > 0) {
-            d.alertas.forEach((a, i) => {
-                erroresHtml += `<tr>
-                    <td class="bg-red">⚠ ${a}</td>
-                    <td>
-                        <div class="sol-box"><b>INSTRUCCIÓN:</b> ${d.soluciones[i]}</div>
-                        <small style="color:var(--text-muted)">Fundamento: ${d.explicaciones[i]}</small>
-                    </td>
-                </tr>`;
-            });
-        } else {
-            erroresHtml = "<tr><td colspan='2' class='bg-green' style='text-align:center'>OPERACIÓN LIMPIA: TODO CUMPLE CON NORMAS IATA/TSA/AVIANCA</td></tr>";
-        }
-        document.getElementById("lista_errores").innerHTML = erroresHtml;
-
-        // Papelería
         document.getElementById("documentos_lista").innerHTML = d.documentos.map(doc => 
-            `<span style="background:#1a263f; padding:8px; border-radius:5px; border:1px solid var(--accent); font-size:11px;">📄 ${doc.toUpperCase()}</span>`
+            `<span style="background:#1a263f; padding:5px 10px; border-radius:15px; border:1px solid var(--accent); font-size:11px;">${doc.toUpperCase()}</span>`
         ).join("");
 
         window.scrollTo(0, document.body.scrollHeight);
     }
 
     function activarVoz() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "es-ES";
-        recognition.onresult = (e) => {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = "es-ES";
+        rec.onresult = (e) => {
             document.getElementById("input_texto").value = e.results[0][0].transcript;
+            miniValidador();
         };
-        recognition.start();
+        rec.start();
     }
 
-    function borrarTodo() {
-        if(confirm("¿Desea limpiar todos los datos de la asesoría actual?")) {
-            location.reload();
+    // Cortinas
+    document.querySelectorAll(".collapsible").forEach(btn => {
+        btn.onclick = function() {
+            let c = this.nextElementSibling;
+            c.style.display = (c.style.display === "none" || c.style.display === "") ? "block" : "none";
         }
-    }
+    });
 
-    addPieza(); // Iniciar con una fila
+    addPieza();
 </script>
-
 </body>
 </html>
