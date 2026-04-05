@@ -11,28 +11,44 @@
         .container { padding: 15px; max-width: 850px; margin: auto; }
         .card { background: var(--card); padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #374151; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         h3 { margin-top: 0; color: var(--green); font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #374151; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* Pouch & Steps */
         .step-box { background: #111827; padding: 10px; border-left: 4px solid var(--green); margin-bottom: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
         .qty-badge { background: var(--green); color: black; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
         .base-doc { border-color: var(--yellow); background: rgba(250, 204, 21, 0.05); }
+
+        /* Form Elements */
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 11px; color: #9ca3af; text-transform: uppercase; }
         input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        
+        /* Piezas / Pallets */
         .piece-row { background: #111827; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; position: relative; }
         .grid-pieces { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;}
         .dims-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .vol-display { color: var(--yellow); font-size: 12px; font-weight: bold; margin-top: 8px; display: block; }
         .img-preview { max-width: 100px; max-height: 100px; margin-top: 10px; border-radius: 5px; border: 1px solid var(--green); display: none; }
+
+        /* ULD Buttons */
         .uld-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .btn-uld { background: #374151; color: white; border: 1px solid var(--green); padding: 12px; font-size: 11px; cursor: pointer; border-radius: 6px; transition: 0.2s; }
         .btn-uld.active { background: var(--green); color: black; font-weight: bold; }
+
+        /* Roles Buttons */
         .role-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
         .btn-role { background: #1f2937; color: #9ca3af; border: 1px solid #4b5563; padding: 8px; font-size: 10px; cursor: pointer; border-radius: 4px; }
         .btn-role.active { border-color: var(--yellow); color: var(--yellow); font-weight: bold; }
+
+        /* Voice & Scan */
         .voice-controls { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-mic { background: #374151; flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; border-radius: 6px; border: 1px solid #4b5563; cursor: pointer; padding: 12px; }
+        .btn-mic { background: #374151; flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; border-radius: 6px; border: 1px solid #4b5563; cursor: pointer; }
         .btn-mic.recording { background: var(--red); animation: pulse 1.5s infinite; }
         .btn-scan { background: var(--green); color: black; font-weight: bold; width: 140px; border: none; border-radius: 6px; cursor: pointer; }
+
+        /* Alerts */
         .warning-live { color: var(--red); background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: 6px; border: 1px solid var(--red); margin-top: 10px; display: none; font-weight: bold; font-size: 12px; }
+
         button.main-exec { background: var(--green); color: black; font-weight: 800; border: none; padding: 20px; width: 100%; cursor: pointer; border-radius: 8px; font-size: 18px; margin-top: 20px; text-transform: uppercase; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
         .hidden { display: none; }
     </style>
@@ -42,6 +58,7 @@
 <header>🚀 AL CIELO: SMARTCARGO ADVISORY - MIA TERMINAL</header>
 
 <div class="container">
+
     <div class="card">
         <h3>0. 👤 IDENTIFICACIÓN DEL USUARIO</h3>
         <div class="role-grid">
@@ -64,7 +81,9 @@
             <option value="HUM">HUMAN REMAINS (HUM)</option>
             <option value="DRY">DRY ICE (SUBSIDIARIO)</option>
         </select>
+        
         <div id="pouch_content" style="margin-top: 15px;"></div>
+        <p style="font-size: 10px; color: var(--yellow); margin-top: 10px;">* El orden del sobre debe ser descendente para evitar esperas en counter Avianca.</p>
     </div>
 
     <div class="card">
@@ -105,40 +124,93 @@
 </div>
 
 <script>
-    const pouchData = {
-        "BASE": [{n: "AWB ORIGINAL", q: "TOP"}, {n: "COMMERCIAL INVOICE", q: "REQ"}, {n: "PACKING LIST", q: "REQ"}, {n: "ID / RESP. SHIPPER", q: "REQ"}],
-        "GENERAL": [{n: "AWB (1+3 COPIAS)", q: "MIA-STD"}, {n: "COMMERCIAL INVOICE", q: "1 ORIG + 2 COP"}, {n: "PACKING LIST DETALLADO", q: "ORIG"}, {n: "CARTA RESPONSABILIDAD", q: "FIRMA"}],
-        "DGR": [{n: "AWB ORIGINAL (1+4 COPIAS)", q: "DGR-STD"}, {n: "SHIPPER DECLARATION", q: "3 ORIG B. ROJO"}, {n: "MSDS (HOJA SEGURIDAD)", q: "REQ"}, {n: "DG CHECKLIST", q: "AV-OK"}],
-        "PER": [{n: "AWB (1+3 COPIAS)", q: "PER-STD"}, {n: "CERT. FITOSANITARIO / USDA", q: "ORIG"}, {n: "TEMPERATURE LOG", q: "SI APLICA"}, {n: "INVOICE + PACKING", q: "2 COP"}],
-        "PHR": [{n: "AWB (1+3 COPIAS)", q: "PHR-STD"}, {n: "CERT. CALIDAD / LOTE", q: "REQ"}, {n: "TEMPERATURE DECLARATION", q: "ORIG"}],
-        "HUM": [{n: "AWB (1+3 COPIAS)", q: "HUM-STD"}, {n: "CERT. DEFUNCIÓN / EMBALMING", q: "ORIG"}, {n: "FUNERAL HOME LETTER", q: "ORIG"}],
-        "DRY": [{n: "AWB CON NOTA DRY ICE", q: "REQ"}, {n: "DECLARACIÓN IATA CO2", q: "ORIG"}, {n: "MARCAJE VISIBLE KG", q: "BULTOS"}]
-    };
-
+    // 1. GESTIÓN DE ROLES
     function selectRole(btn, role) {
         document.querySelectorAll('.btn-role').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById("user_role").value = role;
     }
 
+    // 2. LÓGICA DE POUCH (MIA REQUISITOS)
+    const pouchData = {
+        "BASE": [
+            {n: "AWB ORIGINAL", q: "TOP"},
+            {n: "COMMERCIAL INVOICE", q: "REQ"},
+            {n: "PACKING LIST", q: "REQ"},
+            {n: "ID / RESP. SHIPPER", q: "REQ"}
+        ],
+        "GENERAL": [
+            {n: "AWB (1+3 COPIAS)", q: "MIA-STD"},
+            {n: "COMMERCIAL INVOICE", q: "1 ORIG + 2 COP"},
+            {n: "PACKING LIST DETALLADO", q: "ORIG"},
+            {n: "CARTA RESPONSABILIDAD", q: "FIRMA"}
+        ],
+        "DGR": [
+            {n: "AWB ORIGINAL (1+4 COPIAS)", q: "DGR-STD"},
+            {n: "SHIPPER DECLARATION", q: "3 ORIG B. ROJO"},
+            {n: "MSDS (HOJA SEGURIDAD)", q: "REQ"},
+            {n: "DG CHECKLIST", q: "AV-OK"}
+        ],
+        "PER": [
+            {n: "AWB (1+3 COPIAS)", q: "PER-STD"},
+            {n: "CERT. FITOSANITARIO / USDA", q: "ORIG"},
+            {n: "TEMPERATURE LOG", q: "SI APLICA"},
+            {n: "INVOICE + PACKING", q: "2 COP"}
+        ],
+        "PHR": [
+            {n: "AWB (1+3 COPIAS)", q: "PHR-STD"},
+            {n: "CERT. CALIDAD / LOTE", q: "REQ"},
+            {n: "TEMPERATURE DECLARATION", q: "ORIG"}
+        ],
+        "HUM": [
+            {n: "AWB (1+3 COPIAS)", q: "HUM-STD"},
+            {n: "CERT. DEFUNCIÓN / EMBALMING", q: "ORIG"},
+            {n: "FUNERAL HOME LETTER", q: "ORIG"}
+        ],
+        "DRY": [
+            {n: "AWB CON NOTA DRY ICE", q: "REQ"},
+            {n: "DECLARACIÓN IATA CO2", q: "ORIG"},
+            {n: "MARCAJE VISIBLE KG", q: "BULTOS"}
+        ]
+    };
+
     function updatePouch() {
         const type = document.getElementById("cargo_type").value;
         const container = document.getElementById("pouch_content");
-        let html = `<b style="font-size:11px; color:var(--yellow);">[BASE UNIVERSAL]</b>` + 
-                   pouchData["BASE"].map(item => `<div class="step-box base-doc"><span>${item.n}</span><span class="qty-badge">${item.q}</span></div>`).join("") +
-                   `<b style="font-size:11px; color:var(--green); margin-top:10px; display:block;">[REQUISITOS ${type}]</b>` +
-                   pouchData[type].map(item => `<div class="step-box"><span>${item.n}</span><span class="qty-badge">${item.q}</span></div>`).join("");
+        
+        let html = `<b style="font-size:11px; color:var(--yellow);">[BASE UNIVERSAL]</b>`;
+        html += pouchData["BASE"].map(item => `
+            <div class="step-box base-doc"><span>${item.n}</span><span class="qty-badge">${item.q}</span></div>
+        `).join("");
+
+        html += `<b style="font-size:11px; color:var(--green); margin-top:10px; display:block;">[REQUISITOS ${type}]</b>`;
+        html += pouchData[type].map(item => `
+            <div class="step-box"><span>${item.n}</span><span class="qty-badge">${item.q}</span></div>
+        `).join("");
+        
         container.innerHTML = html;
     }
 
+    // 3. GESTIÓN DE PIEZAS
     function addPieceRow() {
         const container = document.getElementById("pieces_list");
         const div = document.createElement("div");
         div.className = "piece-row";
         div.innerHTML = `
             <div class="grid-pieces">
-                <select class="p-type"><option value="pallet_wd">PALLET MADERA</option><option value="pallet_pl">PALLET PLASTICO</option><option value="boxes">BOXES</option></select>
-                <input type="file" accept="image/*" onchange="previewImg(this)" style="display:none;"><button onclick="this.previousElementSibling.click()" style="background:var(--green); border:none; border-radius:4px; font-size:10px; cursor:pointer; height:35px;">FOTO</button>
+                <select class="p-type">
+                    <option value="pallet_wd">PALLET MADERA</option>
+                    <option value="pallet_pl">PALLET PLASTICO</option>
+                    <option value="boxes">BOXES</option>
+                    <option value="drums">DRUMS</option>
+                    <option value="crates">CRATES</option>
+                    <option value="skips">SKIPS/METAL</option>
+                    <option value="engine">ENGINE STAND</option>
+                </select>
+                <div style="display:flex; gap:5px;">
+                    <input type="file" accept="image/*" onchange="previewImg(this)" style="display:none;">
+                    <button onclick="this.previousElementSibling.click()" style="background:var(--green); border:none; border-radius:4px; font-size:10px; cursor:pointer; flex-grow:1;">FOTO</button>
+                </div>
             </div>
             <div class="dims-grid">
                 <input type="number" placeholder="L(in)" class="p-l" oninput="updatePieceCalc(this)">
@@ -147,7 +219,8 @@
                 <input type="number" placeholder="Kg" class="p-p">
             </div>
             <span class="vol-display">Volumen: <span class="v-val">0</span> kgv</span>
-            <img class="img-preview" src="">`;
+            <img class="img-preview" src="">
+        `;
         container.appendChild(div);
     }
 
@@ -170,6 +243,7 @@
         }
     }
 
+    // 4. ULD Y VOZ
     function selectULD(btn, type) {
         document.querySelectorAll('.btn-uld').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -187,7 +261,10 @@
         rec.lang = 'es-ES';
         rec.onstart = () => btn.classList.add("recording");
         rec.onend = () => btn.classList.remove("recording");
-        rec.onresult = e => { document.getElementById("input_texto").value = e.results[0][0].transcript; runMiniScan(); };
+        rec.onresult = e => {
+            document.getElementById("input_texto").value = e.results[0][0].transcript;
+            runMiniScan();
+        };
         rec.start();
     }
 
@@ -195,13 +272,25 @@
         const t = document.getElementById("input_texto").value.toUpperCase();
         const warn = document.getElementById("critical_warning");
         let msg = "";
-        if((t.includes("MADERA") || t.includes("PALLET")) && !t.includes("SELLO")) msg = "❌ ORDEN: ¡PARE EL CAMIÓN! Madera sin sello ISPM15 detectada.";
-        else if(t.includes("ROTO") || t.includes("MOJADO")) msg = "❌ RIESGO TSA: Empaque dañado. No será aceptado en counter.";
-        warn.innerText = msg; warn.style.display = msg ? "block" : "none";
+        if((t.includes("MADERA") || t.includes("PALLET")) && !t.includes("SELLO")) {
+            msg = "❌ ORDEN: ¡PARE EL CAMIÓN! Madera sin sello ISPM15 detectada.";
+        } else if(t.includes("ROTO") || t.includes("MOJADO")) {
+            msg = "❌ RIESGO TSA: Empaque dañado. No será aceptado en counter.";
+        }
+        warn.innerText = msg;
+        warn.style.display = msg ? "block" : "none";
     }
 
+    // 5. EJECUCIÓN FINAL
     async function executePreCheck() {
         const uld = document.getElementById("uld_type").value;
+        const piecesCount = document.querySelectorAll(".piece-row").length;
+        
+        if(!uld || piecesCount === 0) {
+            alert("ERROR: Debe seleccionar ULD e ingresar piezas.");
+            return;
+        }
+
         const pieces = [];
         document.querySelectorAll(".piece-row").forEach(r => {
             pieces.push({
@@ -209,33 +298,49 @@
                 w: parseFloat(r.querySelector(".p-w").value) || 0,
                 h: parseFloat(r.querySelector(".p-h").value) || 0,
                 p: parseFloat(r.querySelector(".p-p").value) || 0,
-                packaging: r.querySelector("select").value
+                packaging: r.querySelector(".p-type").value
             });
         });
+
+        const payload = {
+            user_role: document.getElementById("user_role").value,
+            cargo_type: document.getElementById("cargo_type").value,
+            uld_type: uld,
+            pieces: pieces,
+            raw_text: document.getElementById("input_texto").value
+        };
 
         const res = await fetch("/precheck", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                user_role: document.getElementById("user_role").value,
-                cargo_type: document.getElementById("cargo_type").value,
-                uld_type: uld,
-                pieces: pieces,
-                raw_text: document.getElementById("input_texto").value
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();
         const results = document.getElementById("result_area");
         results.classList.remove("hidden");
+        
         const dBox = document.getElementById("decision_box");
         dBox.innerText = data.status === "READY" ? "ACEPTADO PARA VUELO" : "RECHAZADO / HOLD";
         dBox.style.background = data.status === "READY" ? "var(--green)" : "var(--red)";
-        document.getElementById("instructions_list").innerHTML = data.instructions.map(ins => `<div style="padding:10px; border-bottom:1px solid #333;">👉 ${ins}</div>`).join("");
-        document.getElementById("weight_summary").innerHTML = `CHARGEABLE WEIGHT: ${data.chargeable_weight} KG<br>POSICIÓN ULD: ${data.uld_position}`;
+        dBox.style.color = data.status === "READY" ? "black" : "white";
+
+        document.getElementById("instructions_list").innerHTML = data.instructions.map(ins => 
+            `<div style="padding:10px; border-bottom:1px solid #333;">👉 ${ins}</div>`
+        ).join("");
+
+        document.getElementById("weight_summary").innerHTML = `
+            CHARGEABLE WEIGHT: ${data.chargeable_weight} KG<br>
+            POSICIÓN ULD: ${data.uld_position}
+        `;
+        
         window.scrollTo(0, document.body.scrollHeight);
     }
-    updatePouch(); addPieceRow();
+
+    // Inicializar
+    updatePouch();
+    addPieceRow();
 </script>
+
 </body>
 </html>
