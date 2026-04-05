@@ -22,7 +22,7 @@ class Piece(BaseModel):
     p: float
     qty: int
     packaging: str
-    unit: str # "IN" o "CM"
+    unit: str  # "IN" o "CM"
 
 class PreCheckRequest(BaseModel):
     user_role: str
@@ -36,77 +36,94 @@ async def precheck(data: PreCheckRequest):
     instructions = []
     reject = False
     max_h_in = 0
-    total_kg = 0
-    
-    # Glosario Técnico para el reporte
+    total_actual_kg = 0
+    total_vol_kg = 0
+
+    # Diccionario de Autoridad: Glosario Legal
     glossary = {
-        "ISPM15": "Sello internacional que certifica que la madera está libre de plagas (Exigido por CBP).",
-        "TSA": "Administración de Seguridad en el Transporte. Exige que la carga no sea manipulable.",
-        "HUM": "Human Remains (Restos Humanos). Carga de prioridad máxima con protocolos de dignidad.",
-        "AVI": "Live Animals (Animales Vivos). Requiere ventilación y checklist de bienestar.",
-        "DGD": "Shipper's Declaration for Dangerous Goods. Documento legal para químicos/baterías."
+        "IATA": "Asociación Internacional de Transporte Aéreo (Dicta reglas globales).",
+        "TSA": "Administración de Seguridad en el Transporte (Obligatorio en USA).",
+        "CBP": "Aduanas y Protección Fronteriza (Control de madera y contrabando).",
+        "ISPM15": "Norma Internacional de Medidas Fitosanitarias para Madera.",
+        "DGR": "Mercancías Peligrosas (Requiere certificación técnica).",
+        "AWB": "Guía Aérea (Contrato de transporte)."
     }
 
-    # 1. PROCESAMIENTO DE PIEZAS Y MEDIDAS (Conversión Dinámica)
+    # 1. Lógica Documental Específica por Tipo de Carga
+    doc_map = {
+        "GENERAL": ["AWB Original", "Commercial Invoice (FOB)", "Packing List"],
+        "DGR": ["Shipper's Declaration (Borde Rojo)", "MSDS (Hoja de Seguridad)", "AWB con frases de manejo"],
+        "PER": ["Certificado Fitosanitario", "Factura con tiempo de vida útil"],
+        "PHR": ["Termógrafo (Data Logger)", "Protocolo de temperatura"],
+        "HUMANS": ["Certificado de Defunción", "Permiso de Tránsito Funerario", "Embalaje Hermético"],
+        "LIVE_ANIMALS": ["Certificado Veterinario de Salud", "IATA Live Animals Checklist", "Permiso de Importación"],
+        "DRY_ICE": ["Declaración de cantidad neta", "Etiquetas Clase 9", "Marcado de UN1845"]
+    }
+    
+    required_docs = doc_map.get(data.cargo_type, ["AWB Original"])
+    required_docs.extend(["Carta de Responsabilidad TSA", "ID del Driver"])
+
+    # 2. Auditoría de Piezas (Conversión y Medidas)
     for i, p in enumerate(data.pieces):
-        # Convertir todo a pulgadas para la validación de aviones
+        # Convertir a Pulgadas para lógica de avión si viene en CM
+        l_in = p.l if p.unit == "IN" else p.l / 2.54
+        w_in = p.w if p.unit == "IN" else p.w / 2.54
         h_in = p.h if p.unit == "IN" else p.h / 2.54
+        
         if h_in > max_h_in: max_h_in = h_in
-        total_kg += (p.p * p.qty)
 
-        # Validación de Embalaje por tipo
-        if p.packaging == "DRUM":
-            instructions.append(f"📦 PIEZA #{i+1} (TAMBOR): Debe viajar sobre estiba y asegurado con flejes metálicos. No se acepta plástico (shrink wrap) como único soporte.")
-        if p.packaging == "BOX" and h_in > 45:
-            instructions.append(f"❌ ERROR PIEZA #{i+1}: Caja de cartón muy alta ({round(h_in,1)}in). Riesgo de colapso. ACCIÓN: Re-embalar en CRATE (Huacal) de madera.")
+        # Cálculo de Pesos
+        p_weight = p.p * p.qty
+        p_vol = (l_in * w_in * h_in * p.qty) / 166
+        total_actual_kg += p_weight
+        total_vol_kg += p_vol
+
+        # Validaciones de Embalaje con Autoridad
+        if p.packaging == "BOX" and p.p > 68:
+            instructions.append(f"❌ ERROR PIEZA #{i+1}: Caja de {p.p}kg excede límite de manejo manual. ACCIÓN: Debe paletizar para evitar rechazo en counter.")
             reject = True
+        
+        if p.packaging == "DRUM" and data.cargo_type != "DGR":
+             instructions.append(f"⚠️ PIEZA #{i+1} (TAMBOR): Verificar que no contenga líquidos prohibidos o corrosivos según IATA.")
 
-    # 2. LÓGICA ESPECÍFICA POR TIPO DE CARGA
-    if data.cargo_type == "HUM":
-        instructions.append("⚱️ PROTOCOLO HUM: Verificar certificado de defunción y embalsamamiento. La caja debe estar sellada herméticamente y dentro de un outer packaging discreto.")
-    elif data.cargo_type == "AVI":
-        instructions.append("🐾 PROTOCOLO AVI: El contenedor debe tener ventilación en los 4 lados y recipientes para agua/comida accesibles desde fuera.")
-    elif data.cargo_type == "DGR_ICE":
-        instructions.append("❄️ DRY ICE: Verificar que el embalaje permita la salida del gas (CO2). Si excede 2.5kg por bulto, requiere declaración de DGR.")
-
-    # 3. AURA SCAN (Análisis de Fallas)
+    # 3. AURA SCAN (Análisis de Texto y Riesgos)
     text = data.raw_text.upper()
-    if any(word in text for word in ["ROTO", "MOJADO", "DAÑADO", "HOYO"]):
-        instructions.append("❌ RECHAZO TSA: Daño físico detectado. SOLUCIÓN: El almacén debe parchar o re-embalar antes de que el camión salga hacia Avianca.")
+    if any(word in text for word in ["ROTO", "DAÑADO", "MOJADO", "HOYO", "WET"]):
+        instructions.append("❌ RECHAZO SEGURIDAD (TSA): Daño físico detectado. SOLUCIÓN: Re-embalar. Ninguna carga con acceso al interior será aceptada.")
         reject = True
-    if "SELLO" not in text and any(p.packaging in ["PALLET_WD", "CRATE"] for p in data.pieces):
-        instructions.append("❌ FALLA CBP: No se menciona sello ISPM15 en madera. SOLUCIÓN: Llevar a fumigación inmediata en MIA Station.")
-        reject = True
+    
+    if any(p.packaging in ["PALLET_WD", "CRATE"] for p in data.pieces):
+        if "SELLO" not in text and "ISPM" not in text:
+            instructions.append("🛑 ALERTA CBP: Madera sin sello ISPM15 visible. SOLUCIÓN: El Trucker debe verificar sello físico o llevar a estación de fumigación en MIA antes de Avianca.")
 
-    # 4. COMPATIBILIDAD DE AVIONES (Lógica Avianca MIA)
+    # 4. Tabla de Aeronaves
     fleet = [
-        {"model": "A330-200F", "deck": "Main Deck", "limit": 96},
-        {"model": "A330-200F", "deck": "High Position", "limit": 118},
-        {"model": "A330/A321", "deck": "Belly (Pax)", "limit": 63}
+        {"model": "A330-200F", "deck": "Main Deck", "max_h": 96},
+        {"model": "A330-200F", "deck": "High Position", "max_h": 118},
+        {"model": "A330/A321", "deck": "Belly (Pasajeros)", "max_h": 63}
     ]
     
-    aircraft_results = []
-    for a in fleet:
-        ok = max_h_in <= a["limit"]
-        aircraft_results.append({
-            "model": a["model"], "deck": a["deck"], "limit_h": a["limit"],
-            "status": "OK" if ok else "NO CABE",
-            "reason": "Altura permitida" if ok else f"Excede límite de {a['limit']}in"
+    compatibility = []
+    for air in fleet:
+        status = "OK" if max_h_in <= air["max_h"] else "NO CABE"
+        compatibility.append({
+            "model": air["model"],
+            "deck": air["deck"],
+            "status": status,
+            "limit_h": air["max_h"],
+            "reason": "Dentro del contorno" if status == "OK" else f"Excede por {round(max_h_in - air['max_h'], 1)}in"
         })
+
+    chargeable = max(total_actual_kg, total_vol_kg)
 
     return {
         "status": "REJECT" if reject else "READY",
         "instructions": instructions,
-        "aircraft_compatibility": aircraft_results,
-        "chargeable_weight": round(total_kg, 2),
+        "required_docs": required_docs,
+        "chargeable_weight": round(chargeable, 2),
+        "aircraft_compatibility": compatibility,
         "glossary": glossary
     }
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f: return f.read()
 
 if __name__ == "__main__":
     import uvicorn
