@@ -12,139 +12,179 @@
             --danger: #ff4d4d;
             --success: #4dff88;
             --warning: #ffd24d;
+            --text-muted: #a0aec0;
         }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .section { background: var(--card); padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #222; }
-        h2, h3 { color: var(--accent); margin-top: 0; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; }
+        .container { max-width: 1100px; margin: auto; }
         
-        textarea { width: 100%; background: #070d1a; color: #fff; border: 1px solid #333; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 16px; }
-        select, input { background: #1a263f; color: white; border: 1px solid #444; padding: 10px; border-radius: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        /* Header Profesional */
+        header { border-bottom: 2px solid var(--accent); padding: 15px 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-text { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+
+        /* Cortinas Inteligentes */
+        .collapsible { background: var(--card); color: white; cursor: pointer; padding: 18px; width: 100%; border: none; text-align: left; outline: none; font-size: 16px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); }
+        .active, .collapsible:hover { background: #1a263f; }
+        .content { padding: 0 18px; display: none; overflow: hidden; background-color: #0d1629; border-radius: 0 0 8px 8px; margin-bottom: 15px; border: 1px solid #222; }
+
+        /* Grid de Datos Generales */
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; padding: 20px 0; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 12px; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
+        input, select, textarea { background: #1a263f; color: white; border: 1px solid #333; padding: 10px; border-radius: 5px; font-size: 14px; }
+
+        /* Tablas de Cumplimiento */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+        th { background: #1a263f; color: var(--accent); padding: 12px; text-align: left; border-bottom: 2px solid var(--accent); }
+        td { padding: 10px; border-bottom: 1px solid #222; }
+
+        /* Semáforo de Estado */
+        .status-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
+        .bg-red { background: var(--danger); color: white; }
+        .bg-green { background: var(--success); color: black; }
+        .bg-yellow { background: var(--warning); color: black; }
+
+        /* Botones de Acción */
+        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; }
+        .btn-validate { background: var(--accent); color: #000; font-size: 18px; }
+        .btn-clear { background: #333; color: white; margin-top: 40px; }
         
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-main { background: var(--accent); color: #000; }
-        .btn-voice { background: #444; color: white; }
-        .btn-clear { background: var(--danger); color: white; margin-top: 20px; width: 100%; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #0d1629; }
-        th, td { border: 1px solid #2a364f; padding: 12px; text-align: left; }
-        th { background: #1a263f; color: var(--accent); }
-        
-        .status-box { padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 1.2em; }
-        .alert-row { background: rgba(255, 77, 77, 0.1); }
-        .solution-text { color: var(--success); font-weight: bold; }
-        .explanation-text { color: var(--warning); font-size: 0.9em; display: block; margin-top: 5px; }
-        
-        img { max-width: 100px; border-radius: 5px; margin-top: 5px; display: block; }
-        .live-tag { font-size: 0.8em; padding: 3px 8px; border-radius: 4px; background: var(--warning); color: black; display: inline-block; margin-bottom: 10px; }
+        .floating-summary { background: #070d1a; border: 2px solid var(--accent); padding: 20px; border-radius: 12px; margin-top: 30px; }
+        img { max-width: 60px; border-radius: 4px; }
+        .sol-box { background: rgba(77, 255, 136, 0.1); border-left: 4px solid var(--success); padding: 10px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>✈️ AL CIELO - SmartCargo Advisory</h2>
-    <p style="font-size: 0.9em; color: #888;">Asesoría Técnica Preventiva para Operaciones Avianca Cargo</p>
+    <header>
+        <div class="logo-text">✈️ AL CIELO <span style="font-size: 12px; color: var(--text-muted);">| SmartCargo Advisory</span></div>
+        <div id="global_status" class="status-badge bg-yellow">ESPERANDO DATOS</div>
+    </header>
 
-    <div class="section">
-        <h3>🧠 Descripción de Carga / Papelería</h3>
-        <div id="live_feedback"></div>
-        <textarea id="input_texto" rows="4" placeholder="Ej: Traigo 2 pallets de madera con repuestos, peso 400kg, destino Miami. La madera no se ve sellada..."></textarea>
-        <div class="btn-group">
-            <button class="btn-voice" onclick="activarVoz()">🎤 Iniciar Dictado</button>
-            <button class="btn-voice" style="background:#555;" onclick="detenerVoz()">🛑 Detener</button>
-        </div>
-    </div>
-
-    <div class="section">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-                <label>👤 Rol del Usuario</label>
+    <button class="collapsible">1. IDENTIFICACIÓN Y ROL DEL ACTOR <span>▼</span></button>
+    <div class="content">
+        <div class="grid-inputs">
+            <div class="input-group">
+                <label>Número de Guía (AWB)</label>
+                <input type="text" id="awb" placeholder="000-00000000">
+            </div>
+            <div class="input-group">
+                <label>Dueño de Carga / Cliente</label>
+                <input type="text" id="cliente" placeholder="Nombre de la Empresa">
+            </div>
+            <div class="input-group">
+                <label>Rol en Operación</label>
                 <select id="rol">
-                    <option>TRUCKER</option>
-                    <option>FORWARDER</option>
-                    <option>WAREHOUSE</option>
-                    <option>SHIPPER</option>
+                    <option value="TRUCKER">CAMIONERO (Entrega rápida)</option>
+                    <option value="FORWARDER">FORWARDER (Logística/Papelería)</option>
+                    <option value="SHIPPER">SHIPPER (Dueño/Origen)</option>
+                    <option value="COUNTER">AGENTE COUNTER (Aceptación)</option>
                 </select>
             </div>
-            <div>
-                <label>📦 Tipo de Mercancía</label>
-                <select id="tipo">
-                    <option value="GENERAL">GENERAL CARGO</option>
-                    <option value="DGR">DANGEROUS GOODS</option>
-                    <option value="PER">PERISHABLE</option>
-                    <option value="AVI">LIVE ANIMALS</option>
-                    <option value="HUM">HUMAN REMAINS</option>
-                    <option value="VAL">VALUABLE</option>
-                    <option value="PHR">PHARMA</option>
-                </select>
+            <div class="input-group">
+                <label>Destino Final</label>
+                <input type="text" id="destino" placeholder="MIA, BOG, MEX...">
             </div>
         </div>
     </div>
 
-    <div class="section">
-        <h3>📏 Verificación de Piezas (Audit)</h3>
-        <div style="overflow-x: auto;">
-            <table id="tabla_piezas">
+    <button class="collapsible">2. CLASIFICACIÓN DE CARGA (IATA/DOT) <span>▼</span></button>
+    <div class="content">
+        <div class="grid-inputs">
+            <div class="input-group">
+                <label>Naturaleza de Carga</label>
+                <select id="tipo">
+                    <option value="GENERAL">CARGA GENERAL</option>
+                    <option value="DGR">MERCANCÍA PELIGROSA (DG)</option>
+                    <option value="PER">PERECEDEROS (FRIO)</option>
+                    <option value="AVI">ANIMALES VIVOS</option>
+                    <option value="HUM">RESTOS HUMANOS (HUM)</option>
+                    <option value="VAL">VALORES (VUL)</option>
+                    <option value="PHR">FARMACÉUTICOS</option>
+                    <option value="ICE">DRY ICE (HIELO SECO)</option>
+                    <option value="COMAT">COMAT (Material Aerolínea)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Tipo de Embalaje</label>
+                <select id="embalaje">
+                    <option>PALLET (Skids)</option>
+                    <option>BOXES (Cajas)</option>
+                    <option>CRATE (Huacal Madera)</option>
+                    <option>DRUMS (Tambores)</option>
+                    <option>ENGINE (Motor)</option>
+                    <option>CONSOL (Consolidado)</option>
+                </select>
+            </div>
+            <div class="input-group" style="grid-column: span 2;">
+                <label>Descripción Dictada / Observaciones (Aura Scan)</label>
+                <textarea id="input_texto" rows="3" placeholder="Dicte o escriba: 'Traigo 2 pallets de madera con repuestos, no tiene sello de fumigación...'"></textarea>
+                <button onclick="activarVoz()" style="margin-top:5px; background: #333; color: white; border: none; padding: 5px; cursor: pointer;">🎤 Iniciar Dictado Profesional</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="collapsible">3. AUDITORÍA FÍSICA Y DIMENSIONES <span>▼</span></button>
+    <div class="content">
+        <table id="tabla_piezas">
+            <thead>
+                <tr>
+                    <th>CANT</th>
+                    <th>LARGO (in)</th>
+                    <th>ANCHO (in)</th>
+                    <th>ALTO (in)</th>
+                    <th>PESO (kg)</th>
+                    <th>FOTO</th>
+                    <th>ULD SUGERIDO</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+        <button onclick="addPieza()" style="background:var(--accent); color:black; border:none; padding:10px; border-radius:5px; margin-bottom:15px; cursor:pointer;">+ Agregar Pieza/Pallet</button>
+    </div>
+
+    <button class="btn btn-validate" onclick="validarCarga()">VERIFICAR CUMPLIMIENTO TOTAL (COUNTER)</button>
+
+    <div id="diagnostico_final" class="floating-summary" style="display:none;">
+        <h2 id="final_status_text">DIAGNÓSTICO DE OPERACIÓN</h2>
+        
+        <div id="resumen_visual" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            </div>
+
+        <div id="seccion_irregularidades">
+            <h3>🔍 HALLAZGOS Y ACCIONES CORRECTIVAS</h3>
+            <table id="tabla_errores">
                 <thead>
-                    <tr>
-                        <th>Cant</th>
-                        <th>L (in)</th>
-                        <th>W (in)</th>
-                        <th>H (in)</th>
-                        <th>Peso (kg)</th>
-                        <th>Evidencia</th>
-                    </tr>
+                    <tr><th>IRREGULARIDAD DETECTADA</th><th>INSTRUCCIÓN TÉCNICA PARA VOLAR</th></tr>
                 </thead>
-                <tbody>
-                    </tbody>
+                <tbody id="lista_errores"></tbody>
             </table>
         </div>
-        <button class="btn-voice" onclick="addPieza()" style="margin-top:10px;">+ Agregar Unidad</button>
+
+        <div id="seccion_papeleria">
+            <h3>📋 PAPELERÍA COMPLETA NECESARIA (Pouch Check)</h3>
+            <div id="documentos_lista" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
+        <div style="margin-top:20px; border-top: 1px solid #333; padding-top: 20px;">
+            <p><b>Objetivo de Asesoría:</b> Prevención de rechazos en counter Avianca y cumplimiento con TSA / CBP / IATA.</p>
+            <button class="btn" style="background:#5cb85c; color:white;" onclick="window.print()">🖨️ GENERAR REPORTE PDF PARA WHATSAPP</button>
+        </div>
     </div>
 
-    <div class="section">
-        <button class="btn-main" onclick="validarCarga()" style="font-size: 1.2em;">VERIFICAR CUMPLIMIENTO (COUNTER)</button>
-        <div id="resultado_container" style="margin-top:20px;"></div>
-    </div>
-
-    <button class="btn-clear" onclick="borrarDatos()">🗑️ BORRAR DATOS SENSIBLES / NUEVA SESIÓN</button>
+    <button class="btn btn-clear" onclick="borrarTodo()">🗑️ LIMPIAR SISTEMA / NUEVA INSPECCIÓN</button>
 </div>
 
 <script>
-    let recognition;
-
-    function activarVoz() {
-        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!window.SpeechRecognition) return alert("Dictado no soportado en este navegador.");
-        
-        recognition = new SpeechRecognition();
-        recognition.lang = "es-ES";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onresult = (event) => {
-            let texto = "";
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                texto += event.results[i][0].transcript;
-            }
-            document.getElementById("input_texto").value = texto;
-            analizarTextoRapido(texto.toUpperCase());
-        };
-        recognition.start();
-    }
-
-    function detenerVoz() { if(recognition) recognition.stop(); }
-
-    function analizarTextoRapido(t) {
-        let feedback = document.getElementById("live_feedback");
-        if (t.includes("MADERA") && !t.includes("SELLO")) {
-            feedback.innerHTML = `<span class="live-tag">⚠ POSIBLE HALLAZGO: Falta sello ISPM15</span>`;
-        } else if (t.includes("DERRAME") || t.includes("MOJADO")) {
-            feedback.innerHTML = `<span class="live-tag">⚠ ALERTA: Daño físico detectado</span>`;
-        } else {
-            feedback.innerHTML = "";
-        }
+    // Lógica de Cortinas
+    var coll = document.getElementsByClassName("collapsible");
+    for (var i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            content.style.display = content.style.display === "block" ? "none" : "block";
+        });
     }
 
     function addPieza() {
@@ -152,31 +192,28 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><input type="number" class="cant" value="1"></td>
-            <td><input type="number" class="l"></td>
-            <td><input type="number" class="w"></td>
-            <td><input type="number" class="h"></td>
-            <td><input type="number" class="p"></td>
-            <td><input type="file" onchange="preview(this)" accept="image/*"></td>
+            <td><input type="number" class="l" placeholder="L"></td>
+            <td><input type="number" class="w" placeholder="W"></td>
+            <td><input type="number" class="h" placeholder="H"></td>
+            <td><input type="number" class="p" placeholder="kg"></td>
+            <td><input type="file" onchange="preview(this)"></td>
+            <td class="uld-sug">-</td>
         `;
         tbody.appendChild(tr);
     }
 
     function preview(input) {
         if (input.files && input.files[0]) {
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                let img = input.parentNode.querySelector("img") || document.createElement("img");
-                img.src = e.target.result;
-                if (!input.parentNode.querySelector("img")) input.parentNode.appendChild(img);
-            };
-            reader.readAsDataURL(input.files[0]);
+            let img = document.createElement("img");
+            img.src = URL.createObjectURL(input.files[0]);
+            input.parentNode.appendChild(img);
         }
     }
 
     async function validarCarga() {
-        const resultadoDiv = document.getElementById("resultado_container");
-        resultadoDiv.innerHTML = "<p>Procesando asesoría técnica...</p>";
-
+        const diagnostico = document.getElementById("diagnostico_final");
+        diagnostico.style.display = "block";
+        
         let piezas = [];
         document.querySelectorAll("#tabla_piezas tbody tr").forEach(tr => {
             piezas.push({
@@ -187,75 +224,75 @@
             });
         });
 
-        try {
-            const response = await fetch("/api/validar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    tipo: document.getElementById("tipo").value,
-                    rol: document.getElementById("rol").value,
-                    input_texto: document.getElementById("input_texto").value,
-                    piezas: piezas
-                })
+        const res = await fetch("/api/validar", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                awb: document.getElementById("awb").value,
+                cliente: document.getElementById("cliente").value,
+                tipo: document.getElementById("tipo").value,
+                rol: document.getElementById("rol").value,
+                input_texto: document.getElementById("input_texto").value,
+                piezas: piezas
+            })
+        });
+
+        const d = await res.json();
+        
+        // Actualizar Global Status
+        const gStatus = document.getElementById("global_status");
+        gStatus.innerHTML = d.status;
+        gStatus.className = "status-badge " + (d.status === "FLY READY" ? "bg-green" : "bg-red");
+
+        // Resumen Visual
+        document.getElementById("resumen_visual").innerHTML = `
+            <div class="section"><b>PESO COBRABLE:</b><br>${d.peso_cobrable} kg</div>
+            <div class="section"><b>AERONAVE:</b><br>${d.avion}</div>
+            <div class="section"><b>DESTINO:</b><br>${document.getElementById("destino").value}</div>
+            <div class="section"><b>STATUS:</b><br>${d.status}</div>
+        `;
+
+        // Tabla de Errores
+        let erroresHtml = "";
+        if(d.alertas.length > 0) {
+            d.alertas.forEach((a, i) => {
+                erroresHtml += `<tr>
+                    <td class="bg-red">⚠ ${a}</td>
+                    <td>
+                        <div class="sol-box"><b>INSTRUCCIÓN:</b> ${d.soluciones[i]}</div>
+                        <small style="color:var(--text-muted)">Fundamento: ${d.explicaciones[i]}</small>
+                    </td>
+                </tr>`;
             });
+        } else {
+            erroresHtml = "<tr><td colspan='2' class='bg-green' style='text-align:center'>OPERACIÓN LIMPIA: TODO CUMPLE CON NORMAS IATA/TSA/AVIANCA</td></tr>";
+        }
+        document.getElementById("lista_errores").innerHTML = erroresHtml;
 
-            const d = await response.json();
-            
-            let html = `
-                <div class="status-box" style="background: ${d.status === 'FLY READY' ? 'rgba(77,255,136,0.2)' : 'rgba(255,77,77,0.2)'}; color: ${d.status === 'FLY READY' ? 'var(--success)' : 'var(--danger)'}">
-                    ESTADO: ${d.status}
-                </div>
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                    <div class="section" style="margin:0"><b>Peso Cobrable:</b> ${d.peso_cobrable} kg</div>
-                    <div class="section" style="margin:0"><b>Equipo:</b> ${d.avion}</div>
-                </div>
+        // Papelería
+        document.getElementById("documentos_lista").innerHTML = d.documentos.map(doc => 
+            `<span style="background:#1a263f; padding:8px; border-radius:5px; border:1px solid var(--accent); font-size:11px;">📄 ${doc.toUpperCase()}</span>`
+        ).join("");
 
-                <h3>📋 Documentación Requerida</h3>
-                <div class="section">
-                    <ul style="margin:0; padding-left:20px;">
-                        ${d.documentos.map(doc => `<li>${doc.replace(/_/g, ' ').toUpperCase()}</li>`).join('')}
-                    </ul>
-                </div>
+        window.scrollTo(0, document.body.scrollHeight);
+    }
 
-                <h3>🔍 Hallazgos y Soluciones Técnicas</h3>
-                <table>
-                    <thead>
-                        <tr><th>Irregularidad</th><th>Instrucción de Asesoría</th></tr>
-                    </thead>
-                    <tbody>
-                        ${d.alertas.length > 0 ? d.alertas.map((a, i) => `
-                            <tr class="alert-row">
-                                <td><b>⚠ ${a}</b></td>
-                                <td>
-                                    <span class="solution-text">✔ ${d.soluciones[i]}</span>
-                                    <span class="explanation-text">${d.explicaciones[i]}</span>
-                                </td>
-                            </tr>
-                        `).join('') : `<tr><td colspan="2" class="green" style="text-align:center">Sin irregularidades detectadas. Carga lista para counter.</td></tr>`}
-                    </tbody>
-                </table>
-                <button class="btn-voice" style="margin-top:15px;" onclick="window.print()">🖨️ Generar Reporte / PDF</button>
-            `;
-            resultadoDiv.innerHTML = html;
+    function activarVoz() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "es-ES";
+        recognition.onresult = (e) => {
+            document.getElementById("input_texto").value = e.results[0][0].transcript;
+        };
+        recognition.start();
+    }
 
-        } catch (err) {
-            resultadoDiv.innerHTML = "<p class='red'>Error de conexión con el servidor de asesoría.</p>";
+    function borrarTodo() {
+        if(confirm("¿Desea limpiar todos los datos de la asesoría actual?")) {
+            location.reload();
         }
     }
 
-    function borrarDatos() {
-        if (confirm("Se eliminarán todos los datos de la carga actual. ¿Proceder?")) {
-            document.getElementById("input_texto").value = "";
-            document.querySelector("#tabla_piezas tbody").innerHTML = "";
-            document.getElementById("resultado_container").innerHTML = "";
-            document.getElementById("live_feedback").innerHTML = "";
-            addPieza();
-        }
-    }
-
-    // Inicializar con una pieza
-    addPieza();
+    addPieza(); // Iniciar con una fila
 </script>
 
 </body>
