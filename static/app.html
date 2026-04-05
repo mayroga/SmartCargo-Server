@@ -1,278 +1,141 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AL CIELO - SmartCargo Advisory</title>
-    <style>
-        :root {
-            --bg: #0b1220;
-            --card: #111a2e;
-            --accent: #00d4ff;
-            --danger: #ff4d4d;
-            --success: #4dff88;
-            --warning: #ffd24d;
-            --text-muted: #a0aec0;
-        }
-        * { box-sizing: border-box; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
-        .container { max-width: 100%; margin: auto; padding-bottom: 50px; }
-        
-        header { border-bottom: 2px solid var(--accent); padding: 10px 0; margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
-        .logo-text { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: var(--accent); }
-
-        .collapsible { background: var(--card); color: white; cursor: pointer; padding: 15px; width: 100%; border: none; text-align: left; font-size: 15px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); transition: 0.3s; }
-        .active, .collapsible:hover { background: #1a263f; }
-        .content { padding: 15px; display: block; background-color: #0d1629; border-radius: 0 0 8px 8px; margin-bottom: 15px; border: 1px solid #222; }
-
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-        .input-group { display: flex; flex-direction: column; margin-bottom: 10px; }
-        label { font-size: 11px; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
-        input, select, textarea { background: #1a263f; color: white; border: 1px solid #333; padding: 10px; border-radius: 5px; font-size: 14px; width: 100%; }
-        
-        /* ALERTAS EN TIEMPO REAL */
-        .live-error { color: var(--danger); background: rgba(255, 77, 77, 0.15); border: 1px solid var(--danger); padding: 10px; border-radius: 5px; margin-top: 10px; display: none; font-size: 13px; font-weight: bold; }
-        .live-error.visible { display: block; animation: shake 0.5s; }
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
-
-        /* TABLA RESPONSIVA */
-        .table-wrapper { overflow-x: auto; width: 100%; margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { background: #1a263f; color: var(--accent); padding: 8px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid var(--accent); }
-        td { padding: 8px; border-bottom: 1px solid #222; text-align: center; }
-
-        .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; text-transform: uppercase; font-size: 12px; }
-        .bg-red { background: var(--danger); color: white; }
-        .bg-green { background: var(--success); color: black; }
-        .bg-yellow { background: var(--warning); color: black; }
-
-        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; font-size: 16px; margin-top: 10px; text-transform: uppercase; }
-        .btn-validate { background: var(--accent); color: #000; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
-        .btn-mini { background: #1a263f; color: var(--accent); border: 1px solid var(--accent); padding: 8px; font-size: 12px; margin-top: 5px; }
-        .btn-clear { background: #333; color: white; margin-top: 30px; opacity: 0.7; }
-        
-        .floating-summary { background: #070d1a; border: 2px solid var(--accent); padding: 15px; border-radius: 12px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .vol-display { font-size: 10px; color: var(--warning); display: block; margin-top: 2px; }
-    </style>
+<meta charset="UTF-8">
+<title>CONTROL COUNTER PRO</title>
+<style>
+body { background:#0b1220; color:white; font-family:Arial; padding:15px;}
+.section { background:#111a2e; padding:15px; margin-bottom:15px; border-radius:10px;}
+button { padding:10px; margin-top:10px; width:100%; font-weight:bold;}
+input { width:100%; padding:8px; margin-top:5px;}
+.alert { color:red; font-weight:bold;}
+.ok { color:lime; font-weight:bold;}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <header>
-        <div class="logo-text">✈️ AL CIELO | <small>ADVISORY</small></div>
-        <div id="global_status" class="status-badge bg-yellow">ESPERANDO DATOS</div>
-    </header>
+<h2>✈️ CONTROL DOCUMENTAL PRO</h2>
 
-    <button class="collapsible">1. ACTORES Y RUTA <span>▼</span></button>
-    <div class="content">
-        <div class="grid-inputs">
-            <div class="input-group"><label>Guía AWB</label><input type="text" id="awb" placeholder="000-00000000"></div>
-            <div class="input-group"><label>Dueño/Cliente</label><input type="text" id="cliente" placeholder="Nombre Empresa"></div>
-            <div class="input-group">
-                <label>Tu Rol</label>
-                <select id="rol">
-                    <option value="TRUCKER">CAMIONERO</option>
-                    <option value="FORWARDER">FORWARDER</option>
-                    <option value="SHIPPER">SHIPPER</option>
-                    <option value="COUNTER">AGENTE COUNTER</option>
-                </select>
-            </div>
-            <div class="input-group"><label>Destino</label><input type="text" id="destino" placeholder="MIA / BOG"></div>
-        </div>
-    </div>
+<div class="section">
+<h3>1. CONTROL DE SOBRE (OBLIGATORIO)</h3>
+<p>Orden correcto:</p>
+<ol>
+<li>AWB</li>
+<li>Invoice</li>
+<li>Packing List</li>
+<li>ITN</li>
+</ol>
 
-    <button class="collapsible">2. INTERROGATORIO AURA SCAN <span>▼</span></button>
-    <div class="content">
-        <div class="grid-inputs">
-            <div class="input-group">
-                <label>Tipo de Carga</label>
-                <select id="tipo" onchange="actualizarPapeleria()">
-                    <option value="GENERAL">CARGA GENERAL</option>
-                    <option value="DGR">MERCANCÍA PELIGROSA</option>
-                    <option value="PER">PERECEDEROS</option>
-                    <option value="AVI">ANIMALES VIVOS</option>
-                    <option value="HUM">RESTOS HUMANOS</option>
-                    <option value="VAL">VALORES</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>Embalaje</label>
-                <select id="embalaje">
-                    <option>PALLET / SKIDS</option>
-                    <option>CAJAS / BOXES</option>
-                    <option>HUACAL / CRATE</option>
-                    <option>TAMBOR / DRUM</option>
-                </select>
-            </div>
-        </div>
-        <div class="input-group" style="margin-top:10px;">
-            <label>Descripción / Observaciones Críticas</label>
-            <textarea id="input_texto" rows="3" oninput="miniValidador()" placeholder="Describa: 'Pallets de madera, sin sello visible, carga mojada...'"></textarea>
-            <button class="btn-mini" onclick="activarVoz()">🎤 INICIAR DICTADO PROFESIONAL</button>
-            <button class="btn-mini" onclick="miniValidador()" style="background: var(--accent); color:black;">🔍 RECTIFICAR AHORA</button>
-            
-            <div id="mini_alertas" class="live-error"></div>
-        </div>
-    </div>
-
-    <button class="collapsible">3. AUDITORÍA FÍSICA (TIEMPO REAL) <span>▼</span></button>
-    <div class="content">
-        <div class="table-wrapper">
-            <table id="tabla_piezas">
-                <thead>
-                    <tr>
-                        <th>Cant</th>
-                        <th>L (in)</th>
-                        <th>W (in)</th>
-                        <th>H (in)</th>
-                        <th>Kg</th>
-                        <th>Vol/ULD</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        <button onclick="addPieza()" class="btn-mini">+ AÑADIR PIEZA</button>
-    </div>
-
-    <button class="btn btn-validate" onclick="validarCarga()">VALIDAR TODO Y VOLAR</button>
-
-    <div id="diagnostico_final" class="floating-summary" style="display:none;">
-        <h3 id="final_status_text">DIAGNÓSTICO FINAL AURA</h3>
-        <div id="resumen_visual" style="font-size:14px; line-height:1.6;"></div>
-        
-        <div id="seccion_papeleria" style="margin-top:15px;">
-            <label>PAPELERÍA OBLIGATORIA:</label>
-            <div id="documentos_lista" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
-        </div>
-
-        <button class="btn" style="background:var(--success); color:black;" onclick="window.print()">🖨️ GENERAR REPORTE PDF</button>
-    </div>
-
-    <button class="btn btn-clear" onclick="location.reload()">🗑️ NUEVA SESIÓN / BORRAR TODO</button>
+<button onclick="confirmarOrden()">✔ DOCUMENTOS ORDENADOS</button>
+<div id="estadoOrden"></div>
 </div>
 
+<div class="section">
+<h3>2. VALIDACIÓN DOCUMENTAL</h3>
+
+<label>AWB Piezas</label>
+<input id="awb_piezas" type="number">
+
+<label>Packing List Piezas</label>
+<input id="packing_piezas" type="number">
+
+<label>Valor AWB</label>
+<input id="awb_valor" type="number">
+
+<label>Valor Invoice</label>
+<input id="invoice_valor" type="number">
+
+<label>Peso AWB</label>
+<input id="awb_peso" type="number">
+
+<label>ITN</label>
+<input id="itn">
+</div>
+
+<div class="section">
+<h3>3. CARGA</h3>
+
+<label>Descripción</label>
+<input id="texto">
+
+<button onclick="add()">+ PIEZA</button>
+<div id="piezas"></div>
+</div>
+
+<button onclick="validar()">VALIDAR OPERACIÓN</button>
+
+<div class="section" id="resultado"></div>
+
 <script>
-    // Cálculos y Alertas Instantáneas
-    function miniValidador() {
-        const t = document.getElementById("input_texto").value.toUpperCase();
-        const alerts = document.getElementById("mini_alertas");
-        let msg = "";
+let ordenOK = false;
 
-        if ((t.includes("MADERA") || t.includes("PALLET")) && !t.includes("SELLO") && !t.includes("ISPM")) {
-            msg += "⚠ ERROR: MADERA DETECTADA SIN SELLO ISPM15. <br>SOLUCIÓN: FUMIGAR O CAMBIAR A PLÁSTICO AHORA.<br>";
-        }
-        if (t.includes("MOJADO") || t.includes("ROTO") || t.includes("DAÑADO")) {
-            msg += "⚠ ALERTA SEGURIDAD TSA: CARGA COMPROMETIDA. <br>SOLUCIÓN: RE-EMBALAR O ASEGURAR CON FILM ANTES DE LLEGAR.<br>";
-        }
-        if (t.includes("BATERIA") || t.includes("BATTERY") || t.includes("LI-ION")) {
-            msg += "⚠ REGLA IATA DGR: REQUIERE TEST SUMMARY Y ETIQUETADO DE BATERÍAS.<br>";
-        }
+function confirmarOrden(){
+    ordenOK = true;
+    document.getElementById("estadoOrden").innerHTML = "✅ LISTO PARA VALIDAR";
+}
 
-        if (msg) {
-            alerts.innerHTML = msg;
-            alerts.classList.add("visible");
-        } else {
-            alerts.classList.remove("visible");
-        }
+function add(){
+    const div = document.createElement("div");
+    div.innerHTML = `
+        L:<input class="l">
+        W:<input class="w">
+        H:<input class="h">
+        KG:<input class="p">
+    `;
+    document.getElementById("piezas").appendChild(div);
+}
+
+async function validar(){
+
+    if(!ordenOK){
+        alert("❌ PRIMERO ORGANICE DOCUMENTOS");
+        return;
     }
 
-    function addPieza() {
-        const tbody = document.querySelector("#tabla_piezas tbody");
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><input type="number" class="cant" value="1"></td>
-            <td><input type="number" class="l" oninput="calcVol(this)"></td>
-            <td><input type="number" class="w" oninput="calcVol(this)"></td>
-            <td><input type="number" class="h" oninput="calcVol(this)"></td>
-            <td><input type="number" class="p"></td>
-            <td class="vol-cell"><span class="vol-display">0 kgv</span></td>
-        `;
-        tbody.appendChild(tr);
-    }
-
-    function calcVol(el) {
-        const tr = el.closest("tr");
-        const l = tr.querySelector(".l").value || 0;
-        const w = tr.querySelector(".w").value || 0;
-        const h = tr.querySelector(".h").value || 0;
-        const vol = Math.round((l * w * h) / 166);
-        tr.querySelector(".vol-display").innerText = vol + " kgv";
-        
-        // Alerta de Altura en vivo
-        if (h > 63) {
-            tr.querySelector(".h").style.color = "var(--danger)";
-            tr.querySelector(".vol-display").innerHTML += "<br><b style='color:red'>! CAO ONLY</b>";
-        } else {
-            tr.querySelector(".h").style.color = "white";
-        }
-    }
-
-    async function validarCarga() {
-        const d_final = document.getElementById("diagnostico_final");
-        d_final.style.display = "block";
-        
-        let piezas = [];
-        document.querySelectorAll("#tabla_piezas tbody tr").forEach(tr => {
-            piezas.push({
-                l: tr.querySelector(".l").value,
-                w: tr.querySelector(".w").value,
-                h: tr.querySelector(".h").value,
-                peso: tr.querySelector(".p").value
-            });
-        });
-
-        const res = await fetch("/api/validar", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                awb: document.getElementById("awb").value,
-                tipo: document.getElementById("tipo").value,
-                rol: document.getElementById("rol").value,
-                input_texto: document.getElementById("input_texto").value,
-                piezas: piezas
-            })
-        });
-
-        const d = await res.json();
-        const gStatus = document.getElementById("global_status");
-        gStatus.innerHTML = d.status;
-        gStatus.className = "status-badge " + (d.status === "FLY READY" ? "bg-green" : "bg-red");
-
-        document.getElementById("resumen_visual").innerHTML = `
-            <b>ESTADO FINAL:</b> <span style="color:${d.status === 'FLY READY' ? 'var(--success)' : 'var(--danger)'}">${d.status}</span><br>
-            <b>PESO COBRABLE TOTAL:</b> ${d.peso_cobrable} kg<br>
-            <b>EQUIPO REQUERIDO:</b> ${d.avion}<br>
-            <hr border="0" style="border-top:1px solid #333">
-            <p style="color:var(--warning)">${d.alertas.length > 0 ? "⚠️ ATENCIÓN: " + d.alertas.join(" | ") : "✅ TODO EN ORDEN PARA VOLAR"}</p>
-        `;
-
-        document.getElementById("documentos_lista").innerHTML = d.documentos.map(doc => 
-            `<span style="background:#1a263f; padding:5px 10px; border-radius:15px; border:1px solid var(--accent); font-size:11px;">${doc.toUpperCase()}</span>`
-        ).join("");
-
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function activarVoz() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang = "es-ES";
-        rec.onresult = (e) => {
-            document.getElementById("input_texto").value = e.results[0][0].transcript;
-            miniValidador();
-        };
-        rec.start();
-    }
-
-    // Cortinas
-    document.querySelectorAll(".collapsible").forEach(btn => {
-        btn.onclick = function() {
-            let c = this.nextElementSibling;
-            c.style.display = (c.style.display === "none" || c.style.display === "") ? "block" : "none";
-        }
+    let piezas = [];
+    document.querySelectorAll("#piezas div").forEach(d=>{
+        piezas.push({
+            l: d.querySelector(".l").value,
+            w: d.querySelector(".w").value,
+            h: d.querySelector(".h").value,
+            peso: d.querySelector(".p").value
+        })
     });
 
-    addPieza();
+    const res = await fetch("/api/validar",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            awb_piezas: Number(document.getElementById("awb_piezas").value),
+            packing_piezas: Number(document.getElementById("packing_piezas").value),
+            awb_valor: Number(document.getElementById("awb_valor").value),
+            invoice_valor: Number(document.getElementById("invoice_valor").value),
+            awb_peso: Number(document.getElementById("awb_peso").value),
+            itn: document.getElementById("itn").value,
+            texto: document.getElementById("texto").value,
+            piezas: piezas
+        })
+    });
+
+    const d = await res.json();
+
+    let html = `<h3>${d.estado}</h3>`;
+    html += `<p>Peso cobrable: ${d.peso_cobrable}</p>`;
+
+    if(d.alertas.length){
+        html += "<div class='alert'>ERRORES:<br>" + d.alertas.join("<br>") + "</div>";
+    }
+
+    if(d.soluciones.length){
+        html += "<div>Soluciones:<br>" + d.soluciones.join("<br>") + "</div>";
+    }
+
+    html += "<div>Acción:<br>" + d.acciones.join("<br>") + "</div>";
+
+    document.getElementById("resultado").innerHTML = html;
+}
 </script>
+
 </body>
 </html>
