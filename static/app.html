@@ -2,139 +2,173 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>CONTROL COUNTER PRO</title>
+<title>Pre-Check Counter System</title>
+
 <style>
-body { background:#0b1220; color:white; font-family:Arial; padding:15px;}
-.section { background:#111a2e; padding:15px; margin-bottom:15px; border-radius:10px;}
-button { padding:10px; margin-top:10px; width:100%; font-weight:bold;}
-input { width:100%; padding:8px; margin-top:5px;}
-.alert { color:red; font-weight:bold;}
-.ok { color:lime; font-weight:bold;}
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    padding: 20px;
+}
+
+.card {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 700px;
+    margin: auto;
+}
+
+.step {
+    display: none;
+}
+
+.step.active {
+    display: block;
+}
+
+button {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.ok { background: #22c55e; }
+.next { background: #3b82f6; }
+.danger { background: #ef4444; }
+
+.progress {
+    height: 8px;
+    background: #334155;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.bar {
+    height: 8px;
+    background: #22c55e;
+    width: 0%;
+    border-radius: 10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>✈️ CONTROL DOCUMENTAL PRO</h2>
+<div class="card">
 
-<div class="section">
-<h3>1. CONTROL DE SOBRE (OBLIGATORIO)</h3>
-<p>Orden correcto:</p>
-<ol>
-<li>AWB</li>
-<li>Invoice</li>
-<li>Packing List</li>
-<li>ITN</li>
-</ol>
+<h2>PRE-CHECK OPERATIVO</h2>
+<p>Verificación total de documentación antes de counter</p>
 
-<button onclick="confirmarOrden()">✔ DOCUMENTOS ORDENADOS</button>
-<div id="estadoOrden"></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+
+<!-- CORTINA 1 -->
+<div class="step active">
+<h3>1. Orden físico del sobre</h3>
+<p>MASTER AWB visible arriba</p>
+<input type="checkbox" id="awb"> OK<br>
+
+<p>Invoice debajo del AWB</p>
+<input type="checkbox" id="invoice"> OK<br>
+
+<p>Packing List incluido</p>
+<input type="checkbox" id="packing"> OK<br>
+
+<p>Orden limpio y alineado</p>
+<input type="checkbox" id="order"> OK<br>
+
+<button class="next" onclick="nextStep()">CONTINUAR</button>
 </div>
 
-<div class="section">
-<h3>2. VALIDACIÓN DOCUMENTAL</h3>
+<!-- CORTINA 2 -->
+<div class="step">
+<h3>2. Calidad documental</h3>
 
-<label>AWB Piezas</label>
-<input id="awb_piezas" type="number">
+<p>Legibilidad total</p>
+<input type="checkbox" id="readable"> OK<br>
 
-<label>Packing List Piezas</label>
-<input id="packing_piezas" type="number">
+<p>Sin daños ni manchas</p>
+<input type="checkbox" id="clean"> OK<br>
 
-<label>Valor AWB</label>
-<input id="awb_valor" type="number">
-
-<label>Valor Invoice</label>
-<input id="invoice_valor" type="number">
-
-<label>Peso AWB</label>
-<input id="awb_peso" type="number">
-
-<label>ITN</label>
-<input id="itn">
+<button class="next" onclick="nextStep()">CONTINUAR</button>
 </div>
 
-<div class="section">
-<h3>3. CARGA</h3>
+<!-- CORTINA 3 -->
+<div class="step">
+<h3>3. Coherencia operativa</h3>
 
-<label>Descripción</label>
-<input id="texto">
+<p>Peso coincide</p>
+<input type="checkbox" id="weight"> OK<br>
 
-<button onclick="add()">+ PIEZA</button>
-<div id="piezas"></div>
+<p>Piezas coinciden</p>
+<input type="checkbox" id="pieces"> OK<br>
+
+<button class="ok" onclick="finalCheck()">EJECUTAR PRE-CHECK</button>
 </div>
 
-<button onclick="validar()">VALIDAR OPERACIÓN</button>
+<!-- RESULTADO -->
+<div class="step" id="resultBox">
+<h3>RESULTADO</h3>
+<pre id="result"></pre>
+</div>
 
-<div class="section" id="resultado"></div>
+</div>
 
 <script>
-let ordenOK = false;
+let step = 0;
+const steps = document.querySelectorAll(".step");
+const bar = document.getElementById("bar");
 
-function confirmarOrden(){
-    ordenOK = true;
-    document.getElementById("estadoOrden").innerHTML = "✅ LISTO PARA VALIDAR";
+function update() {
+    steps.forEach((s, i) => {
+        s.classList.remove("active");
+        if (i === step) s.classList.add("active");
+    });
+    bar.style.width = ((step + 1) / steps.length) * 100 + "%";
 }
 
-function add(){
-    const div = document.createElement("div");
-    div.innerHTML = `
-        L:<input class="l">
-        W:<input class="w">
-        H:<input class="h">
-        KG:<input class="p">
-    `;
-    document.getElementById("piezas").appendChild(div);
-}
-
-async function validar(){
-
-    if(!ordenOK){
-        alert("❌ PRIMERO ORGANICE DOCUMENTOS");
-        return;
+function nextStep() {
+    if (step < steps.length - 2) {
+        step++;
+        update();
     }
+}
 
-    let piezas = [];
-    document.querySelectorAll("#piezas div").forEach(d=>{
-        piezas.push({
-            l: d.querySelector(".l").value,
-            w: d.querySelector(".w").value,
-            h: d.querySelector(".h").value,
-            peso: d.querySelector(".p").value
-        })
+async function finalCheck() {
+
+    const data = {
+        awb: document.getElementById("awb").checked,
+        invoice: document.getElementById("invoice").checked,
+        packing_list: document.getElementById("packing").checked,
+        clean_order: document.getElementById("order").checked,
+        readable: document.getElementById("readable").checked,
+        no_damage: document.getElementById("clean").checked,
+        weight_match: document.getElementById("weight").checked,
+        pieces_match: document.getElementById("pieces").checked
+    };
+
+    const res = await fetch("/check", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
     });
 
-    const res = await fetch("/api/validar",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-            awb_piezas: Number(document.getElementById("awb_piezas").value),
-            packing_piezas: Number(document.getElementById("packing_piezas").value),
-            awb_valor: Number(document.getElementById("awb_valor").value),
-            invoice_valor: Number(document.getElementById("invoice_valor").value),
-            awb_peso: Number(document.getElementById("awb_peso").value),
-            itn: document.getElementById("itn").value,
-            texto: document.getElementById("texto").value,
-            piezas: piezas
-        })
-    });
+    const json = await res.json();
 
-    const d = await res.json();
+    steps.forEach(s => s.classList.remove("active"));
+    document.getElementById("resultBox").classList.add("active");
 
-    let html = `<h3>${d.estado}</h3>`;
-    html += `<p>Peso cobrable: ${d.peso_cobrable}</p>`;
+    document.getElementById("result").innerText =
+        JSON.stringify(json, null, 2);
 
-    if(d.alertas.length){
-        html += "<div class='alert'>ERRORES:<br>" + d.alertas.join("<br>") + "</div>";
-    }
-
-    if(d.soluciones.length){
-        html += "<div>Soluciones:<br>" + d.soluciones.join("<br>") + "</div>";
-    }
-
-    html += "<div>Acción:<br>" + d.acciones.join("<br>") + "</div>";
-
-    document.getElementById("resultado").innerHTML = html;
+    bar.style.width = "100%";
 }
+
+update();
 </script>
 
 </body>
