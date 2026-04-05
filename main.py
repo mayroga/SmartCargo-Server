@@ -1,163 +1,129 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+import json
+import os
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn, os
+import uvicorn
 
-app = FastAPI(title="SMARTCARGO SERVER PRO FINAL")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory Server")
 
-if not os.path.exists("static"): os.makedirs("static")
+# Configuración de directorios y archivos
+if not os.path.exists("static"):
+    os.makedirs("static")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Carga de Base de Datos Normativa (Reglas de Avianca y Carga)
+def cargar_reglas():
+    try:
+        with open("static/avianca_rules.json", encoding="utf-8") as f:
+            avianca = json.load(f)
+        with open("static/cargo_rules.json", encoding="utf-8") as f:
+            cargo = json.load(f)
+        return avianca, cargo
+    except FileNotFoundError:
+        return {}, {}
+
+AVIANCA_RULES, CARGO_RULES = cargar_reglas()
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    with open("static/app.html", encoding="utf-8") as f:
-        return f.read()
-
+    try:
+        with open("static/app.html", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Error: static/app.html no encontrado."
 
 @app.post("/api/validar")
 async def validar(data: dict):
-
     alertas = []
     soluciones = []
-    docs = []
     explicaciones = []
-
+    
+    tipo_carga = data.get("tipo", "GENERAL")
+    texto_dictado = data.get("input_texto", "").upper()
     piezas = data.get("piezas", [])
-    tipo = data.get("tipo", "GENERAL")
-    texto = data.get("input_texto", "").upper()
+    rol = data.get("rol", "TRUCKER")
 
-    if len(piezas) == 0:
-        return {
-            "status":"STOP",
-            "alertas":["NO HAY CARGA REGISTRADA"],
-            "soluciones":["Debe ingresar al menos una pieza física"],
-            "explicaciones":["Sin carga no existe operación logística"],
-            "documentos":[]
-        }
+    # 1. VALIDACIÓN DE DOCUMENTACIÓN (Basado en cargo_rules.json)
+    reglas_especificas = CARGO_RULES.get(tipo_carga, CARGO_RULES["GENERAL"])
+    docs_requeridos = reglas_especificas.get("documents", [])
 
+    # 2. AUDITORÍA FÍSICA Y LÍMITES DE AERONAVE (Basado en avianca_rules.json)
+    limits = AVIANCA_RULES.get("aircraft_limits", {})
     total_real = 0
     total_vol = 0
     max_h = 0
-    fotos_ok = True
+    peso_excedido = False
 
-    for i,p in enumerate(piezas):
-
+    for i, p in enumerate(piezas):
         try:
-            l = float(p["l"])
-            w = float(p["w"])
-            h = float(p["h"])
-            peso = float(p["peso"])
-            foto = p.get("foto", False)
-
-            if not foto:
-                fotos_ok = False
-
-            if l<=0 or w<=0 or h<=0 or peso<=0:
-                alertas.append(f"PIEZA {i+1} INVÁLIDA")
-                soluciones.append("Ingrese dimensiones reales mayores a 0")
-                explicaciones.append("El sistema requiere datos físicos reales para cálculo aeronáutico")
-                continue
-
-            vol = (l*w*h)/166
-
+            l, w, h = float(p.get("l", 0)), float(p.get("w", 0)), float(p.get("h", 0))
+            peso = float(p.get("peso", 0))
+            
             total_real += peso
-            total_vol += vol
-
+            total_vol += (l * w * h) / 166
             if h > max_h: max_h = h
 
-            if h > 63:
-                alertas.append(f"ALTURA EXCESIVA PZA {i+1}")
-                soluciones.append("Mover a vuelo carguero (CAO)")
-                explicaciones.append("Altura supera límite belly aircraft")
+            # Validar peso por pieza individual
+            if peso > limits.get("max_piece_weight_kg", 150):
+                peso_excedido = True
+        except ValueError:
+            continue
 
-        except:
-            alertas.append(f"ERROR PIEZA {i+1}")
-            soluciones.append("Verificar valores numéricos")
-            explicaciones.append("Datos corruptos o incompletos")
+    # Lógica de Avión (Belly vs Freighter)
+    limit_h_pax = limits.get("max_height_belly_in", 63)
+    tipo_avion = "PAX / BELLY"
+    if max_h > limit_h_pax:
+        tipo_avion = "FREIGHTER (CAO)"
+        alertas.append(f"ALTURA EXCESIVA PARA PAX ({max_h} in)")
+        soluciones.append("Mover carga a vuelo carguero.")
+        explicaciones.append(f"La altura supera los {limit_h_pax} in permitidos en aviones de pasajeros.")
 
-    if not fotos_ok:
-        alertas.append("FALTA FOTO DE CARGA")
-        soluciones.append("Tomar foto visible de cada pieza")
-        explicaciones.append("El counter exige evidencia visual del estado físico")
+    if peso_excedido:
+        alertas.append("PESO INDIVIDUAL EXCEDIDO")
+        soluciones.append("Re-estibar en unidades más pequeñas o usar equipo especial.")
+        explicaciones.append(f"Piezas sobrepasan el límite estándar de {limits.get('max_piece_weight_kg')} kg.")
 
-    # 🔴 MOTOR AVANZADO POR TIPO
-    if tipo == "DGR":
-        docs += [
-            "Shipper Declaration (3 originales - pouch)",
-            "MSDS (copia)",
-            "UN Packaging Cert (copia externa)"
-        ]
-        alertas.append("CARGA PELIGROSA (DGR)")
-        soluciones.append("Requiere DG Specialist + etiquetas IATA")
-        explicaciones.append("Regulado por IATA DGR")
+    # 3. ASESORÍA TÉCNICA PREVENTIVA (IAAT / CBP / USDA)
+    # Validación de Madera (Sello ISPM15)
+    if any(palabra in texto_dictado for palabra in ["MADERA", "WOOD", "PALLET"]):
+        if "ISPM15" not in texto_dictado and "SELLO" not in texto_dictado:
+            alertas.append("FALLO FITOSANITARIO (USDA)")
+            soluciones.append("Llevar el pallet a fumigar o cambiarlo por uno de plástico.")
+            explicaciones.append("Todo embalaje de madera hacia USA requiere sello certificado ISPM15.")
 
-    if tipo == "PER":
-        docs += [
-            "Certificado sanitario",
-            "Control de temperatura",
-            "Registro cadena frío"
-        ]
-        soluciones.append("Usar gel pack / dry ice certificado")
-        explicaciones.append("Carga sensible al tiempo")
+    # Validación de Carga Peligrosa (DGR)
+    if tipo_carga == "DGR" or "PELIGROSA" in texto_dictado:
+        if "MSDS" not in texto_dictado:
+            alertas.append("FALTA HOJA DE SEGURIDAD (MSDS)")
+            soluciones.append("Solicitar MSDS al shipper antes de entregar en counter.")
+            explicaciones.append("Regulación DOT requiere ficha técnica para materiales peligrosos.")
 
-    if tipo == "VAL":
-        docs += [
-            "Manifiesto VAL",
-            "Custodia armada",
-            "Seguro carga"
-        ]
-        soluciones.append("Coordinar seguridad aeropuerto")
-        explicaciones.append("Carga de alto valor")
+    # Validación de Seguridad (TSA)
+    if "DAÑADA" in texto_dictado or "ROTA" in texto_dictado or "MOJADA" in texto_dictado:
+        alertas.append("INTEGRIDAD DE CARGA COMPROMETIDA")
+        soluciones.append("Rectificar embalaje y re-asegurar bultos.")
+        explicaciones.append("Carga con daños físicos es rechazada por seguridad aérea (TSA).")
 
-    if tipo == "HUM":
-        docs += [
-            "Acta defunción",
-            "Permiso tránsito",
-            "Certificado embalsamamiento"
-        ]
-        soluciones.append("Proceso prioritario")
-        explicaciones.append("Carga sensible y regulada")
+    # 4. DETERMINACIÓN DE ESTADO FINAL
+    status = "FLY READY" if not alertas else "HOLD / RECTIFICAR"
+    
+    # Peso Cobrable (El mayor entre real y volumétrico)
+    peso_cobrable = round(max(total_real, total_vol), 2)
 
-    if tipo == "AVI":
-        docs += [
-            "Certificado veterinario",
-            "Jaula IATA",
-            "Permiso importación"
-        ]
-        soluciones.append("Revisión bienestar animal")
-        explicaciones.append("Live animals regulations")
-
-    if tipo == "MED":
-        docs += [
-            "Registro sanitario",
-            "Control temperatura",
-            "Factura"
-        ]
-        soluciones.append("Validar cadena farmacéutica")
-        explicaciones.append("Carga médica crítica")
-
-    if tipo == "ICE":
-        docs += [
-            "Declaración Dry Ice",
-            "Peso neto CO2",
-            "Etiqueta UN1845"
-        ]
-        soluciones.append("Ventilación y límites de peso")
-        explicaciones.append("Regulado como mercancía peligrosa parcial")
-
-    status = "FLY READY" if len(alertas)==0 else "STOP / HOLD"
-
-    return {
+    return JSONResponse(content={
         "status": status,
-        "peso_cobrable": round(max(total_real,total_vol),2),
+        "peso_cobrable": peso_cobrable,
         "alertas": alertas,
         "soluciones": soluciones,
         "explicaciones": explicaciones,
-        "documentos": docs,
-        "avion": "CAO" if max_h>63 else "PAX"
-    }
-
+        "documentos": docs_requeridos,
+        "avion": tipo_avion,
+        "asesor": "SmartCargo Advisory by May Roga"
+    })
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    # Configurado para correr en Render o local
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
