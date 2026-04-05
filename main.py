@@ -1,76 +1,124 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List, Optional
+from flask import Flask, request, jsonify, send_from_directory
+import json
+import os
 
-app = FastAPI()
+app = Flask(__name__, static_folder="static")
 
-# -----------------------------
-# MODELO DE DATOS
-# -----------------------------
-class DocumentCheck(BaseModel):
-    awb: bool
-    invoice: bool
-    packing_list: bool
-    house_awb: Optional[bool] = False
-    itn: Optional[bool] = False
-    sli: Optional[bool] = False
-    clean_order: bool
-    readable: bool
-    no_damage: bool
-    weight_match: bool
-    pieces_match: bool
+# =========================
+# LOAD RULES
+# =========================
 
-# -----------------------------
-# MOTOR DE VALIDACIÓN (CORE)
-# -----------------------------
-def evaluate(doc: DocumentCheck):
+def load_json(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-    errors = []
-    warnings = []
+AVIATION_RULES = load_json("static/avianca_rules.json")
+CARGO_RULES = load_json("static/cargo_rules.json")
 
-    # 🔴 CORTINA 1: ORDEN FÍSICO
-    if not doc.awb:
-        errors.append("FALTA MASTER AWB (CRÍTICO)")
-    if not doc.invoice:
-        errors.append("FALTA COMMERCIAL INVOICE")
-    if not doc.packing_list:
-        errors.append("FALTA PACKING LIST")
-    if not doc.clean_order:
-        errors.append("ORDEN FÍSICO INCORRECTO EN SOBRE")
 
-    # 🔴 CORTINA 2: CALIDAD DOCUMENTAL
-    if not doc.readable:
-        errors.append("DOCUMENTOS NO LEGIBLES")
-    if not doc.no_damage:
-        errors.append("DOCUMENTOS DAÑADOS O SUCIOS")
+# =========================
+# CORE VALIDATION ENGINE
+# =========================
 
-    # 🔴 CORTINA 3: COHERENCIA OPERATIVA
-    if not doc.weight_match:
-        errors.append("DISCREPANCIA DE PESO (AWB vs REAL)")
-    if not doc.pieces_match:
-        errors.append("DISCREPANCIA DE PIEZAS")
-
-    # 🔴 CORTINA 4: SEGURIDAD / LEGAL
-    if not doc.itn:
-        warnings.append("ITN NO CONFIRMADO (SI APLICA)")
-
-    # DECISIÓN FINAL
-    if len(errors) > 0:
-        status = "RECHAZO / HOLD"
-    elif len(warnings) > 0:
-        status = "REVISIÓN MANUAL"
-    else:
-        status = "APROBADO PARA COUNTER"
+def validate_documents(cargo_type, docs):
+    required = CARGO_RULES.get(cargo_type, {}).get("documents", [])
+    missing = [d for d in required if d not in docs]
 
     return {
-        "status": status,
-        "errors": errors,
-        "warnings": warnings
+        "cargo_type": cargo_type,
+        "required_documents": required,
+        "missing_documents": missing,
+        "document_status": "FAIL" if missing else "PASS"
     }
 
-# -----------------------------
-# ENDPOINT PRINCIPAL
-# -----------------------------
-@app.post("/check")
-def check_document(doc: DocumentCheck):
-    return evaluate(doc)
+
+def validate_weight(height_in, weight_kg, uld_type):
+    aircraft = AVIATION_RULES["aircraft_limits"]
+
+    height_limit = aircraft["max_height_freighter_in"]
+    weight_limit = aircraft["max_piece_weight_kg"]
+
+    errors = []
+
+    if height_in > height_limit:
+        errors.append(f"ALTURA EXCEDE LIMITE ({height_in} > {height_limit})")
+
+    if weight_kg > weight_limit:
+        errors.append(f"PESO EXCEDE LIMITE ({weight_kg} > {weight_limit})")
+
+    uld = AVIATION_RULES["uld_types"].get(uld_type)
+
+    if uld and weight_kg > uld.get("max_weight_kg", 0):
+        errors.append("EXCEDE LIMITE ULD")
+
+    return {
+        "height_check": "PASS" if height_in <= height_limit else "FAIL",
+        "weight_check": "PASS" if weight_kg <= weight_limit else "FAIL",
+        "uld_check": "PASS" if not errors else "FAIL",
+        "errors": errors
+    }
+
+
+def detect_risk_flags(data):
+    flags = []
+
+    if data.get("dg"):
+        flags.append("DANGEROUS_GOODS")
+
+    if data.get("lithium_batteries"):
+        flags.append("LITHIUM_BATTERY")
+
+    if data.get("perishable"):
+        flags.append("PERISHABLE")
+
+    if data.get("human_remains"):
+        flags.append("HUMAN_REMAINS")
+
+    if data.get("high_value"):
+        flags.append("HIGH_VALUE")
+
+    return flags
+
+
+# =========================
+# MAIN ENDPOINT
+# =========================
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.json
+
+    cargo_type = data.get("cargo_type", "GENERAL")
+    docs = data.get("documents", [])
+
+    doc_result = validate_documents(cargo_type, docs)
+
+    physical = validate_weight(
+        data.get("height_in", 0),
+        data.get("weight_kg", 0),
+        data.get("uld_type", "")
+    )
+
+    risks = detect_risk_flags(data)
+
+    return jsonify({
+        "document_check": doc_result,
+        "physical_check": physical,
+        "risk_flags": risks,
+        "overall_status": "REJECT" if (
+            doc_result["missing_documents"] or physical["errors"]
+        ) else "CLEARED"
+    })
+
+
+# =========================
+# STATIC FRONTEND
+# =========================
+
+@app.route("/")
+def home():
+    return send_from_directory("static", "app.html")
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
