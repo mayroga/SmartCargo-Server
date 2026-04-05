@@ -2,21 +2,23 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Counter Control System</title>
+<title>COUNTER PRE-ACCEPTANCE SYSTEM - MIA/AVIATION</title>
+
 <style>
 body {
     font-family: Arial;
     background: #0b0f14;
-    color: #fff;
+    color: #ffffff;
     margin: 0;
     padding: 0;
 }
 
 header {
     background: #111827;
-    padding: 15px;
+    padding: 18px;
     font-size: 18px;
     font-weight: bold;
+    border-bottom: 2px solid #22c55e;
 }
 
 .container {
@@ -30,34 +32,67 @@ header {
     border-radius: 10px;
 }
 
-input, select {
+h3 {
+    margin-top: 0;
+    color: #22c55e;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+input, select, textarea {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     margin-top: 5px;
     margin-bottom: 10px;
+    border-radius: 5px;
+    border: none;
 }
 
 button {
     background: #22c55e;
-    border: none;
-    padding: 10px;
-    width: 100%;
+    color: black;
     font-weight: bold;
+    border: none;
+    padding: 12px;
+    width: 100%;
     cursor: pointer;
+    border-radius: 6px;
+    font-size: 16px;
 }
 
-.error {
-    color: red;
+button:hover {
+    background: #16a34a;
+}
+
+.result {
+    white-space: pre-wrap;
+    background: black;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #22c55e;
+}
+
+.step {
+    padding: 10px;
+    border-left: 4px solid #22c55e;
+    margin-bottom: 10px;
+    background: #111827;
+}
+
+.warning {
+    color: #facc15;
+}
+
+.danger {
+    color: #ef4444;
 }
 
 .ok {
     color: #22c55e;
-}
-
-.step {
-    border-left: 4px solid #22c55e;
-    padding-left: 10px;
-    margin-bottom: 10px;
 }
 </style>
 </head>
@@ -65,34 +100,39 @@ button {
 <body>
 
 <header>
-COUNTER PRE-CHECK SYSTEM — AVIATION CONTROL MODE
+🛫 COUNTER PRE-ACCEPTANCE SYSTEM — MIA AIR CARGO SIMULATOR
 </header>
 
 <div class="container">
 
+<!-- ===================== -->
 <!-- STEP 1 -->
+<!-- ===================== -->
 <div class="card">
-<h3>1. 🗂️ ORGANIZACIÓN FÍSICA (OBLIGATORIA)</h3>
 
-<div class="step">
-✔ Orden: AWB → HAWB → Invoice → Packing List → Permisos → Certificados
+<h3>1. 🗂️ ORGANIZACIÓN FÍSICA DEL SOBRE (OBLIGATORIO)</h3>
+
+<div class="step">✔ AWB ORIGINAL (arriba del todo)</div>
+<div class="step">✔ HAWB (si aplica)</div>
+<div class="step">✔ COMMERCIAL INVOICE</div>
+<div class="step">✔ PACKING LIST DETALLADO</div>
+<div class="step">✔ PERMISOS (USDA / FDA / ICA / SENASA / DIAN)</div>
+<div class="step">✔ CERTIFICADOS (DG / PHYTOSANITARY / PHARMA / etc)</div>
+
+<div class="step warning">
+⚠ Orden incorrecto = retraso automático en COUNTER
 </div>
 
-<div class="step">
-✔ Verificar: limpieza, legibilidad, sin tachones
 </div>
 
-<div class="step">
-✔ Separación física: ORIGINAL / COPIAS / ADUANA
-</div>
-</div>
-
-
+<!-- ===================== -->
 <!-- STEP 2 -->
+<!-- ===================== -->
 <div class="card">
-<h3>2. 📄 INGRESO DE DATOS</h3>
 
-<label>Cargo Type</label>
+<h3>2. 📦 DATOS OPERATIVOS DE CARGA</h3>
+
+<label>Tipo de Carga</label>
 <select id="cargo_type">
 <option>GENERAL</option>
 <option>DGR</option>
@@ -101,48 +141,58 @@ COUNTER PRE-CHECK SYSTEM — AVIATION CONTROL MODE
 <option>HUM</option>
 <option>VAL</option>
 <option>PHR</option>
+<option>FSH</option>
+<option>BAT</option>
+<option>MED</option>
 </select>
 
-<label>ULD Type</label>
-<input id="uld" placeholder="PMC / PAG / AKE">
+<label>ULD TYPE</label>
+<input id="uld" placeholder="PMC / PAG / PAJ / AKE">
 
-<label>Weight (kg)</label>
+<label>Peso (kg)</label>
 <input id="weight" type="number">
 
-<label>Height (in)</label>
+<label>Altura (in)</label>
 <input id="height" type="number">
 
-<label>Documents (comma separated)</label>
-<input id="docs">
+<label>Documentos (separados por coma)</label>
+<input id="docs" placeholder="air_waybill, commercial_invoice, packing_list">
 
 </div>
 
-
+<!-- ===================== -->
 <!-- STEP 3 -->
+<!-- ===================== -->
 <div class="card">
-<h3>3. ⚠️ FLAGS DE RIESGO</h3>
 
-<label><input type="checkbox" id="dg"> DG</label>
-<label><input type="checkbox" id="lithium"> Lithium</label>
-<label><input type="checkbox" id="perishable"> Perishable</label>
-<label><input type="checkbox" id="human"> Human Remains</label>
-<label><input type="checkbox" id="value"> High Value</label>
+<h3>3. ⚠️ FLAGS OPERATIVOS (RIESGO REAL)</h3>
+
+<label><input type="checkbox" id="dg"> DG (Dangerous Goods)</label>
+<label><input type="checkbox" id="lithium"> Lithium Batteries</label>
+<label><input type="checkbox" id="perishable"> Perecedero</label>
+<label><input type="checkbox" id="human"> Restos Humanos</label>
+<label><input type="checkbox" id="value"> Alto Valor</label>
 
 </div>
 
-
+<!-- ===================== -->
 <!-- STEP 4 -->
+<!-- ===================== -->
 <div class="card">
-<h3>4. 🚀 EJECUTAR CONTROL</h3>
-<button onclick="analyze()">ANALIZAR CARGA</button>
 
-<pre id="result"></pre>
+<h3>4. 🚀 SIMULACIÓN DE COUNTER REAL</h3>
+
+<button onclick="runCheck()">EJECUTAR PRE-ACEPTACIÓN</button>
+
+<div id="output" class="result"></div>
+
 </div>
 
 </div>
 
 <script>
-async function analyze() {
+
+async function runCheck() {
 
     const payload = {
         cargo_type: document.getElementById("cargo_type").value,
@@ -152,13 +202,13 @@ async function analyze() {
         documents: document.getElementById("docs").value.split(",").map(x => x.trim()),
 
         dg: document.getElementById("dg").checked,
-        lithium_batteries: document.getElementById("lithium").checked,
+        lithium: document.getElementById("lithium").checked,
         perishable: document.getElementById("perishable").checked,
         human_remains: document.getElementById("human").checked,
         high_value: document.getElementById("value").checked
     };
 
-    const res = await fetch("/analyze", {
+    const res = await fetch("/precheck", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(payload)
@@ -166,9 +216,31 @@ async function analyze() {
 
     const data = await res.json();
 
-    document.getElementById("result").innerText =
-        JSON.stringify(data, null, 2);
+    let text = "";
+
+    text += "================ COUNTER SIMULATION ================\n\n";
+
+    text += "📄 DOCUMENTOS REQUERIDOS:\n";
+    text += JSON.stringify(data.COUNTER_SIMULATION.required_documents, null, 2) + "\n\n";
+
+    text += "❌ DOCUMENTOS FALTANTES:\n";
+    text += JSON.stringify(data.COUNTER_SIMULATION.missing_documents, null, 2) + "\n\n";
+
+    text += "📦 ERRORES FÍSICOS:\n";
+    text += JSON.stringify(data.COUNTER_SIMULATION.physical_errors, null, 2) + "\n\n";
+
+    text += "⚠️ RIESGOS DETECTADOS:\n";
+    text += JSON.stringify(data.COUNTER_SIMULATION.risk_flags, null, 2) + "\n\n";
+
+    text += "====================================================\n";
+    text += "🧠 DECISIÓN FINAL: " + data.FINAL_DECISION + "\n\n";
+
+    text += "📌 ACCIONES REQUERIDAS:\n";
+    text += data.COUNTER_INSTRUCTIONS.join("\n");
+
+    document.getElementById("output").innerText = text;
 }
+
 </script>
 
 </body>
