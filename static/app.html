@@ -5,36 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AL CIELO - SmartCargo Advisory MIA</title>
     <style>
-        body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: #0b0f14; color: #ffffff; margin: 0; padding: 0; }
-        header { background: #111827; padding: 20px; font-size: 20px; font-weight: bold; border-bottom: 3px solid #22c55e; text-align: center; letter-spacing: 1px; }
-        .container { padding: 15px; max-width: 800px; margin: auto; }
-        .card { background: #1f2937; padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #374151; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h3 { margin-top: 0; color: #22c55e; font-size: 16px; text-transform: uppercase; border-bottom: 1px solid #374151; padding-bottom: 10px; margin-bottom: 15px; }
-        label { display: block; margin-top: 12px; font-weight: bold; font-size: 13px; color: #9ca3af; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 6px; font-size: 15px; }
-        input:focus { border-color: #22c55e; outline: none; }
+        :root { --green: #22c55e; --red: #ef4444; --yellow: #facc15; --bg: #0b0f14; --card: #1f2937; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #ffffff; margin: 0; padding: 0; padding-bottom: 50px; }
+        header { background: #111827; padding: 20px; font-size: 20px; font-weight: bold; border-bottom: 3px solid var(--green); text-align: center; letter-spacing: 1px; }
+        .container { padding: 15px; max-width: 850px; margin: auto; }
+        .card { background: var(--card); padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #374151; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h3 { margin-top: 0; color: var(--green); font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #374151; padding-bottom: 10px; margin-bottom: 15px; }
         
-        .step-box { background: #111827; padding: 12px; border-left: 4px solid #22c55e; margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
-        .warning-live { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 10px; display: none; font-weight: bold; font-size: 14px; }
-        
-        button { background: #22c55e; color: black; font-weight: 800; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 8px; font-size: 17px; margin-top: 15px; transition: 0.3s; text-transform: uppercase; }
-        button:hover { background: #16a34a; transform: translateY(-2px); }
-        
-        .result-area { display: none; margin-top: 25px; padding: 20px; border-radius: 12px; border: 2px solid #22c55e; background: #000; }
-        .decision-badge { font-size: 24px; font-weight: 900; text-align: center; padding: 10px; margin-bottom: 20px; border-radius: 6px; }
-        .REJECTED { background: #ef4444; color: white; }
-        .ACCEPTED { background: #22c55e; color: black; }
-        .CONDITIONAL { background: #facc15; color: black; }
-        
-        .instruction-item { background: #111827; padding: 12px; border-bottom: 1px solid #374151; color: #f3f4f6; font-size: 14px; line-height: 1.5; }
-        .instruction-item b { color: #22c55e; }
+        /* Pouch & Steps */
+        .step-box { background: #111827; padding: 12px; border-left: 4px solid var(--green); margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .qty-badge { background: var(--green); color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-        .vol-info { color: #facc15; font-size: 12px; font-weight: bold; margin-top: 5px; }
+        /* Form Elements */
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 12px; color: #9ca3af; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
         
-        @media (max-width: 600px) {
-            header { font-size: 16px; }
-            .card { padding: 15px; }
-        }
+        /* Piezas / Pallets */
+        .piece-row { background: #111827; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; position: relative; }
+        .grid-pieces { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .vol-display { color: var(--yellow); font-size: 12px; font-weight: bold; margin-top: 8px; display: block; }
+        .img-preview { max-width: 100px; max-height: 100px; margin-top: 10px; border-radius: 5px; border: 1px solid var(--green); display: none; }
+
+        /* ULD Buttons */
+        .uld-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .btn-uld { background: #374151; color: white; border: 1px solid var(--green); padding: 10px; font-size: 12px; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .btn-uld.active { background: var(--green); color: black; font-weight: bold; }
+
+        /* Voice & Scan */
+        .voice-controls { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-mic { background: #374151; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-mic.recording { background: var(--red); animation: pulse 1.5s infinite; }
+        .btn-scan { background: var(--green); color: black; width: 150px !important; }
+
+        /* Alerts */
+        .warning-live { color: var(--red); background: rgba(239, 68, 68, 0.1); padding: 12px; border-radius: 6px; border: 1px solid var(--red); margin-top: 10px; display: none; font-weight: bold; font-size: 13px; }
+
+        button.main-exec { background: var(--green); color: black; font-weight: 800; border: none; padding: 20px; width: 100%; cursor: pointer; border-radius: 8px; font-size: 18px; margin-top: 20px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -45,122 +54,212 @@
 
     <div class="card">
         <h3>1. 📂 PROTOCOLO DE SOBRE (POUCH) - MIA</h3>
-        <div class="step-box"><span>1. AWB ORIGINAL (TOP)</span> ✅</div>
-        <div class="step-box"><span>2. COMMERCIAL INVOICE</span> ✅</div>
-        <div class="step-box"><span>3. PACKING LIST</span> ✅</div>
-        <div class="step-box"><span>4. PERMISOS (USDA/CBP)</span> ✅</div>
-        <p style="font-size: 11px; color: #facc15;">* El agente de Avianca en MIA rechazará el sobre si no está en este orden exacto.</p>
-    </div>
-
-    <div class="card">
-        <h3>2. 📦 AUDITORÍA OPERATIVA</h3>
-        
         <label>TIPO DE CARGA / COMMODITY</label>
-        <select id="cargo_type" onchange="runLiveCheck()">
+        <select id="cargo_type" onchange="updatePouch()">
             <option value="GENERAL">GENERAL CARGO</option>
             <option value="DGR">DANGEROUS GOODS (DG)</option>
             <option value="PER">PERISHABLE (PER)</option>
-            <option value="AVI">LIVE ANIMALS (AVI)</option>
-            <option value="HUM">HUMAN REMAINS (HUM)</option>
             <option value="PHR">PHARMA</option>
             <option value="BAT">LITHIUM BATTERIES</option>
         </select>
-
-        <label>IDENTIFICADOR ULD / PALLET</label>
-        <input id="uld" placeholder="Ej: PMC / PAG / AKE" oninput="runLiveCheck()">
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <label>PESO TOTAL (KG)</label>
-                <input id="weight" type="number" placeholder="Kg" oninput="runLiveCheck()">
-            </div>
-            <div>
-                <label>ALTURA MÁXIMA (IN)</label>
-                <input id="height" type="number" placeholder="Inches" oninput="runLiveCheck()">
-            </div>
-        </div>
-        <div id="live_vol_info" class="vol-info"></div>
-
-        <label>AURA SCAN: DICTADO O DETALLES CRÍTICOS</label>
-        <textarea id="input_texto" rows="3" placeholder="Ej: 'Madera sin sello', 'Caja mojada', 'Falta firma en MSDS'..." oninput="runLiveCheck()"></textarea>
         
-        <div id="critical_warning" class="warning-live"></div>
+        <div id="pouch_content" style="margin-top: 15px;">
+            </div>
+        <p style="font-size: 11px; color: var(--yellow); margin-top: 10px;">* Orden descendente obligatorio para evitar rechazo en counter Avianca.</p>
     </div>
 
     <div class="card">
-        <h3>3. ⚠️ VERIFICACIÓN DE RIESGOS</h3>
-        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
-            <input type="checkbox" id="dg" style="width:20px; height:20px;"> MERCANCÍA PELIGROSA (DG)
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
-            <input type="checkbox" id="lithium" style="width:20px; height:20px;"> BATERÍAS DE LITIO
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
-            <input type="checkbox" id="wood" style="width:20px; height:20px;"> EMBALAJE DE MADERA
-        </label>
+        <h3>2. 📦 AUDITORÍA DE PIEZAS E IMAGEN</h3>
+        <div id="pieces_list"></div>
+        <button onclick="addPieceRow()" style="background: transparent; color: var(--green); border: 1px dashed var(--green); padding: 10px; font-size: 13px; cursor: pointer; width: 100%; border-radius: 6px;">+ AÑADIR PIEZA / PALLET</button>
+
+        <label>IDENTIFICACIÓN DE ULD (SELECT)</label>
+        <div class="uld-grid">
+            <button class="btn-uld" onclick="selectULD(this, 'PMC')">PMC (P6P)</button>
+            <button class="btn-uld" onclick="selectULD(this, 'PAG')">PAG (P1P)</button>
+            <button class="btn-uld" onclick="selectULD(this, 'AKE')">AKE (LD3)</button>
+        </div>
+        <input type="hidden" id="uld_type" value="">
+        <div id="uld_warning" class="warning-live"></div>
     </div>
 
-    <button onclick="executePreCheck()">VERIFICAR CUMPLIMIENTO FINAL</button>
-
-    <div id="result_area" class="result-area">
-        <div id="decision_box" class="decision-badge"></div>
-        
-        <div class="card" style="background:#111827;">
-            <h3>📋 INSTRUCCIONES DE ACCIÓN INMEDIATA</h3>
-            <div id="instructions_list"></div>
+    <div class="card">
+        <h3>3. 🎤 AURA SCAN: DICTADO Y DETALLES</h3>
+        <div class="voice-controls">
+            <button id="btn_mic" class="btn-mic" onclick="startVoice()">🎤 DICTAR AHORA</button>
+            <button class="btn-scan" onclick="runMiniScan()">🔍 SCAN RÁPIDO</button>
         </div>
+        <textarea id="input_texto" rows="3" placeholder="Dictado o notas críticas..."></textarea>
+        <div id="critical_warning" class="warning-live"></div>
+    </div>
 
-        <div class="card" style="background:#111827;">
-            <h3>📄 DOCUMENTACIÓN QUE DEBES TENER EN MANO</h3>
-            <div id="docs_required" style="font-size:13px; color:#22c55e;"></div>
+    <div id="risk_card" class="card hidden">
+        <h3 style="color: var(--red);">⚠️ VERIFICACIÓN DE RIESGOS DGR</h3>
+        <div class="step-box"><span>VERIFICAR ETIQUETAS CLASE 9</span> ✅</div>
+        <div class="step-box"><span>CONFIRMAR EMBALAJE UN</span> ✅</div>
+    </div>
+
+    <button class="main-exec" onclick="executePreCheck()">VERIFICAR CUMPLIMIENTO FINAL</button>
+
+    <div id="result_area" class="hidden" style="margin-top: 25px;">
+        <div id="decision_box" class="decision-badge" style="padding: 20px; font-size: 24px; font-weight: 900; text-align: center; border-radius: 12px; margin-bottom: 20px;"></div>
+        <div class="card" style="background: #000; border: 2px solid var(--green);">
+            <h3>ORDENES DE ACCIÓN INMEDIATA</h3>
+            <div id="instructions_list" style="font-size: 14px; line-height: 1.6;"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // Rectificación en tiempo real (Aura Scan)
-    function runLiveCheck() {
-        const text = document.getElementById("input_texto").value.toUpperCase();
-        const height = parseFloat(document.getElementById("height").value) || 0;
-        const wood = document.getElementById("wood").checked;
-        const warning = document.getElementById("critical_warning");
-        const volInfo = document.getElementById("live_vol_info");
-        
-        let msg = "";
-        
-        // Alerta de Altura
-        if (height > 63) {
-            msg += "⚠ ALTURA CRÍTICA: La carga NO entra en Bellies (Pasajeros). Llama al Freight Forwarder ahora para asegurar espacio en Carguero (Freighter).<br>";
-        }
-        
-        // Alerta de Madera/USDA
-        if ((text.includes("MADERA") || wood) && !text.includes("SELLO") && !text.includes("ISPM")) {
-            msg += "⚠ RECHAZO USDA: Madera sin sello detectada. ¡PARA EL CAMIÓN! Debes fumigar o cambiar el pallet antes de entrar a Avianca.<br>";
-        }
+    // 1. LÓGICA DE POUCH
+    const pouchData = {
+        "GENERAL": [
+            {n: "AWB ORIGINAL", q: "1 Original + 3 Copias"},
+            {n: "COMMERCIAL INVOICE", q: "Original + 2 Copias"},
+            {n: "PACKING LIST", q: "1 Detallado"},
+            {n: "CARTA RESPONSABILIDAD", q: "Firma Original"}
+        ],
+        "DGR": [
+            {n: "AWB ORIGINAL", q: "1 Original + 4 Copias"},
+            {n: "SHIPPER DECLARATION", q: "3 Originales (Borde Rojo)"},
+            {n: "MSDS", q: "Hoja de Seguridad"},
+            {n: "CHECKLIST DG", q: "Aceptación Avianca"}
+        ],
+        "PER": [
+            {n: "AWB ORIGINAL", q: "1 Original + 3 Copias"},
+            {n: "FITOSANITARIO/USDA", q: "Original"},
+            {n: "INVOICE/PACKING", q: "Original + 2"},
+            {n: "TEMP LOG", q: "Si aplica"}
+        ],
+        "PHR": [
+            {n: "AWB ORIGINAL", q: "1 Original + 3"},
+            {n: "CERT. CALIDAD/LOTE", q: "1 Copia"},
+            {n: "TEMP DECLARATION", q: "1 Original"}
+        ],
+        "BAT": [
+            {n: "AWB ORIGINAL", q: "1 Original + 3"},
+            {n: "LITHIUM DECLARATION", q: "1 Original"},
+            {n: "UN38.3 TEST", q: "Resumen de prueba"}
+        ]
+    };
 
-        // Alerta de Daño/TSA
-        if (text.includes("MOJADO") || text.includes("ROTO") || text.includes("DAÑADO")) {
-            msg += "⚠ RIESGO TSA: Embalaje comprometido. El counter rechazará por seguridad. Rectifica con film industrial ahora.<br>";
-        }
+    function updatePouch() {
+        const type = document.getElementById("cargo_type").value;
+        const container = document.getElementById("pouch_content");
+        const riskCard = document.getElementById("risk_card");
 
-        if (msg) {
-            warning.innerHTML = msg;
+        riskCard.className = (type === "DGR" || type === "BAT") ? "card" : "card hidden";
+        
+        container.innerHTML = pouchData[type].map((item, index) => `
+            <div class="step-box">
+                <span>${index + 1}. ${item.n}</span>
+                <span class="qty-badge">${item.q}</span>
+            </div>
+        `).join("");
+    }
+
+    // 2. LÓGICA DE PIEZAS
+    function addPieceRow() {
+        const container = document.getElementById("pieces_list");
+        const div = document.createElement("div");
+        div.className = "piece-row";
+        div.innerHTML = `
+            <div class="grid-pieces">
+                <input type="number" placeholder="L" class="p-l" oninput="updateVol(this)">
+                <input type="number" placeholder="W" class="p-w" oninput="updateVol(this)">
+                <input type="number" placeholder="H" class="p-h" oninput="updateVol(this)">
+                <input type="number" placeholder="Kg" class="p-p">
+                <input type="file" accept="image/*" onchange="previewImg(this)" style="display:none;" id="file_${Date.now()}">
+                <button onclick="this.previousElementSibling.click()" style="padding:5px; font-size:10px; background:var(--green); color:black; border:none; border-radius:4px; cursor:pointer;">FOTO</button>
+            </div>
+            <span class="vol-label vol-display">Volumen: <span class="v-val">0</span> kgv</span>
+            <img class="img-preview" src="">
+        `;
+        container.appendChild(div);
+    }
+
+    function updateVol(el) {
+        const row = el.closest(".piece-row");
+        const l = row.querySelector(".p-l").value || 0;
+        const w = row.querySelector(".p-w").value || 0;
+        const h = row.querySelector(".p-h").value || 0;
+        const vol = Math.round((l * w * h) / 166);
+        row.querySelector(".v-val").innerText = vol;
+        if(h > 63) row.querySelector(".p-h").style.border = "2px solid var(--red)";
+        else row.querySelector(".p-h").style.border = "1px solid #4b5563";
+    }
+
+    function previewImg(input) {
+        const row = input.closest(".piece-row");
+        const img = row.querySelector(".img-preview");
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => { img.src = e.target.result; img.style.display = "block"; };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function selectULD(btn, type) {
+        document.querySelectorAll('.btn-uld').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById("uld_type").value = type;
+        
+        const warning = document.getElementById("uld_warning");
+        if(type === 'AKE') {
+            warning.innerText = "⚠ NOTA: AKE es solo para Bellies (PAX). Altura máxima 63in.";
             warning.style.display = "block";
         } else {
             warning.style.display = "none";
         }
     }
 
+    // 3. VOICE & SCAN
+    function startVoice() {
+        const btn = document.getElementById("btn_mic");
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Speech) return alert("Navegador no soporta voz");
+        
+        const rec = new Speech();
+        rec.lang = 'es-ES';
+        rec.onstart = () => btn.classList.add("recording");
+        rec.onend = () => btn.classList.remove("recording");
+        rec.onresult = e => {
+            document.getElementById("input_texto").value = e.results[0][0].transcript;
+            runMiniScan();
+        };
+        rec.start();
+    }
+
+    function runMiniScan() {
+        const t = document.getElementById("input_texto").value.toUpperCase();
+        const warn = document.getElementById("critical_warning");
+        let msg = "";
+        if((t.includes("MADERA") || document.getElementById("input_texto").value.includes("pallet")) && !t.includes("SELLO")) {
+            msg = "❌ ORDEN: ¡PARA EL CAMIÓN! Madera sin sello detectada. No entrará a Avianca.";
+        } else if(t.includes("ROTO") || t.includes("MOJADO") || t.includes("DAÑADO")) {
+            msg = "❌ RIESGO TSA: Empaque comprometido. Rectifica antes de llegar al counter.";
+        }
+        
+        if(msg) { warn.innerText = msg; warn.style.display = "block"; }
+        else { warn.style.display = "none"; }
+    }
+
+    // 4. EXECUTION
     async function executePreCheck() {
+        const pieces = [];
+        document.querySelectorAll(".piece-row").forEach(r => {
+            pieces.push({
+                l: parseFloat(r.querySelector(".p-l").value) || 0,
+                w: parseFloat(r.querySelector(".p-w").value) || 0,
+                h: parseFloat(r.querySelector(".p-h").value) || 0,
+                p: parseFloat(r.querySelector(".p-p").value) || 0
+            });
+        });
+
         const payload = {
             cargo_type: document.getElementById("cargo_type").value,
-            weight_kg: parseFloat(document.getElementById("weight").value) || 0,
-            height_in: parseFloat(document.getElementById("height").value) || 0,
-            uld_type: document.getElementById("uld").value.toUpperCase(),
-            documents: [], // Se calculan en backend
-            dg: document.getElementById("dg").checked,
-            lithium: document.getElementById("lithium").checked,
-            wood_packaging: document.getElementById("wood").checked,
+            uld_type: document.getElementById("uld_type").value,
+            pieces: pieces,
             raw_text: document.getElementById("input_texto").value
         };
 
@@ -171,23 +270,24 @@
         });
 
         const data = await res.json();
+        const results = document.getElementById("result_area");
+        results.classList.remove("hidden");
         
-        // Mostrar resultados
-        document.getElementById("result_area").style.display = "block";
         const dBox = document.getElementById("decision_box");
-        dBox.innerText = data.FINAL_DECISION;
-        dBox.className = "decision-badge " + data.FINAL_DECISION;
+        dBox.innerText = data.status === "READY" ? "ACEPTADO PARA VUELO" : "CARGA RECHAZADA / HOLD";
+        dBox.style.background = data.status === "READY" ? "var(--green)" : "var(--red)";
+        dBox.style.color = data.status === "READY" ? "black" : "white";
 
-        // Lista de Instrucciones
-        document.getElementById("instructions_list").innerHTML = data.COUNTER_INSTRUCTIONS.map(ins => 
-            `<div class="instruction-item"><b>ORDEN:</b> ${ins}</div>`
-        ).join("");
-
-        // Documentos
-        document.getElementById("docs_required").innerText = "DEBES PRESENTAR: " + data.COUNTER_SIMULATION.required_documents.join(", ").toUpperCase();
-
+        document.getElementById("instructions_list").innerHTML = data.instructions.map(ins => 
+            `<div style="padding:10px; border-bottom:1px solid #333;"><b>ORDEN:</b> ${ins}</div>`
+        ).join("") || "Todo en orden. Procede al counter.";
+        
         window.scrollTo(0, document.body.scrollHeight);
     }
+
+    // Inicializar
+    updatePouch();
+    addPieceRow();
 </script>
 
 </body>
