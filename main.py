@@ -1,150 +1,87 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Dict
-
+from typing import List, Optional
 import json
+import os
 
-app = FastAPI(title="Counter Pre-Acceptance System")
-
-# =========================
-# LOAD RULES (NO MODULOS NUEVOS)
-# =========================
-
-with open("static/avianca_rules.json", "r") as f:
-    AVIATION_RULES = json.load(f)
-
-with open("static/cargo_rules.json", "r") as f:
-    CARGO_RULES = json.load(f)
-
+app = FastAPI(title="SmartCargo Advisory MIA")
 
 # =========================
-# INPUT MODEL (COUNTER FORM)
+# CARGA DE REGLAS REALES
 # =========================
+def load_db():
+    try:
+        with open("static/avianca_rules.json", "r") as f:
+            av = json.load(f)
+        with open("static/cargo_rules.json", "r") as f:
+            cg = json.load(f)
+        return av, cg
+    except:
+        return {}, {}
+
+AV_RULES, CG_RULES = load_db()
 
 class CargoRequest(BaseModel):
     cargo_type: str
-    documents: List[str]
     weight_kg: float
     height_in: float
     uld_type: str
-
     dg: bool = False
     lithium: bool = False
-    perishable: bool = False
-    human_remains: bool = False
-    high_value: bool = False
-
-
-# =========================
-# CORE COUNTER LOGIC
-# =========================
-
-def document_check(cargo_type, docs):
-    required = CARGO_RULES.get(cargo_type, {}).get("documents", [])
-    missing = [d for d in required if d not in docs]
-
-    return missing, required
-
-
-def physical_check(weight, height, uld_type):
-    limits = AVIATION_RULES["aircraft_limits"]
-    uld = AVIATION_RULES["uld_types"].get(uld_type, {})
-
-    errors = []
-
-    if height > limits["max_height_freighter_in"]:
-        errors.append("ALTURA EXCEDE LIMITE AVIACION")
-
-    if weight > limits["max_piece_weight_kg"]:
-        errors.append("PESO EXCEDE LIMITE AVIACION")
-
-    if uld and weight > uld.get("max_weight_kg", 0):
-        errors.append("EXCEDE LIMITE ULD")
-
-    return errors
-
-
-def risk_engine(data):
-    risks = []
-
-    if data.dg:
-        risks.append("DANGEROUS_GOODS")
-
-    if data.lithium:
-        risks.append("LITHIUM_BATTERY")
-
-    if data.perishable:
-        risks.append("PERISHABLE")
-
-    if data.human_remains:
-        risks.append("HUMAN_REMAINS")
-
-    if data.high_value:
-        risks.append("HIGH_VALUE")
-
-    return risks
-
-
-# =========================
-# DECISION ENGINE (LO QUE REALMENTE IMPORTA)
-# =========================
-
-def decision(missing_docs, physical_errors, risks):
-
-    if len(missing_docs) == 0 and len(physical_errors) == 0:
-        return "ACCEPTED"
-
-    if "DANGEROUS_GOODS" in risks and len(missing_docs) == 0:
-        return "CONDITIONAL"
-
-    return "REJECTED"
-
-
-def action_plan(missing_docs, physical_errors, risks):
-
-    actions = []
-
-    for d in missing_docs:
-        actions.append(f"FALTANTE DOCUMENTO: {d} → ENTREGAR ANTES DE LLEGAR A COUNTER")
-
-    for e in physical_errors:
-        actions.append(f"ERROR FISICO: {e} → REETIQUETAR O REACOMODAR")
-
-    if "DANGEROUS_GOODS" in risks:
-        actions.append("DG DETECTADO → REVISAR SHIPPER DECLARATION IATA")
-
-    if "LITHIUM_BATTERY" in risks:
-        actions.append("LITHIUM → VERIFICAR SECCION IATA IA/IB/II")
-
-    return actions
-
-
-# =========================
-# MAIN ENDPOINT (COUNTER SIMULATOR)
-# =========================
+    wood_packaging: bool = False
+    raw_text: str = ""
 
 @app.post("/precheck")
 def precheck(data: CargoRequest):
+    instructions = []
+    physical_errors = []
+    risks = []
+    
+    # 1. ANALISIS DE DOCUMENTACIÓN (Basado en tipo)
+    required_docs = CG_RULES.get(data.cargo_type, {}).get("documents", ["air_waybill", "commercial_invoice", "packing_list"])
+    
+    # 2. ANALISIS FISICO (Real de Avianca)
+    limits = AV_RULES.get("aircraft_limits", {"max_height_belly_in": 63, "max_height_freighter_in": 118})
+    
+    if data.height_in > limits["max_height_freighter_in"]:
+        physical_errors.append("ALTURA EXCEDE LIMITE MAXIMO AERONAVE")
+        instructions.append("RE-ESTIBAR AHORA: La carga no entra ni en carguero. Reduce la altura de los bultos.")
+    elif data.height_in > limits["max_height_belly_in"]:
+        instructions.append("CAMBIO DE EQUIPO: Asegúrate que la reserva sea en CARGUERO. En PAX (Belly) será rechazada.")
 
-    missing_docs, required = document_check(data.cargo_type, data.documents)
-    physical_errors = physical_check(data.weight_kg, data.height_in, data.uld_type)
-    risks = risk_engine(data)
+    # 3. ANALISIS DE RIESGO AURA SCAN (Vida Real en MIA)
+    text = data.raw_text.upper()
+    
+    if data.wood_packaging or "MADERA" in text:
+        if "SELLO" not in text and "ISPM" not in text:
+            risks.append("USDA_NON_COMPLIANCE")
+            instructions.append("ACCION: Busca el sello ISPM15. Si no está, llama a un proveedor de pallets en MIA para cambio urgente.")
 
-    final_decision = decision(missing_docs, physical_errors, risks)
+    if data.dg or "DG" in text or data.cargo_type == "DGR":
+        risks.append("DANGEROUS_GOODS")
+        instructions.append("DOCS: Verifica que la Shipper Declaration tenga las 3 copias con bordes rojos originales.")
+
+    if data.lithium:
+        instructions.append("ETIQUETADO: Verifica que la etiqueta UN3480/3481 sea visible y no esté tapada por el film.")
+
+    # 4. DECISION FINAL
+    decision = "ACCEPTED"
+    if physical_errors or "USDA_NON_COMPLIANCE" in risks:
+        decision = "REJECTED"
+    elif risks or data.height_in > 63:
+        decision = "CONDITIONAL"
 
     return {
         "COUNTER_SIMULATION": {
-            "required_documents": required,
-            "missing_documents": missing_docs,
+            "required_documents": required_docs,
             "physical_errors": physical_errors,
             "risk_flags": risks
         },
-
-        "FINAL_DECISION": final_decision,
-
-        "COUNTER_INSTRUCTIONS": action_plan(
-            missing_docs,
-            physical_errors,
-            risks
-        )
+        "FINAL_DECISION": decision,
+        "COUNTER_INSTRUCTIONS": instructions if instructions else ["Todo en orden. Procede al counter con el sobre organizado."]
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
