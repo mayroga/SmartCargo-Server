@@ -12,28 +12,28 @@
         
         /* Ventanas Inteligentes (Cards Estrictas) */
         .window { background: var(--card); padding: 25px; margin-bottom: 25px; border-radius: 15px; border: 1px solid #374151; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        h3 { margin-top: 0; color: var(--green); font-size: 14px; text-transform: uppercase; border-bottom: 2px solid #374151; padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        h3 { margin-top: 0; color: var(--green); font-size: 16px; text-transform: uppercase; border-bottom: 2px solid #374151; padding-bottom: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         
         /* Sistema de Medidas Dual */
         .unit-switch { display: flex; gap: 10px; margin-bottom: 15px; background: #111827; padding: 5px; border-radius: 8px; width: fit-content; }
-        .unit-btn { background: transparent; color: #9ca3af; border: none; padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 11px; }
+        .unit-btn { background: transparent; color: #9ca3af; border: none; padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 12px; }
         .unit-btn.active { background: var(--green); color: black; }
 
         /* Tabla de Piezas Maestra */
         .piece-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .piece-table th { text-align: center; font-size: 11px; color: #9ca3af; padding: 10px; text-transform: uppercase; border-bottom: 1px solid #4b5563; }
-        .piece-row td { padding: 8px; border-bottom: 1px solid #374151; }
-        .input-table { width: 100%; background: #111827; color: white; border: 1px solid #4b5563; padding: 12px 5px; border-radius: 5px; font-size: 14px; text-align: center; box-sizing: border-box; }
+        .piece-table th { text-align: left; font-size: 11px; color: #9ca3af; padding: 10px; text-transform: uppercase; border-bottom: 1px solid #4b5563; }
+        .piece-row td { padding: 10px; border-bottom: 1px solid #374151; }
+        .input-table { width: 100%; background: #111827; color: white; border: 1px solid #4b5563; padding: 10px; border-radius: 5px; font-size: 14px; text-align: center; }
 
         /* Estilo de Botones */
-        .btn-main { background: var(--green); color: black; font-weight: 900; border: none; padding: 20px; width: 100%; cursor: pointer; border-radius: 10px; font-size: 18px; text-transform: uppercase; transition: 0.3s; margin-top: 10px; }
+        .btn-main { background: var(--green); color: black; font-weight: 900; border: none; padding: 20px; width: 100%; cursor: pointer; border-radius: 10px; font-size: 18px; text-transform: uppercase; transition: 0.3s; }
         .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(34, 197, 94, 0.4); }
-        .btn-sec { background: #374151; color: white; border: 1px solid transparent; padding: 12px; cursor: pointer; border-radius: 8px; font-size: 12px; transition: 0.2s; }
-        .btn-sec.active { border-color: var(--green); background: rgba(34, 197, 94, 0.1); color: var(--green); font-weight: bold; }
+        .btn-sec { background: #374151; color: white; border: 1px solid var(--green); padding: 12px; cursor: pointer; border-radius: 8px; font-size: 12px; }
+        .btn-sec.active { background: var(--green); color: black; font-weight: bold; }
 
         /* Alertas de Asesoría */
-        textarea { width: 100%; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 8px; padding: 15px; box-sizing: border-box; font-family: inherit; font-size: 15px; resize: none; }
-        .status-badge { display: inline-block; padding: 10px 20px; border-radius: 50px; font-weight: 800; margin-bottom: 20px; text-transform: uppercase; font-size: 13px; }
+        .advice-box { background: rgba(0,0,0,0.4); border-left: 5px solid var(--green); padding: 15px; margin-top: 20px; display: none; }
+        .status-badge { display: inline-block; padding: 10px 20px; border-radius: 50px; font-weight: 800; margin-bottom: 15px; }
 
         .hidden { display: none; }
     </style>
@@ -46,7 +46,7 @@
 
     <div class="window">
         <h3>👤 QUIÉN REPORTA LA CARGA</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
             <button class="btn-sec" onclick="setRole(this, 'SHIPPER')">DUEÑO CARGA</button>
             <button class="btn-sec" onclick="setRole(this, 'FORWARDER')">AGENCIA</button>
             <button class="btn-sec active" onclick="setRole(this, 'TRUCKER')">CHOFER</button>
@@ -65,7 +65,7 @@
         <table class="piece-table">
             <thead>
                 <tr>
-                    <th style="width: 15%;">CANT.</th>
+                    <th style="width: 15%;">CANTIDAD</th>
                     <th style="width: 20%;">LARGO</th>
                     <th style="width: 20%;">ANCHO</th>
                     <th style="width: 20%;">ALTO</th>
@@ -75,25 +75,25 @@
             <tbody id="pieces_body">
                 </tbody>
         </table>
-        <button onclick="addRow()" style="margin-top:15px; background:transparent; color:var(--green); border:1px dashed var(--green); padding:12px; width:100%; cursor:pointer; border-radius:8px; font-weight: bold;">+ AÑADIR OTRO GRUPO DE PIEZAS</button>
+        <button onclick="addRow()" style="margin-top:15px; background:transparent; color:var(--green); border:1px dashed var(--green); padding:10px; width:100%; cursor:pointer; border-radius:8px;">+ AÑADIR OTRO GRUPO DE PIEZAS</button>
     </div>
 
     <div class="window">
         <h3>🎤 REVISIÓN VISUAL Y ESTADO</h3>
-        <p style="font-size: 13px; color: #9ca3af; margin-bottom: 10px;">Indique si hay daños, humedad o madera sin sello ISPM15:</p>
-        <textarea id="input_texto" rows="3" placeholder="Ej: Pallet de madera sin sello, caja mojada..."></textarea>
-        <button id="btn_mic" class="btn-sec" onclick="startVoice()" style="width:100%; margin-top:15px; display:flex; align-items:center; justify-content:center; gap:10px; border: 1px solid #4b5563;">
-            <span>🎤 PRESIONE PARA DICTAR POR VOZ</span>
+        <p style="font-size: 12px; color: #9ca3af;">Si ve algo roto, mojado o madera sin sello, dígalo aquí:</p>
+        <textarea id="input_texto" rows="3" placeholder="Ejemplo: El pallet es de madera y no tiene el sello de fumigación..."></textarea>
+        <button id="btn_mic" class="btn-sec" onclick="startVoice()" style="width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <span>🎤 PRESIONE PARA HABLAR</span>
         </button>
     </div>
 
-    <button class="btn-main" onclick="processAdvisory()">GENERAR ASESORÍA AHORA</button>
+    <button class="btn-main" onclick="processAdvisory()">REVISAR CARGA AHORA</button>
 
     <div id="result_area" class="hidden" style="margin-top: 30px;">
         <div class="window" style="border: 2px solid var(--green);">
             <div id="status_display" class="status-badge"></div>
-            <div id="master_instructions" style="line-height: 1.8; font-size: 15px; color: #e5e7eb;"></div>
-            <div id="summary_footer" style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #4b5563; color: var(--yellow); font-weight: bold; font-size: 18px; text-align: center;"></div>
+            <div id="master_instructions" style="line-height: 1.8; font-size: 15px;"></div>
+            <div id="summary_footer" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #4b5563; color: var(--yellow); font-weight: bold;"></div>
         </div>
     </div>
 </div>
@@ -118,7 +118,7 @@
         const tr = document.createElement("tr");
         tr.className = "piece-row";
         tr.innerHTML = `
-            <td><input type="number" class="input-table p-qty" value="1" min="1"></td>
+            <td><input type="number" class="input-table p-qty" value="1"></td>
             <td><input type="number" class="input-table p-l" placeholder="0"></td>
             <td><input type="number" class="input-table p-w" placeholder="0"></td>
             <td><input type="number" class="input-table p-h" placeholder="0"></td>
@@ -129,7 +129,7 @@
 
     function startVoice() {
         const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!Speech) return alert("Navegador no compatible con voz.");
+        if (!Speech) return alert("Su teléfono no soporta dictado de voz.");
         const rec = new Speech();
         rec.lang = 'es-ES';
         rec.onresult = e => { document.getElementById("input_texto").value = e.results[0][0].transcript; };
@@ -144,54 +144,49 @@
             let l = parseFloat(r.querySelector(".p-l").value) || 0;
             let w = parseFloat(r.querySelector(".p-w").value) || 0;
             let h = parseFloat(r.querySelector(".p-h").value) || 0;
-            let p = parseFloat(r.querySelector(".p-p").value) || 0;
             let qty = parseInt(r.querySelector(".p-qty").value) || 1;
 
+            // Conversión inmediata a Pulgadas para el Backend de Avianca
             if(currentUnits === 'CM') {
                 l = l / 2.54; w = w / 2.54; h = h / 2.54;
             }
 
             for(let i=0; i<qty; i++) {
-                pieces.push({ l, w, h, p, packaging: "GENERAL" });
+                pieces.push({
+                    l: l, w: w, h: h,
+                    p: parseFloat(r.querySelector(".p-p").value) || 0,
+                    packaging: "GENERAL"
+                });
             }
         });
 
-        if (pieces.length === 0) return alert("Añada al menos una pieza.");
+        const res = await fetch("/precheck", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                user_role: document.getElementById("user_role").value,
+                cargo_type: "GENERAL",
+                pieces: pieces,
+                raw_text: document.getElementById("input_texto").value
+            })
+        });
 
-        try {
-            const res = await fetch("/precheck", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    user_role: document.getElementById("user_role").value,
-                    cargo_type: "GENERAL",
-                    pieces: pieces,
-                    raw_text: document.getElementById("input_texto").value
-                })
-            });
+        const data = await res.json();
+        const area = document.getElementById("result_area");
+        area.classList.remove("hidden");
 
-            const data = await res.json();
-            const area = document.getElementById("result_area");
-            area.classList.remove("hidden");
+        const status = document.getElementById("status_display");
+        status.innerText = data.status === "READY" ? "CARGA LISTA PARA DESPACHO" : "ACCIONES REQUERIDAS";
+        status.style.background = data.status === "READY" ? var(--green) : (data.status === "HOLD" ? var(--yellow) : var(--red));
+        status.style.color = "black";
 
-            const status = document.getElementById("status_display");
-            status.innerText = data.status === "READY" ? "CARGA LISTA / OK" : "REVISIÓN NECESARIA";
-            
-            // Colores de estado
-            const colors = { "READY": "#22c55e", "HOLD": "#facc15", "REJECT": "#ef4444" };
-            status.style.backgroundColor = colors[data.status] || colors["HOLD"];
-            status.style.color = "black";
-
-            document.getElementById("master_instructions").innerHTML = data.instructions.map(i => `<div style="margin-bottom:8px;">• ${i}</div>`).join("");
-            document.getElementById("summary_footer").innerText = `PESO COBRABLE: ${data.chargeable_weight}`;
-            
-            window.scrollTo({ top: area.offsetTop, behavior: 'smooth' });
-        } catch (err) {
-            alert("Error conectando con el servidor.");
-        }
+        document.getElementById("master_instructions").innerHTML = data.instructions.map(i => `<div>✅ ${i}</div>`).join("");
+        document.getElementById("summary_footer").innerText = `PESO TOTAL A PAGAR: ${data.chargeable_weight} KG`;
+        
+        window.scrollTo(0, document.body.scrollHeight);
     }
 
-    // Inicializar con una fila
+    // Inicializar
     addRow();
 </script>
 
