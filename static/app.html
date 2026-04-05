@@ -86,6 +86,23 @@
         .piece-row { background: #1a1f26; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 15px; }
         .dims-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .vol-badge { display: inline-block; margin-top: 10px; padding: 5px 10px; background: rgba(250, 204, 21, 0.1); color: var(--yellow); border-radius: 4px; font-size: 12px; font-weight: bold; }
+        
+        /* Foto Placeholder */
+        .photo-placeholder {
+            width: 100%;
+            height: 120px;
+            background: #0b0f14;
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+        }
 
         /* Botones de Acción */
         .btn-main { 
@@ -96,11 +113,29 @@
         /* Resultados */
         #result_area { display: none; margin-top: 25px; }
         .status-box { padding: 25px; border-radius: 12px; text-align: center; font-size: 22px; font-weight: 900; margin-bottom: 20px; }
-        .instruction-item { padding: 12px; border-bottom: 1px solid #333; font-size: 14px; display: flex; gap: 10px; }
+        .instruction-item { 
+            padding: 15px; 
+            border-left: 5px solid var(--red); 
+            background: rgba(239, 68, 68, 0.1);
+            font-size: 14px; 
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .instruction-item.success {
+            border-left-color: var(--green);
+            background: rgba(34, 197, 94, 0.1);
+        }
         
         .spec-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
         .spec-table th, .spec-table td { border: 1px solid #374151; padding: 10px; text-align: left; }
         .spec-table th { background: #1f2937; color: var(--green); }
+        
+        .explainer {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            line-height: 1.3;
+        }
     </style>
 </head>
 <body>
@@ -127,11 +162,12 @@
             <div>
                 <label>Tipo de Mercancía</label>
                 <select id="cargo_type">
-                    <option value="GENERAL">CARGA GENERAL</option>
-                    <option value="DGR">DANGEROUS GOODS (DG)</option>
-                    <option value="PER">PERECEDEROS (PER)</option>
-                    <option value="PHR">PHARMA (TEMPERATURA)</option>
+                    <option value="GENERAL">CARGA GENERAL (Sin químicos ni peligrosos)</option>
+                    <option value="DGR">DANGEROUS GOODS (DG - Mercancía Peligrosa)</option>
+                    <option value="PER">PERECEDEROS (PER - Alimentos/Flores)</option>
+                    <option value="PHR">PHARMA (Temperatura Controlada)</option>
                 </select>
+                <div class="explainer">DGR requiere Shipper's Declaration (borde rojo). PER requiere Fitonisanitario.</div>
             </div>
             <div>
                 <label>Destino Final</label>
@@ -146,18 +182,18 @@
         <div class="curtain">
             <div class="curtain-header" onclick="toggleCurtain(this)">DOCUMENTOS DENTRO DEL SOBRE (POUCH) <span>▼</span></div>
             <div class="curtain-content">
-                • <b>AWB ORIGINAL:</b> 1 Original + 3 Copias legibles.<br>
-                • <b>FACTURA COMERCIAL:</b> Debe indicar Incoterm y valor FOB.<br>
-                • <b>PACKING LIST:</b> Desglose detallado por bulto.<br>
-                • <b>PERMISOS:</b> Licencias de exportación si aplica.
+                • <b>AWB ORIGINAL:</b> Air Waybill (Guía Aérea). 1 Original + 3 Copias.<br>
+                • <b>COMMERCIAL INVOICE:</b> Factura con Incoterm (término de venta) y valor FOB.<br>
+                • <b>PACKING LIST:</b> Lista de empaque con peso neto y bruto por bulto.<br>
+                • <b>PERMISOS:</b> Licencias del gobierno o entidades sanitarias.
             </div>
         </div>
         <div class="curtain">
             <div class="curtain-header" onclick="toggleCurtain(this)">DOCUMENTOS FUERA DEL SOBRE <span>▼</span></div>
             <div class="curtain-content">
-                • <b>MANIFIESTO DE CARGA:</b> Copia para el transportista.<br>
-                • <b>CARTA DE RESPONSABILIDAD:</b> Firmada y sellada (TSA Requirement).<br>
-                • <b>IDENTIFICACIÓN:</b> Copia de ID del Driver.
+                • <b>CARGO MANIFEST:</b> Manifiesto de carga para el transportista.<br>
+                • <b>SECURITY FORM:</b> Carta de responsabilidad TSA firmada y sellada.<br>
+                • <b>ID DRIVER:</b> Copia de licencia del conductor que entrega.
             </div>
         </div>
     </div>
@@ -170,7 +206,7 @@
 
     <div class="card">
         <h3>🎤 AURA SCAN: ESTADO Y SOLUCIONES REALES</h3>
-        <label>Describa el estado visual para detectar errores de CBP/TSA</label>
+        <label>Describa visualmente la carga (Ejem: flejes sueltos, madera sin sello, caja rota)</label>
         <textarea id="raw_text" rows="3" placeholder="Ej: Pallet de madera sin sello visible, empaque mojado, falta fleje..."></textarea>
     </div>
 
@@ -183,13 +219,13 @@
             <h3>📋 RESOLUCIÓN TÉCNICA DEL ASESOR</h3>
             <div id="instructions_container"></div>
             
-            <h4 style="color: var(--yellow); margin-top: 20px; font-size: 13px;">📊 SUGERENCIA AUTOMÁTICA DE AERONAVE</h4>
+            <h4 style="color: var(--yellow); margin-top: 20px; font-size: 13px;">📊 COMPATIBILIDAD DE AERONAVE SEGÚN MEDIDAS</h4>
             <table class="spec-table">
                 <thead>
                     <tr>
-                        <th>EQUIPO</th>
+                        <th>EQUIPO (AVIÓN)</th>
                         <th>POSICIÓN</th>
-                        <th>MAX H</th>
+                        <th>MAX ALTURA</th>
                         <th>ESTADO</th>
                     </tr>
                 </thead>
@@ -199,7 +235,7 @@
             <div id="summary_data" style="margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; color: var(--yellow); font-weight: bold;"></div>
         </div>
         
-        <button class="btn-main" style="background: var(--blue); color: white; font-size: 14px;" onclick="window.print()">GENERAR REPORTE PDF</button>
+        <button class="btn-main" style="background: var(--blue); color: white; font-size: 14px;" onclick="window.print()">GENERAR REPORTE PDF PARA WHATSAPP</button>
     </div>
 </div>
 
@@ -222,14 +258,17 @@
         const div = document.createElement("div");
         div.className = "piece-row";
         div.innerHTML = `
+            <div class="photo-placeholder">📸 VISTA PREVIA DE LA CARGA (Carga la imagen en el dispositivo para que el asesor la analice)</div>
             <div class="form-row">
                 <div>
-                    <label>Embalaje</label>
+                    <label>Tipo de Embalaje</label>
                     <select class="p-type">
-                        <option value="PALLET_WD">Pallet Madera</option>
-                        <option value="PALLET_PL">Pallet Plástico</option>
-                        <option value="BOX">Cajas Sueltas</option>
-                        <option value="CRATE">Huacal / Crate</option>
+                        <option value="PALLET_WD">Pallet de Madera (Wood Pallet)</option>
+                        <option value="PALLET_PL">Pallet Plástico (Plastic Pallet)</option>
+                        <option value="CRATE">Huacal / Crate (Caja de madera cerrada)</option>
+                        <option value="BOX">Cajas de Cartón (Boxes)</option>
+                        <option value="DRUM">Tambores (Drums - Metal/Plástico)</option>
+                        <option value="SKID">Skid / Plataforma Metal</option>
                     </select>
                 </div>
                 <div>
@@ -238,12 +277,13 @@
                 </div>
             </div>
             <div class="dims-grid">
-                <input type="number" placeholder="L(in)" class="p-l" oninput="updateVol(this)">
-                <input type="number" placeholder="W(in)" class="p-w" oninput="updateVol(this)">
-                <input type="number" placeholder="H(in)" class="p-h" oninput="updateVol(this)">
-                <input type="number" placeholder="Kg" class="p-p">
+                <input type="number" placeholder="Largo(in)" class="p-l" oninput="updateVol(this)">
+                <input type="number" placeholder="Ancho(in)" class="p-w" oninput="updateVol(this)">
+                <input type="number" placeholder="Alto(in)" class="p-h" oninput="updateVol(this)">
+                <input type="number" placeholder="Peso(Kg)" class="p-p">
             </div>
-            <div class="vol-badge">V. Kg: <span class="v-val">0.00</span></div>
+            <div class="vol-badge">V. Kg (Volumen): <span class="v-val">0.00</span></div>
+            <div class="explainer">IATA/TSA revisa que el empaque resista la estiba.</div>
         `;
         container.appendChild(div);
     }
@@ -304,37 +344,47 @@
         
         area.style.display = "block";
         
-        // Status
-        statusBox.innerText = data.status === "READY" ? "ACEPTADO PARA VUELO" : "RECHAZADO / HOLD";
-        statusBox.style.background = data.status === "READY" ? "var(--green)" : "var(--red)";
-        statusBox.style.color = data.status === "READY" ? "black" : "white";
+        // Status con lógica de color
+        const isReady = data.status === "READY";
+        statusBox.innerText = isReady ? "✅ LISTO: CARGA ACEPTADA PARA COUNTER" : "❌ RECHAZADO: CORREGIR ERRORES AHORA";
+        statusBox.style.background = isReady ? "var(--green)" : "var(--red)";
+        statusBox.style.color = isReady ? "black" : "white";
 
-        // Instrucciones
-        instBox.innerHTML = data.instructions.map(i => `
-            <div class="instruction-item">
-                <span>👉</span> <span>${i}</span>
-            </div>
-        `).join("");
+        // Instrucciones con lógica de alerta
+        instBox.innerHTML = data.instructions.map(i => {
+            const isCritical = i.includes("❌") || i.includes("ERROR") || i.includes("RECHAZO");
+            return `
+                <div class="instruction-item ${isCritical ? '' : 'success'}">
+                    <span>${isCritical ? '🛑' : '✔️'}</span> 
+                    <span><b>${i}</b></span>
+                </div>
+            `;
+        }).join("");
 
-        // Tabla de Aeronaves
-        airBody.innerHTML = data.aircraft_compatibility.map(a => `
-            <tr>
-                <td>${a.model}</td>
-                <td>${a.deck}</td>
-                <td>${a.limit_h}"</td>
-                <td style="color:${a.status === 'OK' ? 'var(--green)' : 'var(--red)'}; font-weight:bold;">${a.status}</td>
-            </tr>
-        `).join("");
+        // Tabla de Aeronaves con explicación dinámica
+        airBody.innerHTML = data.aircraft_compatibility.map(a => {
+            let reason = a.status === 'OK' ? "Carga permitida" : "Pieza muy alta";
+            return `
+                <tr>
+                    <td>${a.model} <div class="explainer">${a.deck}</div></td>
+                    <td>${a.deck}</td>
+                    <td>${a.limit_h}"</td>
+                    <td style="color:${a.status === 'OK' ? 'var(--green)' : 'var(--red)'}; font-weight:bold;">
+                        ${a.status}<br><span style="font-size:9px;">${reason}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
 
         document.getElementById("summary_data").innerHTML = `
-            PESO COBRABLE TOTAL: ${data.chargeable_weight} KG<br>
-            ROL AUDITOR: ${data.user_role}
+            PESO TOTAL: ${data.chargeable_weight} KG<br>
+            ROL EJECUTOR: ${data.user_role}<br>
+            <span style="font-size:10px; color:white;">*Recuerde que TSA exige inspección visual al 100%.</span>
         `;
 
         window.scrollTo(0, document.body.scrollHeight);
     }
 
-    // Inicio
     addPieceRow();
 </script>
 
