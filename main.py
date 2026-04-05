@@ -15,119 +15,98 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- MODELOS DE DATOS ---
 class Piece(BaseModel):
     l: float
     w: float
     h: float
     p: float
     qty: int
-    packaging: str # PALLET_WD, PALLET_PL, BOX, CRATE, DRUM, SKID
+    packaging: str
+    unit: str # "IN" o "CM"
 
 class PreCheckRequest(BaseModel):
     user_role: str
     cargo_type: str
-    target_aircraft: str
     pieces: List[Piece]
     raw_text: str
     destination: str
 
-# --- ASESORÍA TÉCNICA CON LÓGICA DE RESOLUCIÓN ---
 @app.post("/precheck")
 async def precheck(data: PreCheckRequest):
     instructions = []
     reject = False
-    max_h_found = 0
-    total_actual_weight = 0
-    total_vol_weight = 0
-
-    # Diccionario de definiciones para los "no expertos"
-    definitions = {
-        "ISPM15": "Norma Internacional para Medidas Fitosanitarias (Sello de fumigación en madera).",
-        "TSA": "Administración de Seguridad en el Transporte (Gobierno USA).",
-        "IATA": "Asociación Internacional de Transporte Aéreo.",
-        "CBP": "Aduanas y Protección Fronteriza de los Estados Unidos."
+    max_h_in = 0
+    total_kg = 0
+    
+    # Glosario Técnico para el reporte
+    glossary = {
+        "ISPM15": "Sello internacional que certifica que la madera está libre de plagas (Exigido por CBP).",
+        "TSA": "Administración de Seguridad en el Transporte. Exige que la carga no sea manipulable.",
+        "HUM": "Human Remains (Restos Humanos). Carga de prioridad máxima con protocolos de dignidad.",
+        "AVI": "Live Animals (Animales Vivos). Requiere ventilación y checklist de bienestar.",
+        "DGD": "Shipper's Declaration for Dangerous Goods. Documento legal para químicos/baterías."
     }
 
-    # 1. Auditoría de Piezas y Embalaje
+    # 1. PROCESAMIENTO DE PIEZAS Y MEDIDAS (Conversión Dinámica)
     for i, p in enumerate(data.pieces):
-        p_weight = p.p * p.qty
-        p_vol = (p.l * p.w * p.h * p.qty) / 166
-        total_actual_weight += p_weight
-        total_vol_weight += p_vol
-        if p.h > max_h_found: max_h_found = p.h
+        # Convertir todo a pulgadas para la validación de aviones
+        h_in = p.h if p.unit == "IN" else p.h / 2.54
+        if h_in > max_h_in: max_h_in = h_in
+        total_kg += (p.p * p.qty)
 
-        # Lógica por tipo de embalaje (Reglas TSA/IATA)
-        if p.packaging == "DRUM" and p.p > 250:
-            instructions.append(f"⚠️ PIEZA #{i+1} (TAMBOR): Peso elevado detectado. SOLUCIÓN: Asegurar que estén sobre pallets y con flejes metálicos para evitar movimiento en el avión.")
-        
-        if p.packaging == "BOX" and p.h > 40:
-            instructions.append(f"⚠️ PIEZA #{i+1} (CAJAS): Altura inestable para cajas sueltas. SOLUCIÓN: Recomiendo paletizar y usar 'Shrink Wrap' (plástico estirable) para dar estabilidad.")
-
-    # 2. Alertas Críticas de Seguridad (Rojo) y AURA SCAN
-    text_analysis = data.raw_text.upper()
-    
-    # Madera sin sello (CBP)
-    if any(p.packaging in ["PALLET_WD", "CRATE"] for p in data.pieces):
-        if "SELLO" not in text_analysis and "ISPM" not in text_analysis:
-            instructions.append("❌ ERROR CBP (ADUANA): Madera sin sello ISPM15 detectada. ACCIÓN: No entregue así. Debe fumigar el pallet en MIA o cambiarlo por uno plástico antes del counter.")
+        # Validación de Embalaje por tipo
+        if p.packaging == "DRUM":
+            instructions.append(f"📦 PIEZA #{i+1} (TAMBOR): Debe viajar sobre estiba y asegurado con flejes metálicos. No se acepta plástico (shrink wrap) como único soporte.")
+        if p.packaging == "BOX" and h_in > 45:
+            instructions.append(f"❌ ERROR PIEZA #{i+1}: Caja de cartón muy alta ({round(h_in,1)}in). Riesgo de colapso. ACCIÓN: Re-embalar en CRATE (Huacal) de madera.")
             reject = True
 
-    # Daños físicos (TSA)
-    risk_keywords = ["ROTO", "MOJADO", "WET", "DAÑADO", "BROKEN", "HOYO", "FLEJE SUELTO"]
-    if any(word in text_analysis for word in risk_keywords):
-        instructions.append("❌ RECHAZO SEGURIDAD (TSA): Empaque comprometido. SOLUCIÓN: Re-embalar la pieza inmediatamente. Avianca no aceptará carga con acceso al interior o humedad.")
+    # 2. LÓGICA ESPECÍFICA POR TIPO DE CARGA
+    if data.cargo_type == "HUM":
+        instructions.append("⚱️ PROTOCOLO HUM: Verificar certificado de defunción y embalsamamiento. La caja debe estar sellada herméticamente y dentro de un outer packaging discreto.")
+    elif data.cargo_type == "AVI":
+        instructions.append("🐾 PROTOCOLO AVI: El contenedor debe tener ventilación en los 4 lados y recipientes para agua/comida accesibles desde fuera.")
+    elif data.cargo_type == "DGR_ICE":
+        instructions.append("❄️ DRY ICE: Verificar que el embalaje permita la salida del gas (CO2). Si excede 2.5kg por bulto, requiere declaración de DGR.")
+
+    # 3. AURA SCAN (Análisis de Fallas)
+    text = data.raw_text.upper()
+    if any(word in text for word in ["ROTO", "MOJADO", "DAÑADO", "HOYO"]):
+        instructions.append("❌ RECHAZO TSA: Daño físico detectado. SOLUCIÓN: El almacén debe parchar o re-embalar antes de que el camión salga hacia Avianca.")
+        reject = True
+    if "SELLO" not in text and any(p.packaging in ["PALLET_WD", "CRATE"] for p in data.pieces):
+        instructions.append("❌ FALLA CBP: No se menciona sello ISPM15 en madera. SOLUCIÓN: Llevar a fumigación inmediata en MIA Station.")
         reject = True
 
-    # 3. Sugerencia Automática de Avión (Lógica Avianca)
-    aircraft_compatibility = []
+    # 4. COMPATIBILIDAD DE AVIONES (Lógica Avianca MIA)
     fleet = [
-        {"model": "A330-200F", "deck": "Main Deck (Carguero)", "max_h": 96, "desc": "Avión puro de carga, ideal para pallets estándar."},
-        {"model": "A330-200F", "deck": "High Position (Centro)", "max_h": 118, "desc": "Solo para carga sobredimensionada en el centro del avión."},
-        {"model": "A330/A321", "deck": "Belly (Pasajeros)", "max_h": 63, "desc": "Carga que viaja 'en la barriga' del avión de pasajeros."}
+        {"model": "A330-200F", "deck": "Main Deck", "limit": 96},
+        {"model": "A330-200F", "deck": "High Position", "limit": 118},
+        {"model": "A330/A321", "deck": "Belly (Pax)", "limit": 63}
     ]
-
-    for air in fleet:
-        status = "OK" if max_h_found <= air["max_h"] else "NO CABE"
-        aircraft_compatibility.append({
-            "model": air["model"],
-            "deck": air["deck"],
-            "status": status,
-            "limit_h": air["max_h"],
-            "note": air["desc"]
+    
+    aircraft_results = []
+    for a in fleet:
+        ok = max_h_in <= a["limit"]
+        aircraft_results.append({
+            "model": a["model"], "deck": a["deck"], "limit_h": a["limit"],
+            "status": "OK" if ok else "NO CABE",
+            "reason": "Altura permitida" if ok else f"Excede límite de {a['limit']}in"
         })
-
-    # 4. Contexto por Rol
-    role_tips = {
-        "SHIPPER": "Su prioridad es que la factura y el valor FOB coincidan con el Packing List para evitar retenciones de dinero.",
-        "FORWARDER": "Revise que el Shipper's Declaration no tenga tachaduras, es un documento legal sensible.",
-        "TRUCKER": "Asegúrese de tener su ID vigente y la Carta de Responsabilidad a mano para no perder el turno.",
-        "WAREHOUSE": "Verifique que las etiquetas de destino estén visibles en al menos dos caras del pallet."
-    }
-    instructions.append(f"💡 CONSEJO PARA {data.user_role}: {role_tips.get(data.user_role, '')}")
-
-    chargeable_weight = max(total_actual_weight, total_vol_weight)
 
     return {
         "status": "REJECT" if reject else "READY",
         "instructions": instructions,
-        "chargeable_weight": round(chargeable_weight, 2),
-        "aircraft_compatibility": aircraft_compatibility,
-        "user_role": data.user_role
+        "aircraft_compatibility": aircraft_results,
+        "chargeable_weight": round(total_kg, 2),
+        "glossary": glossary
     }
 
-# --- SERVICIOS DE ARCHIVOS ---
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    try:
-        with open("static/app.html", "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        return "<h1>Error: static/app.html no encontrado.</h1>"
-
-if not os.path.exists("static"):
-    os.makedirs("static")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+    with open("static/app.html", "r", encoding="utf-8") as f: return f.read()
 
 if __name__ == "__main__":
     import uvicorn
