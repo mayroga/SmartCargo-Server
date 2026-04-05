@@ -1,246 +1,193 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>COUNTER PRE-ACCEPTANCE SYSTEM - MIA/AVIATION</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL CIELO - SmartCargo Advisory MIA</title>
+    <style>
+        body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: #0b0f14; color: #ffffff; margin: 0; padding: 0; }
+        header { background: #111827; padding: 20px; font-size: 20px; font-weight: bold; border-bottom: 3px solid #22c55e; text-align: center; letter-spacing: 1px; }
+        .container { padding: 15px; max-width: 800px; margin: auto; }
+        .card { background: #1f2937; padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #374151; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h3 { margin-top: 0; color: #22c55e; font-size: 16px; text-transform: uppercase; border-bottom: 1px solid #374151; padding-bottom: 10px; margin-bottom: 15px; }
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 13px; color: #9ca3af; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 6px; font-size: 15px; }
+        input:focus { border-color: #22c55e; outline: none; }
+        
+        .step-box { background: #111827; padding: 12px; border-left: 4px solid #22c55e; margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+        .warning-live { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #ef4444; margin-top: 10px; display: none; font-weight: bold; font-size: 14px; }
+        
+        button { background: #22c55e; color: black; font-weight: 800; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 8px; font-size: 17px; margin-top: 15px; transition: 0.3s; text-transform: uppercase; }
+        button:hover { background: #16a34a; transform: translateY(-2px); }
+        
+        .result-area { display: none; margin-top: 25px; padding: 20px; border-radius: 12px; border: 2px solid #22c55e; background: #000; }
+        .decision-badge { font-size: 24px; font-weight: 900; text-align: center; padding: 10px; margin-bottom: 20px; border-radius: 6px; }
+        .REJECTED { background: #ef4444; color: white; }
+        .ACCEPTED { background: #22c55e; color: black; }
+        .CONDITIONAL { background: #facc15; color: black; }
+        
+        .instruction-item { background: #111827; padding: 12px; border-bottom: 1px solid #374151; color: #f3f4f6; font-size: 14px; line-height: 1.5; }
+        .instruction-item b { color: #22c55e; }
 
-<style>
-body {
-    font-family: Arial;
-    background: #0b0f14;
-    color: #ffffff;
-    margin: 0;
-    padding: 0;
-}
-
-header {
-    background: #111827;
-    padding: 18px;
-    font-size: 18px;
-    font-weight: bold;
-    border-bottom: 2px solid #22c55e;
-}
-
-.container {
-    padding: 20px;
-}
-
-.card {
-    background: #1f2937;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 10px;
-}
-
-h3 {
-    margin-top: 0;
-    color: #22c55e;
-}
-
-label {
-    display: block;
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border: none;
-}
-
-button {
-    background: #22c55e;
-    color: black;
-    font-weight: bold;
-    border: none;
-    padding: 12px;
-    width: 100%;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 16px;
-}
-
-button:hover {
-    background: #16a34a;
-}
-
-.result {
-    white-space: pre-wrap;
-    background: black;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #22c55e;
-}
-
-.step {
-    padding: 10px;
-    border-left: 4px solid #22c55e;
-    margin-bottom: 10px;
-    background: #111827;
-}
-
-.warning {
-    color: #facc15;
-}
-
-.danger {
-    color: #ef4444;
-}
-
-.ok {
-    color: #22c55e;
-}
-</style>
+        .vol-info { color: #facc15; font-size: 12px; font-weight: bold; margin-top: 5px; }
+        
+        @media (max-width: 600px) {
+            header { font-size: 16px; }
+            .card { padding: 15px; }
+        }
+    </style>
 </head>
-
 <body>
 
-<header>
-🛫 COUNTER PRE-ACCEPTANCE SYSTEM — MIA AIR CARGO SIMULATOR
-</header>
+<header>🚀 AL CIELO: SMARTCARGO ADVISORY - MIA TERMINAL</header>
 
 <div class="container">
 
-<!-- ===================== -->
-<!-- STEP 1 -->
-<!-- ===================== -->
-<div class="card">
+    <div class="card">
+        <h3>1. 📂 PROTOCOLO DE SOBRE (POUCH) - MIA</h3>
+        <div class="step-box"><span>1. AWB ORIGINAL (TOP)</span> ✅</div>
+        <div class="step-box"><span>2. COMMERCIAL INVOICE</span> ✅</div>
+        <div class="step-box"><span>3. PACKING LIST</span> ✅</div>
+        <div class="step-box"><span>4. PERMISOS (USDA/CBP)</span> ✅</div>
+        <p style="font-size: 11px; color: #facc15;">* El agente de Avianca en MIA rechazará el sobre si no está en este orden exacto.</p>
+    </div>
 
-<h3>1. 🗂️ ORGANIZACIÓN FÍSICA DEL SOBRE (OBLIGATORIO)</h3>
+    <div class="card">
+        <h3>2. 📦 AUDITORÍA OPERATIVA</h3>
+        
+        <label>TIPO DE CARGA / COMMODITY</label>
+        <select id="cargo_type" onchange="runLiveCheck()">
+            <option value="GENERAL">GENERAL CARGO</option>
+            <option value="DGR">DANGEROUS GOODS (DG)</option>
+            <option value="PER">PERISHABLE (PER)</option>
+            <option value="AVI">LIVE ANIMALS (AVI)</option>
+            <option value="HUM">HUMAN REMAINS (HUM)</option>
+            <option value="PHR">PHARMA</option>
+            <option value="BAT">LITHIUM BATTERIES</option>
+        </select>
 
-<div class="step">✔ AWB ORIGINAL (arriba del todo)</div>
-<div class="step">✔ HAWB (si aplica)</div>
-<div class="step">✔ COMMERCIAL INVOICE</div>
-<div class="step">✔ PACKING LIST DETALLADO</div>
-<div class="step">✔ PERMISOS (USDA / FDA / ICA / SENASA / DIAN)</div>
-<div class="step">✔ CERTIFICADOS (DG / PHYTOSANITARY / PHARMA / etc)</div>
+        <label>IDENTIFICADOR ULD / PALLET</label>
+        <input id="uld" placeholder="Ej: PMC / PAG / AKE" oninput="runLiveCheck()">
 
-<div class="step warning">
-⚠ Orden incorrecto = retraso automático en COUNTER
-</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>PESO TOTAL (KG)</label>
+                <input id="weight" type="number" placeholder="Kg" oninput="runLiveCheck()">
+            </div>
+            <div>
+                <label>ALTURA MÁXIMA (IN)</label>
+                <input id="height" type="number" placeholder="Inches" oninput="runLiveCheck()">
+            </div>
+        </div>
+        <div id="live_vol_info" class="vol-info"></div>
 
-</div>
+        <label>AURA SCAN: DICTADO O DETALLES CRÍTICOS</label>
+        <textarea id="input_texto" rows="3" placeholder="Ej: 'Madera sin sello', 'Caja mojada', 'Falta firma en MSDS'..." oninput="runLiveCheck()"></textarea>
+        
+        <div id="critical_warning" class="warning-live"></div>
+    </div>
 
-<!-- ===================== -->
-<!-- STEP 2 -->
-<!-- ===================== -->
-<div class="card">
+    <div class="card">
+        <h3>3. ⚠️ VERIFICACIÓN DE RIESGOS</h3>
+        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
+            <input type="checkbox" id="dg" style="width:20px; height:20px;"> MERCANCÍA PELIGROSA (DG)
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
+            <input type="checkbox" id="lithium" style="width:20px; height:20px;"> BATERÍAS DE LITIO
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; color:white; font-size:15px;">
+            <input type="checkbox" id="wood" style="width:20px; height:20px;"> EMBALAJE DE MADERA
+        </label>
+    </div>
 
-<h3>2. 📦 DATOS OPERATIVOS DE CARGA</h3>
+    <button onclick="executePreCheck()">VERIFICAR CUMPLIMIENTO FINAL</button>
 
-<label>Tipo de Carga</label>
-<select id="cargo_type">
-<option>GENERAL</option>
-<option>DGR</option>
-<option>PER</option>
-<option>AVI</option>
-<option>HUM</option>
-<option>VAL</option>
-<option>PHR</option>
-<option>FSH</option>
-<option>BAT</option>
-<option>MED</option>
-</select>
+    <div id="result_area" class="result-area">
+        <div id="decision_box" class="decision-badge"></div>
+        
+        <div class="card" style="background:#111827;">
+            <h3>📋 INSTRUCCIONES DE ACCIÓN INMEDIATA</h3>
+            <div id="instructions_list"></div>
+        </div>
 
-<label>ULD TYPE</label>
-<input id="uld" placeholder="PMC / PAG / PAJ / AKE">
-
-<label>Peso (kg)</label>
-<input id="weight" type="number">
-
-<label>Altura (in)</label>
-<input id="height" type="number">
-
-<label>Documentos (separados por coma)</label>
-<input id="docs" placeholder="air_waybill, commercial_invoice, packing_list">
-
-</div>
-
-<!-- ===================== -->
-<!-- STEP 3 -->
-<!-- ===================== -->
-<div class="card">
-
-<h3>3. ⚠️ FLAGS OPERATIVOS (RIESGO REAL)</h3>
-
-<label><input type="checkbox" id="dg"> DG (Dangerous Goods)</label>
-<label><input type="checkbox" id="lithium"> Lithium Batteries</label>
-<label><input type="checkbox" id="perishable"> Perecedero</label>
-<label><input type="checkbox" id="human"> Restos Humanos</label>
-<label><input type="checkbox" id="value"> Alto Valor</label>
-
-</div>
-
-<!-- ===================== -->
-<!-- STEP 4 -->
-<!-- ===================== -->
-<div class="card">
-
-<h3>4. 🚀 SIMULACIÓN DE COUNTER REAL</h3>
-
-<button onclick="runCheck()">EJECUTAR PRE-ACEPTACIÓN</button>
-
-<div id="output" class="result"></div>
-
-</div>
-
+        <div class="card" style="background:#111827;">
+            <h3>📄 DOCUMENTACIÓN QUE DEBES TENER EN MANO</h3>
+            <div id="docs_required" style="font-size:13px; color:#22c55e;"></div>
+        </div>
+    </div>
 </div>
 
 <script>
+    // Rectificación en tiempo real (Aura Scan)
+    function runLiveCheck() {
+        const text = document.getElementById("input_texto").value.toUpperCase();
+        const height = parseFloat(document.getElementById("height").value) || 0;
+        const wood = document.getElementById("wood").checked;
+        const warning = document.getElementById("critical_warning");
+        const volInfo = document.getElementById("live_vol_info");
+        
+        let msg = "";
+        
+        // Alerta de Altura
+        if (height > 63) {
+            msg += "⚠ ALTURA CRÍTICA: La carga NO entra en Bellies (Pasajeros). Llama al Freight Forwarder ahora para asegurar espacio en Carguero (Freighter).<br>";
+        }
+        
+        // Alerta de Madera/USDA
+        if ((text.includes("MADERA") || wood) && !text.includes("SELLO") && !text.includes("ISPM")) {
+            msg += "⚠ RECHAZO USDA: Madera sin sello detectada. ¡PARA EL CAMIÓN! Debes fumigar o cambiar el pallet antes de entrar a Avianca.<br>";
+        }
 
-async function runCheck() {
+        // Alerta de Daño/TSA
+        if (text.includes("MOJADO") || text.includes("ROTO") || text.includes("DAÑADO")) {
+            msg += "⚠ RIESGO TSA: Embalaje comprometido. El counter rechazará por seguridad. Rectifica con film industrial ahora.<br>";
+        }
 
-    const payload = {
-        cargo_type: document.getElementById("cargo_type").value,
-        uld_type: document.getElementById("uld").value,
-        weight_kg: parseFloat(document.getElementById("weight").value),
-        height_in: parseFloat(document.getElementById("height").value),
-        documents: document.getElementById("docs").value.split(",").map(x => x.trim()),
+        if (msg) {
+            warning.innerHTML = msg;
+            warning.style.display = "block";
+        } else {
+            warning.style.display = "none";
+        }
+    }
 
-        dg: document.getElementById("dg").checked,
-        lithium: document.getElementById("lithium").checked,
-        perishable: document.getElementById("perishable").checked,
-        human_remains: document.getElementById("human").checked,
-        high_value: document.getElementById("value").checked
-    };
+    async function executePreCheck() {
+        const payload = {
+            cargo_type: document.getElementById("cargo_type").value,
+            weight_kg: parseFloat(document.getElementById("weight").value) || 0,
+            height_in: parseFloat(document.getElementById("height").value) || 0,
+            uld_type: document.getElementById("uld").value.toUpperCase(),
+            documents: [], // Se calculan en backend
+            dg: document.getElementById("dg").checked,
+            lithium: document.getElementById("lithium").checked,
+            wood_packaging: document.getElementById("wood").checked,
+            raw_text: document.getElementById("input_texto").value
+        };
 
-    const res = await fetch("/precheck", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-    });
+        const res = await fetch("/precheck", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
 
-    const data = await res.json();
+        const data = await res.json();
+        
+        // Mostrar resultados
+        document.getElementById("result_area").style.display = "block";
+        const dBox = document.getElementById("decision_box");
+        dBox.innerText = data.FINAL_DECISION;
+        dBox.className = "decision-badge " + data.FINAL_DECISION;
 
-    let text = "";
+        // Lista de Instrucciones
+        document.getElementById("instructions_list").innerHTML = data.COUNTER_INSTRUCTIONS.map(ins => 
+            `<div class="instruction-item"><b>ORDEN:</b> ${ins}</div>`
+        ).join("");
 
-    text += "================ COUNTER SIMULATION ================\n\n";
+        // Documentos
+        document.getElementById("docs_required").innerText = "DEBES PRESENTAR: " + data.COUNTER_SIMULATION.required_documents.join(", ").toUpperCase();
 
-    text += "📄 DOCUMENTOS REQUERIDOS:\n";
-    text += JSON.stringify(data.COUNTER_SIMULATION.required_documents, null, 2) + "\n\n";
-
-    text += "❌ DOCUMENTOS FALTANTES:\n";
-    text += JSON.stringify(data.COUNTER_SIMULATION.missing_documents, null, 2) + "\n\n";
-
-    text += "📦 ERRORES FÍSICOS:\n";
-    text += JSON.stringify(data.COUNTER_SIMULATION.physical_errors, null, 2) + "\n\n";
-
-    text += "⚠️ RIESGOS DETECTADOS:\n";
-    text += JSON.stringify(data.COUNTER_SIMULATION.risk_flags, null, 2) + "\n\n";
-
-    text += "====================================================\n";
-    text += "🧠 DECISIÓN FINAL: " + data.FINAL_DECISION + "\n\n";
-
-    text += "📌 ACCIONES REQUERIDAS:\n";
-    text += data.COUNTER_INSTRUCTIONS.join("\n");
-
-    document.getElementById("output").innerText = text;
-}
-
+        window.scrollTo(0, document.body.scrollHeight);
+    }
 </script>
 
 </body>
