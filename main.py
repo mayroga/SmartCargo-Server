@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
+import json
 import os
 
 app = FastAPI(title="AL CIELO - SmartCargo Advisory MIA")
@@ -15,112 +16,105 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- DICCIONARIO MAESTRO AMPLIADO (REGLAS ESTRICTAS MIA) ---
-PAPERWORK_DATABASE = {
-    "GENERAL": [
-        "1 AWB Original + 3 Copias",
-        "1 Commercial Invoice Original + 2 Copias",
-        "1 Packing List detallado",
-        "1 Carta Responsabilidad Shipper (Firma Original)"
-    ],
-    "DGR": [
-        "1 AWB Original + 4 Copias",
-        "3 Shipper's Declaration (Borde Rojo Original)",
-        "1 MSDS (Hoja de Seguridad)",
-        "1 DG Checklist (Aceptación Aerolínea) -> SIN ESTO = REJECT AUTOMÁTICO"
-    ],
-    "PER": [
-        "1 AWB Original + 3 Copias",
-        "1 Certificado Fitosanitario / USDA (Original)",
-        "1 Commercial Invoice + Packing List",
-        "1 Temperature Log (Si aplica)"
-    ],
-    "PHR": [
-        "1 AWB Original + 3 Copias",
-        "1 Certificado de Calidad / Lote",
-        "1 Temperature Declaration",
-        "1 Invoice / Packing List"
-    ],
-    "HUM": [
-        "1 AWB Original + 3 Copias",
-        "1 Certificado de Defunción",
-        "1 Embalming Certificate",
-        "1 Funeral Home Letter / Autorización (MUY ESTRICTO)"
-    ],
-    "DRY": [
-        "AWB con notación 'DRY ICE'",
-        "Declaración IATA de CO2 Sólido",
-        "Marcaje visible de KG de Hielo Seco en bulto",
-        "MSDS (Si está asociado a DG o Pharma)"
-    ]
-}
+# --- CARGA DE REGLAS MAESTRAS (JSON ESTRUCTURADO) ---
+def load_rules(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+AVIANCA_RULES = load_rules("static/avianca_rules.json")
+CARGO_RULES = load_rules("static/cargo_rules.json")
 
 class Piece(BaseModel):
-    l: float
-    w: float
-    h: float
-    p: float
-    packaging: str  # boxes, drums, skips, metal, crates, engine, pallets
+    l: float; w: float; h: float; p: float
+    packaging: str  # wood, plastic, box, pallet, etc.
 
 class PreCheckRequest(BaseModel):
-    user_role: str  # SHIPPER, FORWARDER, TRUCKER, WAREHOUSE
+    user_role: str
     cargo_type: str
     uld_type: str
     pieces: List[Piece]
     raw_text: str
-
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    with open("static/app.html", "r", encoding="utf-8") as f:
-        return f.read()
+    origin_country: str = "USA"
+    dest_country: str = "COL"
 
 @app.post("/precheck")
 async def precheck(data: PreCheckRequest):
     instructions = []
-    total_vol = 0
     total_weight = 0
+    total_vol_weight = 0
     reject = False
     
-    # Bloqueo si no hay información
+    # 1. VALIDACIÓN INICIAL DE DATOS
     if not data.pieces:
-        return {"status": "ERROR", "instructions": ["NO HAY DATOS: Ingrese piezas para diagnóstico."]}
+        return {"status": "ERROR", "instructions": ["DATOS FALTANTES: Se requiere ID de piezas."]}
 
-    # Auditoría por Rol (Soluciones Directas)
-    role_prefix = f"[{data.user_role}] "
+    # 2. AUDITORÍA TÉCNICA DE AERONAVE (AVIANCA LIMITS)
+    limits = AVIANCA_RULES.get("aircraft_limits", {})
+    uld_info = AVIANCA_RULES.get("uld_types", {}).get(data.uld_type, {})
     
     for i, p in enumerate(data.pieces):
-        total_weight += p.p
-        vol = (p.l * p.w * p.h) / 166
-        total_vol += vol
+        p_weight = p.p
+        total_weight += p_weight
+        vol_weight = (p.l * p.w * p.h) / 166
+        total_vol_weight += vol_weight
         
-        # Validación de Altura por ULD
-        if data.uld_type == "AKE" and p.h > 63:
-            instructions.append(f"❌ {role_prefix}PIEZA #{i+1}: Altura {p.h}in excede AKE (LD3). RE-UBICAR EN PMC O CARGUERO.")
+        # Validación de Altura Estricta
+        max_h = limits.get("max_height_belly_in", 63) if data.uld_type == "AKE" else limits.get("max_height_freighter_in", 96)
+        if p.h > max_h:
+            instructions.append(f"❌ PIEZA #{i+1}: Altura {p.h}in excede límite de {data.uld_type}. RE-UBICAR O RE-PALLETIZAR.")
             reject = True
-        elif p.h > 63:
-            instructions.append(f"⚠️ {role_prefix}PIEZA #{i+1}: Altura {p.h}in incompatible con Belly. Solo Avión Carguero.")
 
-        # Soluciones por tipo de embalaje
-        if "WOOD" in p.packaging.upper() or "PALLET" in p.packaging.upper():
-            text = data.raw_text.upper()
-            if "SELLO" not in text and "ISPM" not in text:
-                instructions.append(f"❌ {role_prefix}ORDEN: Llevar pallet a FUMIGAR o cambiar por PLÁSTICO. Sin sello no entra a Avianca.")
-                reject = True
+        # Validación de Peso Máximo por Pieza
+        if p_weight > limits.get("max_piece_weight_kg", 150) and p.packaging.lower() == "boxes":
+            instructions.append(f"⚠️ PIEZA #{i+1}: Peso excesivo para caja individual. Sugerido: MONTAR EN PALLET.")
 
-    # Análisis de Texto de Riesgos
+    # 3. AUDITORÍA DE EMBALAJE (USDA/ISPM15)
     text = data.raw_text.upper()
-    if any(x in text for x in ["ROTO", "DAÑADO", "MOJADO", "WET"]):
-        instructions.append(f"❌ {role_prefix}RIESGO TSA: Empaque comprometido. RE-EMBALAR ANTES DE LLEGAR AL COUNTER.")
+    if any("WOOD" in p.packaging.upper() or "PALLET" in p.packaging.upper() for p in data.pieces):
+        if "SELLO" not in text and "ISPM" not in text:
+            instructions.append("❌ ORDEN: Madera sin sello ISPM15. FUMIGAR O CAMBIAR A PLÁSTICO INMEDIATAMENTE.")
+            reject = True
+
+    # 4. AUDITORÍA DOCUMENTAL (CARGO RULES & COUNTRY SPECIFIC)
+    cargo_info = CARGO_RULES.get(data.cargo_type, CARGO_RULES.get("GENERAL"))
+    required_docs = list(cargo_info.get("documents", []))
+    
+    # Añadir requisitos por país (USA/COL/ETC)
+    country_docs = AVIANCA_RULES.get("country_specific", {}).get(data.origin_country, [])
+    for d in country_docs:
+        if d not in required_docs: required_docs.append(d)
+
+    # 5. ALERTAS DE RIESGO OPERATIVO (TSA/CBP)
+    if any(x in text for x in ["ROTO", "DAÑADO", "MOJADO", "WET", "SIN FLEJE"]):
+        instructions.append("❌ RECHAZO TSA/CBP: Empaque comprometido. No apto para inspección de seguridad.")
         reject = True
 
-    # Respuesta de Asesoría Resolutiva
+    # 6. RESULTADO RESOLUTIVO (PESO COBRABLE)
+    chargeable = round(max(total_weight, total_vol_weight), 2)
+    
     return {
-        "status": "READY" if not reject else "REJECT/HOLD",
-        "instructions": instructions if instructions else ["Carga en cumplimiento. Proceder a pesaje y counter."],
-        "chargeable_weight": round(max(total_weight, total_vol), 2),
-        "required_docs": PAPERWORK_DATABASE.get(data.cargo_type, PAPERWORK_DATABASE["GENERAL"]),
-        "uld_position": "LOWER DECK" if data.uld_type == "AKE" else "MAIN/LOWER DECK (PMC/PAG)"
+        "status": "READY TO FLY" if not reject else "REJECT / HOLD",
+        "advisory_orders": instructions if instructions else ["Carga cumple con estándares Avianca. Proceder al counter."],
+        "pouch_setup": {
+            "required_documents": required_docs,
+            "copies_inside": cargo_info.get("copies_inside", 1),
+            "copies_outside": cargo_info.get("copies_outside", 1),
+            "handling_codes": cargo_info.get("special_handling_codes", [])
+        },
+        "technical_data": {
+            "chargeable_weight_kg": chargeable,
+            "uld_max_capacity": uld_info.get("max_weight_kg", "N/A"),
+            "aircraft_compatibility": "CARGUERO" if any(p.h > 63 for p in data.pieces) else "BELLY/CARGUERO"
+        }
     }
+
+# --- SERVICIOS ESTÁTICOS ---
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    with open("static/app.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
