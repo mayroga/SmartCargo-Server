@@ -1,201 +1,261 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>SMARTCARGO SERVER PRO FINAL</title>
-
-<style>
-body{background:#0b1220;color:white;font-family:Arial}
-.section{background:#111a2e;padding:15px;margin:10px;border-radius:10px}
-.red{color:#ff4d4d}
-.green{color:#4dff88}
-.yellow{color:#ffd24d}
-input,textarea,select{width:100%;padding:8px;margin:5px}
-button{padding:10px;background:#00d4ff;border:none}
-table{width:100%}
-td,th{border:1px solid #333;padding:5px}
-img{max-width:80px}
-.hidden{display:none}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL CIELO - SmartCargo Advisory</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #111a2e;
+            --accent: #00d4ff;
+            --danger: #ff4d4d;
+            --success: #4dff88;
+            --warning: #ffd24d;
+        }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .section { background: var(--card); padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid #222; }
+        h2, h3 { color: var(--accent); margin-top: 0; }
+        
+        textarea { width: 100%; background: #070d1a; color: #fff; border: 1px solid #333; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 16px; }
+        select, input { background: #1a263f; color: white; border: 1px solid #444; padding: 10px; border-radius: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-main { background: var(--accent); color: #000; }
+        .btn-voice { background: #444; color: white; }
+        .btn-clear { background: var(--danger); color: white; margin-top: 20px; width: 100%; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #0d1629; }
+        th, td { border: 1px solid #2a364f; padding: 12px; text-align: left; }
+        th { background: #1a263f; color: var(--accent); }
+        
+        .status-box { padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 1.2em; }
+        .alert-row { background: rgba(255, 77, 77, 0.1); }
+        .solution-text { color: var(--success); font-weight: bold; }
+        .explanation-text { color: var(--warning); font-size: 0.9em; display: block; margin-top: 5px; }
+        
+        img { max-width: 100px; border-radius: 5px; margin-top: 5px; display: block; }
+        .live-tag { font-size: 0.8em; padding: 3px 8px; border-radius: 4px; background: var(--warning); color: black; display: inline-block; margin-bottom: 10px; }
+    </style>
 </head>
 <body>
 
-<h2>✈️ SMARTCARGO SERVER – REAL COUNTER LOGIC</h2>
+<div class="container">
+    <h2>✈️ AL CIELO - SmartCargo Advisory</h2>
+    <p style="font-size: 0.9em; color: #888;">Asesoría Técnica Preventiva para Operaciones Avianca Cargo</p>
 
-<!-- INPUT INTELIGENTE -->
-<div class="section">
-<h3>🧠 CAPTURA INTELIGENTE (TIPO WHATSAPP)</h3>
+    <div class="section">
+        <h3>🧠 Descripción de Carga / Papelería</h3>
+        <div id="live_feedback"></div>
+        <textarea id="input_texto" rows="4" placeholder="Ej: Traigo 2 pallets de madera con repuestos, peso 400kg, destino Miami. La madera no se ve sellada..."></textarea>
+        <div class="btn-group">
+            <button class="btn-voice" onclick="activarVoz()">🎤 Iniciar Dictado</button>
+            <button class="btn-voice" style="background:#555;" onclick="detenerVoz()">🛑 Detener</button>
+        </div>
+    </div>
 
-<textarea id="input_texto" rows="5" placeholder="Pegue, escriba o dicte toda la información de la carga..."></textarea>
-<button onclick="activarVoz()">🎤 Dictar</button>
+    <div class="section">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label>👤 Rol del Usuario</label>
+                <select id="rol">
+                    <option>TRUCKER</option>
+                    <option>FORWARDER</option>
+                    <option>WAREHOUSE</option>
+                    <option>SHIPPER</option>
+                </select>
+            </div>
+            <div>
+                <label>📦 Tipo de Mercancía</label>
+                <select id="tipo">
+                    <option value="GENERAL">GENERAL CARGO</option>
+                    <option value="DGR">DANGEROUS GOODS</option>
+                    <option value="PER">PERISHABLE</option>
+                    <option value="AVI">LIVE ANIMALS</option>
+                    <option value="HUM">HUMAN REMAINS</option>
+                    <option value="VAL">VALUABLE</option>
+                    <option value="PHR">PHARMA</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
-<div id="live_feedback" class="yellow"></div>
-</div>
+    <div class="section">
+        <h3>📏 Verificación de Piezas (Audit)</h3>
+        <div style="overflow-x: auto;">
+            <table id="tabla_piezas">
+                <thead>
+                    <tr>
+                        <th>Cant</th>
+                        <th>L (in)</th>
+                        <th>W (in)</th>
+                        <th>H (in)</th>
+                        <th>Peso (kg)</th>
+                        <th>Evidencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+        <button class="btn-voice" onclick="addPieza()" style="margin-top:10px;">+ Agregar Unidad</button>
+    </div>
 
-<!-- ROL -->
-<div class="section">
-<h3>👤 ROL</h3>
-<select id="rol">
-<option value="">Selecciona</option>
-<option>SHIPPER</option>
-<option>FORWARDER</option>
-<option>WAREHOUSE</option>
-<option>TRUCKER</option>
-</select>
-</div>
+    <div class="section">
+        <button class="btn-main" onclick="validarCarga()" style="font-size: 1.2em;">VERIFICAR CUMPLIMIENTO (COUNTER)</button>
+        <div id="resultado_container" style="margin-top:20px;"></div>
+    </div>
 
-<!-- TIPO -->
-<div class="section">
-<h3>📦 TIPO DE CARGA</h3>
-<select id="tipo">
-<option>GENERAL</option>
-<option>DGR</option>
-<option>PER</option>
-<option>VAL</option>
-<option>HUM</option>
-<option>AVI</option>
-<option>MED</option>
-<option>ICE</option>
-</select>
-</div>
-
-<!-- PIEZAS -->
-<div class="section">
-<h3>📦 AUDITORÍA FÍSICA</h3>
-
-<table id="tabla">
-<tr><th>CANT</th><th>L</th><th>W</th><th>H</th><th>PESO</th><th>FOTO</th></tr>
-</table>
-
-<button onclick="add()">+ PIEZA</button>
-</div>
-
-<!-- VALIDACIÓN -->
-<div class="section">
-<button onclick="validar()">VALIDAR COUNTER</button>
-<div id="resultado"></div>
+    <button class="btn-clear" onclick="borrarDatos()">🗑️ BORRAR DATOS SENSIBLES / NUEVA SESIÓN</button>
 </div>
 
 <script>
+    let recognition;
 
-let recognition;
+    function activarVoz() {
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!window.SpeechRecognition) return alert("Dictado no soportado en este navegador.");
+        
+        recognition = new SpeechRecognition();
+        recognition.lang = "es-ES";
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
-// 🎤 VOZ CONTINUA
-function activarVoz(){
-recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang="es-ES";
-recognition.continuous=true;
+        recognition.onresult = (event) => {
+            let texto = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                texto += event.results[i][0].transcript;
+            }
+            document.getElementById("input_texto").value = texto;
+            analizarTextoRapido(texto.toUpperCase());
+        };
+        recognition.start();
+    }
 
-recognition.onresult = (e)=>{
-input_texto.value += e.results[e.results.length-1][0].transcript + " ";
-analizarTexto();
-};
+    function detenerVoz() { if(recognition) recognition.stop(); }
 
-recognition.start();
-}
+    function analizarTextoRapido(t) {
+        let feedback = document.getElementById("live_feedback");
+        if (t.includes("MADERA") && !t.includes("SELLO")) {
+            feedback.innerHTML = `<span class="live-tag">⚠ POSIBLE HALLAZGO: Falta sello ISPM15</span>`;
+        } else if (t.includes("DERRAME") || t.includes("MOJADO")) {
+            feedback.innerHTML = `<span class="live-tag">⚠ ALERTA: Daño físico detectado</span>`;
+        } else {
+            feedback.innerHTML = "";
+        }
+    }
 
-// 🔴 ANÁLISIS EN TIEMPO REAL
-function analizarTexto(){
-let t = input_texto.value.toUpperCase();
+    function addPieza() {
+        const tbody = document.querySelector("#tabla_piezas tbody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="number" class="cant" value="1"></td>
+            <td><input type="number" class="l"></td>
+            <td><input type="number" class="w"></td>
+            <td><input type="number" class="h"></td>
+            <td><input type="number" class="p"></td>
+            <td><input type="file" onchange="preview(this)" accept="image/*"></td>
+        `;
+        tbody.appendChild(tr);
+    }
 
-let msg="";
+    function preview(input) {
+        if (input.files && input.files[0]) {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let img = input.parentNode.querySelector("img") || document.createElement("img");
+                img.src = e.target.result;
+                if (!input.parentNode.querySelector("img")) input.parentNode.appendChild(img);
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
-if(t.includes("DGR") || t.includes("CORROSIVO")){
-msg += "⚠ Detectado posible DGR → Requiere declaración DG<br>";
-}
+    async function validarCarga() {
+        const resultadoDiv = document.getElementById("resultado_container");
+        resultadoDiv.innerHTML = "<p>Procesando asesoría técnica...</p>";
 
-if(t.includes("FRIO") || t.includes("TEMPERATURA")){
-msg += "⚠ Detectado PER → Control temperatura<br>";
-}
+        let piezas = [];
+        document.querySelectorAll("#tabla_piezas tbody tr").forEach(tr => {
+            piezas.push({
+                l: tr.querySelector(".l").value,
+                w: tr.querySelector(".w").value,
+                h: tr.querySelector(".h").value,
+                peso: tr.querySelector(".p").value
+            });
+        });
 
-live_feedback.innerHTML = msg;
-}
+        try {
+            const response = await fetch("/api/validar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    tipo: document.getElementById("tipo").value,
+                    rol: document.getElementById("rol").value,
+                    input_texto: document.getElementById("input_texto").value,
+                    piezas: piezas
+                })
+            });
 
-// ➕ PIEZAS
-function add(){
-let tr = document.createElement("tr");
+            const d = await response.json();
+            
+            let html = `
+                <div class="status-box" style="background: ${d.status === 'FLY READY' ? 'rgba(77,255,136,0.2)' : 'rgba(255,77,77,0.2)'}; color: ${d.status === 'FLY READY' ? 'var(--success)' : 'var(--danger)'}">
+                    ESTADO: ${d.status}
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div class="section" style="margin:0"><b>Peso Cobrable:</b> ${d.peso_cobrable} kg</div>
+                    <div class="section" style="margin:0"><b>Equipo:</b> ${d.avion}</div>
+                </div>
 
-tr.innerHTML = `
-<td><input class="cant"></td>
-<td><input class="l" oninput="validarCampo(this)"></td>
-<td><input class="w" oninput="validarCampo(this)"></td>
-<td><input class="h" oninput="validarCampo(this)"></td>
-<td><input class="peso" oninput="validarCampo(this)"></td>
-<td><input type="file" onchange="preview(this)"></td>
-`;
+                <h3>📋 Documentación Requerida</h3>
+                <div class="section">
+                    <ul style="margin:0; padding-left:20px;">
+                        ${d.documentos.map(doc => `<li>${doc.replace(/_/g, ' ').toUpperCase()}</li>`).join('')}
+                    </ul>
+                </div>
 
-tabla.appendChild(tr);
-}
+                <h3>🔍 Hallazgos y Soluciones Técnicas</h3>
+                <table>
+                    <thead>
+                        <tr><th>Irregularidad</th><th>Instrucción de Asesoría</th></tr>
+                    </thead>
+                    <tbody>
+                        ${d.alertas.length > 0 ? d.alertas.map((a, i) => `
+                            <tr class="alert-row">
+                                <td><b>⚠ ${a}</b></td>
+                                <td>
+                                    <span class="solution-text">✔ ${d.soluciones[i]}</span>
+                                    <span class="explanation-text">${d.explicaciones[i]}</span>
+                                </td>
+                            </tr>
+                        `).join('') : `<tr><td colspan="2" class="green" style="text-align:center">Sin irregularidades detectadas. Carga lista para counter.</td></tr>`}
+                    </tbody>
+                </table>
+                <button class="btn-voice" style="margin-top:15px;" onclick="window.print()">🖨️ Generar Reporte / PDF</button>
+            `;
+            resultadoDiv.innerHTML = html;
 
-// 📷 FOTO
-function preview(input){
-let img = document.createElement("img");
-img.src = URL.createObjectURL(input.files[0]);
-input.parentNode.appendChild(img);
-}
+        } catch (err) {
+            resultadoDiv.innerHTML = "<p class='red'>Error de conexión con el servidor de asesoría.</p>";
+        }
+    }
 
-// VALIDACIÓN CAMPO
-function validarCampo(i){
-if(i.value<=0){
-i.style.border="2px solid red";
-}else{
-i.style.border="2px solid green";
-}
-}
+    function borrarDatos() {
+        if (confirm("Se eliminarán todos los datos de la carga actual. ¿Proceder?")) {
+            document.getElementById("input_texto").value = "";
+            document.querySelector("#tabla_piezas tbody").innerHTML = "";
+            document.getElementById("resultado_container").innerHTML = "";
+            document.getElementById("live_feedback").innerHTML = "";
+            addPieza();
+        }
+    }
 
-// VALIDAR
-async function validar(){
-
-let piezas=[];
-
-document.querySelectorAll("#tabla tr").forEach((r,i)=>{
-if(i===0)return;
-
-piezas.push({
-l:r.querySelector(".l").value,
-w:r.querySelector(".w").value,
-h:r.querySelector(".h").value,
-peso:r.querySelector(".peso").value,
-foto:r.querySelector("input[type=file]").files.length>0
-});
-});
-
-let res = await fetch("/api/validar",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-tipo:tipo.value,
-piezas:piezas,
-input_texto:input_texto.value
-})
-});
-
-let d = await res.json();
-
-let html = `<h3>ESTADO: ${d.status}</h3>`;
-html += `<p>PESO COBRABLE: ${d.peso_cobrable}</p>`;
-html += `<p>AVIÓN: ${d.avion}</p>`;
-
-html += "<h4>DOCUMENTOS:</h4>";
-d.documentos.forEach(doc=>{
-html += `<div class="yellow">${doc}</div>`;
-});
-
-html += "<h4>ALERTAS Y SOLUCIONES:</h4>";
-d.alertas.forEach((a,i)=>{
-html += `<div class="red">⚠ ${a}</div>`;
-html += `<div>✔ ${d.soluciones[i]}</div>`;
-html += `<div class="yellow">${d.explicaciones[i]}</div>`;
-});
-
-if(d.alertas.length===0){
-html += `<div class="green">✔ LISTO PARA VOLAR</div>`;
-}
-
-resultado.innerHTML = html;
-}
-
+    // Inicializar con una pieza
+    addPieza();
 </script>
 
 </body>
