@@ -5,34 +5,31 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-app = FastAPI(title="AL CIELO - SmartCargo Advisory Server")
+app = FastAPI(title="AL CIELO - SmartCargo Advisory Engine")
 
-# Configuración de directorios y archivos
+# Configuración de archivos estáticos
 if not os.path.exists("static"):
     os.makedirs("static")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Carga de Base de Datos Normativa (Reglas de Avianca y Carga)
-def cargar_reglas():
+# Carga de Base de Datos Maestra
+def cargar_bases():
     try:
         with open("static/avianca_rules.json", encoding="utf-8") as f:
             avianca = json.load(f)
         with open("static/cargo_rules.json", encoding="utf-8") as f:
             cargo = json.load(f)
         return avianca, cargo
-    except FileNotFoundError:
+    except Exception:
         return {}, {}
 
-AVIANCA_RULES, CARGO_RULES = cargar_reglas()
+AVIANCA_RULES, CARGO_RULES = cargar_bases()
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    try:
-        with open("static/app.html", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        return "Error: static/app.html no encontrado."
+    with open("static/app.html", encoding="utf-8") as f:
+        return f.read()
 
 @app.post("/api/validar")
 async def validar(data: dict):
@@ -40,76 +37,78 @@ async def validar(data: dict):
     soluciones = []
     explicaciones = []
     
-    tipo_carga = data.get("tipo", "GENERAL")
-    texto_dictado = data.get("input_texto", "").upper()
-    piezas = data.get("piezas", [])
+    # Extracción de Datos de Identificación y Contexto
+    awb = data.get("awb", "N/A")
     rol = data.get("rol", "TRUCKER")
+    tipo_carga = data.get("tipo", "GENERAL")
+    texto = data.get("input_texto", "").upper()
+    piezas = data.get("piezas", [])
 
-    # 1. VALIDACIÓN DE DOCUMENTACIÓN (Basado en cargo_rules.json)
-    reglas_especificas = CARGO_RULES.get(tipo_carga, CARGO_RULES["GENERAL"])
-    docs_requeridos = reglas_especificas.get("documents", [])
-
-    # 2. AUDITORÍA FÍSICA Y LÍMITES DE AERONAVE (Basado en avianca_rules.json)
+    # 1. VALIDACIÓN DE PAPELERÍA (Basado en el Rol y Tipo de Carga)
+    reglas_tipo = CARGO_RULES.get(tipo_carga, CARGO_RULES["GENERAL"])
+    docs_necesarios = reglas_tipo.get("documents", [])
+    
+    # 2. AUDITORÍA FÍSICA Y CAPACIDAD DE AERONAVE
     limits = AVIANCA_RULES.get("aircraft_limits", {})
     total_real = 0
     total_vol = 0
     max_h = 0
-    peso_excedido = False
+    piezas_pesadas = 0
 
-    for i, p in enumerate(piezas):
+    for p in piezas:
         try:
             l, w, h = float(p.get("l", 0)), float(p.get("w", 0)), float(p.get("h", 0))
             peso = float(p.get("peso", 0))
-            
             total_real += peso
             total_vol += (l * w * h) / 166
             if h > max_h: max_h = h
+            if peso > limits.get("max_piece_weight_kg", 150): piezas_pesadas += 1
+        except: continue
 
-            # Validar peso por pieza individual
-            if peso > limits.get("max_piece_weight_kg", 150):
-                peso_excedido = True
-        except ValueError:
-            continue
-
-    # Lógica de Avión (Belly vs Freighter)
+    # Determinar Avión y ULD
     limit_h_pax = limits.get("max_height_belly_in", 63)
-    tipo_avion = "PAX / BELLY"
+    tipo_avion = "PAX (BELLY)" if max_h <= limit_h_pax else "FREIGHTER (CAO)"
+
     if max_h > limit_h_pax:
-        tipo_avion = "FREIGHTER (CAO)"
-        alertas.append(f"ALTURA EXCESIVA PARA PAX ({max_h} in)")
-        soluciones.append("Mover carga a vuelo carguero.")
-        explicaciones.append(f"La altura supera los {limit_h_pax} in permitidos en aviones de pasajeros.")
+        alertas.append(f"ALTURA EXCEDIDA PARA PAX ({max_h} in)")
+        soluciones.append("Cambiar reserva a vuelo Carguero (Freighter).")
+        explicaciones.append(f"El límite de altura en aviones de pasajeros es de {limit_h_pax} in.")
 
-    if peso_excedido:
-        alertas.append("PESO INDIVIDUAL EXCEDIDO")
-        soluciones.append("Re-estibar en unidades más pequeñas o usar equipo especial.")
-        explicaciones.append(f"Piezas sobrepasan el límite estándar de {limits.get('max_piece_weight_kg')} kg.")
+    if piezas_pesadas > 0:
+        alertas.append(f"DETECTADAS {piezas_pesadas} PIEZAS CON SOBREPESO")
+        soluciones.append("Re-estibar en unidades menores a 150kg o solicitar montacargas especial.")
+        explicaciones.append("Piezas de más de 150kg requieren manejo especial y pueden dañar el piso del avión.")
 
-    # 3. ASESORÍA TÉCNICA PREVENTIVA (IAAT / CBP / USDA)
-    # Validación de Madera (Sello ISPM15)
-    if any(palabra in texto_dictado for palabra in ["MADERA", "WOOD", "PALLET"]):
-        if "ISPM15" not in texto_dictado and "SELLO" not in texto_dictado:
-            alertas.append("FALLO FITOSANITARIO (USDA)")
-            soluciones.append("Llevar el pallet a fumigar o cambiarlo por uno de plástico.")
-            explicaciones.append("Todo embalaje de madera hacia USA requiere sello certificado ISPM15.")
-
-    # Validación de Carga Peligrosa (DGR)
-    if tipo_carga == "DGR" or "PELIGROSA" in texto_dictado:
-        if "MSDS" not in texto_dictado:
-            alertas.append("FALTA HOJA DE SEGURIDAD (MSDS)")
-            soluciones.append("Solicitar MSDS al shipper antes de entregar en counter.")
-            explicaciones.append("Regulación DOT requiere ficha técnica para materiales peligrosos.")
-
-    # Validación de Seguridad (TSA)
-    if "DAÑADA" in texto_dictado or "ROTA" in texto_dictado or "MOJADA" in texto_dictado:
-        alertas.append("INTEGRIDAD DE CARGA COMPROMETIDA")
-        soluciones.append("Rectificar embalaje y re-asegurar bultos.")
-        explicaciones.append("Carga con daños físicos es rechazada por seguridad aérea (TSA).")
-
-    # 4. DETERMINACIÓN DE ESTADO FINAL
-    status = "FLY READY" if not alertas else "HOLD / RECTIFICAR"
+    # 3. INTELIGENCIA DE ASESORÍA (IAAT, CBP, TSA, USDA)
     
-    # Peso Cobrable (El mayor entre real y volumétrico)
+    # Validación de Embalaje (Madera/Pallets)
+    if any(k in texto for k in ["MADERA", "WOOD", "PALLET", "SKID", "CRATE"]):
+        if "ISPM15" not in texto and "SELLO" not in texto:
+            alertas.append("INCUMPLIMIENTO FITOSANITARIO (USDA)")
+            soluciones.append("Llevar el pallet a fumigar o cambiarlo por plástico/metal.")
+            explicaciones.append("CBP exige sello ISPM15 en madera para evitar plagas en USA.")
+
+    # Validación de Mercancía Peligrosa (DGR)
+    if tipo_carga == "DGR":
+        if "MSDS" not in texto:
+            alertas.append("FALTA HOJA DE SEGURIDAD (MSDS)")
+            soluciones.append("El Shipper debe proveer el MSDS para clasificar el UN Number.")
+            explicaciones.append("Norma DOT: No se puede volar DGR sin ficha técnica de seguridad.")
+    
+    # Validación de Integridad (TSA)
+    if any(k in texto for k in ["ROTO", "MOJADO", "DERRAME", "ABIERTO", "CLAVOS"]):
+        alertas.append("FALLO EN INTEGRIDAD FÍSICA (SEGURIDAD TSA)")
+        soluciones.append("Re-embalar la mercancía o asegurar con film industrial.")
+        explicaciones.append("TSA prohíbe el ingreso de bultos que presenten signos de manipulación o goteo.")
+
+    # Validación de Restos Humanos / Animales Vivos
+    if tipo_carga in ["HUM", "AVI"]:
+        alertas.append(f"PRIORIDAD OPERATIVA: {tipo_carga}")
+        soluciones.append("Notificar al Counter para escolta y carga prioritaria.")
+        explicaciones.append("Este tipo de carga tiene tiempos de conexión críticos (Short Connection).")
+
+    # 4. RESULTADO FINAL DEL DIAGNÓSTICO
+    status = "FLY READY" if not alertas else "HOLD / RECTIFICAR"
     peso_cobrable = round(max(total_real, total_vol), 2)
 
     return JSONResponse(content={
@@ -118,12 +117,12 @@ async def validar(data: dict):
         "alertas": alertas,
         "soluciones": soluciones,
         "explicaciones": explicaciones,
-        "documentos": docs_requeridos,
+        "documentos": docs_necesarios,
         "avion": tipo_avion,
-        "asesor": "SmartCargo Advisory by May Roga"
+        "awb_referencia": awb,
+        "rol_auditado": rol
     })
 
 if __name__ == "__main__":
-    # Configurado para correr en Render o local
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
