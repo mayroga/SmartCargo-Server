@@ -1,26 +1,35 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 import json
 import os
 
 app = FastAPI(title="SmartCargo Advisory MIA")
 
-# =========================
-# CARGA DE REGLAS REALES
-# =========================
+# ==========================================
+# CONFIGURACIÓN DE COMUNICACIÓN (CORS)
+# ==========================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Carga de Reglas
 def load_db():
     try:
-        with open("static/avianca_rules.json", "r") as f:
-            av = json.load(f)
-        with open("static/cargo_rules.json", "r") as f:
-            cg = json.load(f)
+        with open("static/avianca_rules.json", "r") as f: av = json.load(f)
+        with open("static/cargo_rules.json", "r") as f: cg = json.load(f)
         return av, cg
-    except:
-        return {}, {}
+    except: return {}, {}
 
 AV_RULES, CG_RULES = load_db()
 
+# Modelos de Datos
 class CargoRequest(BaseModel):
     cargo_type: str
     weight_kg: float
@@ -31,57 +40,53 @@ class CargoRequest(BaseModel):
     wood_packaging: bool = False
     raw_text: str = ""
 
+# ==========================================
+# ENDPOINTS
+# ==========================================
+
+# 1. Servir el Frontend
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    with open("static/app.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+# 2. El Cerebro de Validación
 @app.post("/precheck")
-def precheck(data: CargoRequest):
+async def precheck(data: CargoRequest):
     instructions = []
     physical_errors = []
     risks = []
     
-    # 1. ANALISIS DE DOCUMENTACIÓN (Basado en tipo)
-    required_docs = CG_RULES.get(data.cargo_type, {}).get("documents", ["air_waybill", "commercial_invoice", "packing_list"])
+    # Lógica de Altura Avianca MIA
+    if data.height_in > 63:
+        instructions.append("⚠️ CARGA ALTA: Solo vuela en CARGUERO. Rectifica la reserva ahora.")
     
-    # 2. ANALISIS FISICO (Real de Avianca)
-    limits = AV_RULES.get("aircraft_limits", {"max_height_belly_in": 63, "max_height_freighter_in": 118})
-    
-    if data.height_in > limits["max_height_freighter_in"]:
-        physical_errors.append("ALTURA EXCEDE LIMITE MAXIMO AERONAVE")
-        instructions.append("RE-ESTIBAR AHORA: La carga no entra ni en carguero. Reduce la altura de los bultos.")
-    elif data.height_in > limits["max_height_belly_in"]:
-        instructions.append("CAMBIO DE EQUIPO: Asegúrate que la reserva sea en CARGUERO. En PAX (Belly) será rechazada.")
-
-    # 3. ANALISIS DE RIESGO AURA SCAN (Vida Real en MIA)
+    # Lógica Aura Scan (Texto)
     text = data.raw_text.upper()
-    
-    if data.wood_packaging or "MADERA" in text:
-        if "SELLO" not in text and "ISPM" not in text:
-            risks.append("USDA_NON_COMPLIANCE")
-            instructions.append("ACCION: Busca el sello ISPM15. Si no está, llama a un proveedor de pallets en MIA para cambio urgente.")
+    if (data.wood_packaging or "MADERA" in text) and "SELLO" not in text:
+        risks.append("USDA_WARNING")
+        instructions.append("❌ MADERA SIN SELLO: ¡Para el camión! Cambia el pallet o no entrarás a la terminal.")
 
-    if data.dg or "DG" in text or data.cargo_type == "DGR":
-        risks.append("DANGEROUS_GOODS")
-        instructions.append("DOCS: Verifica que la Shipper Declaration tenga las 3 copias con bordes rojos originales.")
+    if data.dg or data.cargo_type == "DGR":
+        instructions.append("📋 DG CHECK: 3 copias de Shipper Declaration con bordes rojos.")
 
-    if data.lithium:
-        instructions.append("ETIQUETADO: Verifica que la etiqueta UN3480/3481 sea visible y no esté tapada por el film.")
-
-    # 4. DECISION FINAL
-    decision = "ACCEPTED"
-    if physical_errors or "USDA_NON_COMPLIANCE" in risks:
-        decision = "REJECTED"
-    elif risks or data.height_in > 63:
-        decision = "CONDITIONAL"
+    # Decisión
+    decision = "ACCEPTED" if not physical_errors and "USDA_WARNING" not in risks else "REJECTED"
+    if data.height_in > 63 or data.dg: decision = "CONDITIONAL"
 
     return {
         "COUNTER_SIMULATION": {
-            "required_documents": required_docs,
+            "required_documents": CG_RULES.get(data.cargo_type, {}).get("documents", ["AWB", "Invoice"]),
             "physical_errors": physical_errors,
             "risk_flags": risks
         },
         "FINAL_DECISION": decision,
-        "COUNTER_INSTRUCTIONS": instructions if instructions else ["Todo en orden. Procede al counter con el sobre organizado."]
+        "COUNTER_INSTRUCTIONS": instructions if instructions else ["Todo listo. Pouch organizado."]
     }
+
+# Montar carpeta static para archivos extra
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
