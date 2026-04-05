@@ -1,124 +1,150 @@
-from flask import Flask, request, jsonify, send_from_directory
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Dict
+
 import json
-import os
 
-app = Flask(__name__, static_folder="static")
+app = FastAPI(title="Counter Pre-Acceptance System")
 
 # =========================
-# LOAD RULES
+# LOAD RULES (NO MODULOS NUEVOS)
 # =========================
 
-def load_json(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+with open("static/avianca_rules.json", "r") as f:
+    AVIATION_RULES = json.load(f)
 
-AVIATION_RULES = load_json("static/avianca_rules.json")
-CARGO_RULES = load_json("static/cargo_rules.json")
+with open("static/cargo_rules.json", "r") as f:
+    CARGO_RULES = json.load(f)
 
 
 # =========================
-# CORE VALIDATION ENGINE
+# INPUT MODEL (COUNTER FORM)
 # =========================
 
-def validate_documents(cargo_type, docs):
+class CargoRequest(BaseModel):
+    cargo_type: str
+    documents: List[str]
+    weight_kg: float
+    height_in: float
+    uld_type: str
+
+    dg: bool = False
+    lithium: bool = False
+    perishable: bool = False
+    human_remains: bool = False
+    high_value: bool = False
+
+
+# =========================
+# CORE COUNTER LOGIC
+# =========================
+
+def document_check(cargo_type, docs):
     required = CARGO_RULES.get(cargo_type, {}).get("documents", [])
     missing = [d for d in required if d not in docs]
 
-    return {
-        "cargo_type": cargo_type,
-        "required_documents": required,
-        "missing_documents": missing,
-        "document_status": "FAIL" if missing else "PASS"
-    }
+    return missing, required
 
 
-def validate_weight(height_in, weight_kg, uld_type):
-    aircraft = AVIATION_RULES["aircraft_limits"]
-
-    height_limit = aircraft["max_height_freighter_in"]
-    weight_limit = aircraft["max_piece_weight_kg"]
+def physical_check(weight, height, uld_type):
+    limits = AVIATION_RULES["aircraft_limits"]
+    uld = AVIATION_RULES["uld_types"].get(uld_type, {})
 
     errors = []
 
-    if height_in > height_limit:
-        errors.append(f"ALTURA EXCEDE LIMITE ({height_in} > {height_limit})")
+    if height > limits["max_height_freighter_in"]:
+        errors.append("ALTURA EXCEDE LIMITE AVIACION")
 
-    if weight_kg > weight_limit:
-        errors.append(f"PESO EXCEDE LIMITE ({weight_kg} > {weight_limit})")
+    if weight > limits["max_piece_weight_kg"]:
+        errors.append("PESO EXCEDE LIMITE AVIACION")
 
-    uld = AVIATION_RULES["uld_types"].get(uld_type)
-
-    if uld and weight_kg > uld.get("max_weight_kg", 0):
+    if uld and weight > uld.get("max_weight_kg", 0):
         errors.append("EXCEDE LIMITE ULD")
 
+    return errors
+
+
+def risk_engine(data):
+    risks = []
+
+    if data.dg:
+        risks.append("DANGEROUS_GOODS")
+
+    if data.lithium:
+        risks.append("LITHIUM_BATTERY")
+
+    if data.perishable:
+        risks.append("PERISHABLE")
+
+    if data.human_remains:
+        risks.append("HUMAN_REMAINS")
+
+    if data.high_value:
+        risks.append("HIGH_VALUE")
+
+    return risks
+
+
+# =========================
+# DECISION ENGINE (LO QUE REALMENTE IMPORTA)
+# =========================
+
+def decision(missing_docs, physical_errors, risks):
+
+    if len(missing_docs) == 0 and len(physical_errors) == 0:
+        return "ACCEPTED"
+
+    if "DANGEROUS_GOODS" in risks and len(missing_docs) == 0:
+        return "CONDITIONAL"
+
+    return "REJECTED"
+
+
+def action_plan(missing_docs, physical_errors, risks):
+
+    actions = []
+
+    for d in missing_docs:
+        actions.append(f"FALTANTE DOCUMENTO: {d} → ENTREGAR ANTES DE LLEGAR A COUNTER")
+
+    for e in physical_errors:
+        actions.append(f"ERROR FISICO: {e} → REETIQUETAR O REACOMODAR")
+
+    if "DANGEROUS_GOODS" in risks:
+        actions.append("DG DETECTADO → REVISAR SHIPPER DECLARATION IATA")
+
+    if "LITHIUM_BATTERY" in risks:
+        actions.append("LITHIUM → VERIFICAR SECCION IATA IA/IB/II")
+
+    return actions
+
+
+# =========================
+# MAIN ENDPOINT (COUNTER SIMULATOR)
+# =========================
+
+@app.post("/precheck")
+def precheck(data: CargoRequest):
+
+    missing_docs, required = document_check(data.cargo_type, data.documents)
+    physical_errors = physical_check(data.weight_kg, data.height_in, data.uld_type)
+    risks = risk_engine(data)
+
+    final_decision = decision(missing_docs, physical_errors, risks)
+
     return {
-        "height_check": "PASS" if height_in <= height_limit else "FAIL",
-        "weight_check": "PASS" if weight_kg <= weight_limit else "FAIL",
-        "uld_check": "PASS" if not errors else "FAIL",
-        "errors": errors
+        "COUNTER_SIMULATION": {
+            "required_documents": required,
+            "missing_documents": missing_docs,
+            "physical_errors": physical_errors,
+            "risk_flags": risks
+        },
+
+        "FINAL_DECISION": final_decision,
+
+        "COUNTER_INSTRUCTIONS": action_plan(
+            missing_docs,
+            physical_errors,
+            risks
+        )
     }
-
-
-def detect_risk_flags(data):
-    flags = []
-
-    if data.get("dg"):
-        flags.append("DANGEROUS_GOODS")
-
-    if data.get("lithium_batteries"):
-        flags.append("LITHIUM_BATTERY")
-
-    if data.get("perishable"):
-        flags.append("PERISHABLE")
-
-    if data.get("human_remains"):
-        flags.append("HUMAN_REMAINS")
-
-    if data.get("high_value"):
-        flags.append("HIGH_VALUE")
-
-    return flags
-
-
-# =========================
-# MAIN ENDPOINT
-# =========================
-
-@app.route("/analyze", methods=["POST"])
-def analyze():
-    data = request.json
-
-    cargo_type = data.get("cargo_type", "GENERAL")
-    docs = data.get("documents", [])
-
-    doc_result = validate_documents(cargo_type, docs)
-
-    physical = validate_weight(
-        data.get("height_in", 0),
-        data.get("weight_kg", 0),
-        data.get("uld_type", "")
-    )
-
-    risks = detect_risk_flags(data)
-
-    return jsonify({
-        "document_check": doc_result,
-        "physical_check": physical,
-        "risk_flags": risks,
-        "overall_status": "REJECT" if (
-            doc_result["missing_documents"] or physical["errors"]
-        ) else "CLEARED"
-    })
-
-
-# =========================
-# STATIC FRONTEND
-# =========================
-
-@app.route("/")
-def home():
-    return send_from_directory("static", "app.html")
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
