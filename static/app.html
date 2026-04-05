@@ -2,173 +2,173 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Pre-Check Counter System</title>
-
+<title>Counter Control System</title>
 <style>
 body {
     font-family: Arial;
-    background: #0f172a;
-    color: white;
+    background: #0b0f14;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #111827;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.container {
     padding: 20px;
 }
 
 .card {
-    background: #1e293b;
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 700px;
-    margin: auto;
+    background: #1f2937;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
 }
 
-.step {
-    display: none;
-}
-
-.step.active {
-    display: block;
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
 }
 
 button {
-    padding: 10px;
-    margin-top: 10px;
-    width: 100%;
+    background: #22c55e;
     border: none;
-    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    font-weight: bold;
     cursor: pointer;
 }
 
-.ok { background: #22c55e; }
-.next { background: #3b82f6; }
-.danger { background: #ef4444; }
-
-.progress {
-    height: 8px;
-    background: #334155;
-    border-radius: 10px;
-    margin-bottom: 15px;
+.error {
+    color: red;
 }
 
-.bar {
-    height: 8px;
-    background: #22c55e;
-    width: 0%;
-    border-radius: 10px;
+.ok {
+    color: #22c55e;
+}
+
+.step {
+    border-left: 4px solid #22c55e;
+    padding-left: 10px;
+    margin-bottom: 10px;
 }
 </style>
 </head>
 
 <body>
 
+<header>
+COUNTER PRE-CHECK SYSTEM — AVIATION CONTROL MODE
+</header>
+
+<div class="container">
+
+<!-- STEP 1 -->
 <div class="card">
+<h3>1. 🗂️ ORGANIZACIÓN FÍSICA (OBLIGATORIA)</h3>
 
-<h2>PRE-CHECK OPERATIVO</h2>
-<p>Verificación total de documentación antes de counter</p>
-
-<div class="progress"><div class="bar" id="bar"></div></div>
-
-<!-- CORTINA 1 -->
-<div class="step active">
-<h3>1. Orden físico del sobre</h3>
-<p>MASTER AWB visible arriba</p>
-<input type="checkbox" id="awb"> OK<br>
-
-<p>Invoice debajo del AWB</p>
-<input type="checkbox" id="invoice"> OK<br>
-
-<p>Packing List incluido</p>
-<input type="checkbox" id="packing"> OK<br>
-
-<p>Orden limpio y alineado</p>
-<input type="checkbox" id="order"> OK<br>
-
-<button class="next" onclick="nextStep()">CONTINUAR</button>
-</div>
-
-<!-- CORTINA 2 -->
 <div class="step">
-<h3>2. Calidad documental</h3>
-
-<p>Legibilidad total</p>
-<input type="checkbox" id="readable"> OK<br>
-
-<p>Sin daños ni manchas</p>
-<input type="checkbox" id="clean"> OK<br>
-
-<button class="next" onclick="nextStep()">CONTINUAR</button>
+✔ Orden: AWB → HAWB → Invoice → Packing List → Permisos → Certificados
 </div>
 
-<!-- CORTINA 3 -->
 <div class="step">
-<h3>3. Coherencia operativa</h3>
-
-<p>Peso coincide</p>
-<input type="checkbox" id="weight"> OK<br>
-
-<p>Piezas coinciden</p>
-<input type="checkbox" id="pieces"> OK<br>
-
-<button class="ok" onclick="finalCheck()">EJECUTAR PRE-CHECK</button>
+✔ Verificar: limpieza, legibilidad, sin tachones
 </div>
 
-<!-- RESULTADO -->
-<div class="step" id="resultBox">
-<h3>RESULTADO</h3>
+<div class="step">
+✔ Separación física: ORIGINAL / COPIAS / ADUANA
+</div>
+</div>
+
+
+<!-- STEP 2 -->
+<div class="card">
+<h3>2. 📄 INGRESO DE DATOS</h3>
+
+<label>Cargo Type</label>
+<select id="cargo_type">
+<option>GENERAL</option>
+<option>DGR</option>
+<option>PER</option>
+<option>AVI</option>
+<option>HUM</option>
+<option>VAL</option>
+<option>PHR</option>
+</select>
+
+<label>ULD Type</label>
+<input id="uld" placeholder="PMC / PAG / AKE">
+
+<label>Weight (kg)</label>
+<input id="weight" type="number">
+
+<label>Height (in)</label>
+<input id="height" type="number">
+
+<label>Documents (comma separated)</label>
+<input id="docs">
+
+</div>
+
+
+<!-- STEP 3 -->
+<div class="card">
+<h3>3. ⚠️ FLAGS DE RIESGO</h3>
+
+<label><input type="checkbox" id="dg"> DG</label>
+<label><input type="checkbox" id="lithium"> Lithium</label>
+<label><input type="checkbox" id="perishable"> Perishable</label>
+<label><input type="checkbox" id="human"> Human Remains</label>
+<label><input type="checkbox" id="value"> High Value</label>
+
+</div>
+
+
+<!-- STEP 4 -->
+<div class="card">
+<h3>4. 🚀 EJECUTAR CONTROL</h3>
+<button onclick="analyze()">ANALIZAR CARGA</button>
+
 <pre id="result"></pre>
 </div>
 
 </div>
 
 <script>
-let step = 0;
-const steps = document.querySelectorAll(".step");
-const bar = document.getElementById("bar");
+async function analyze() {
 
-function update() {
-    steps.forEach((s, i) => {
-        s.classList.remove("active");
-        if (i === step) s.classList.add("active");
-    });
-    bar.style.width = ((step + 1) / steps.length) * 100 + "%";
-}
+    const payload = {
+        cargo_type: document.getElementById("cargo_type").value,
+        uld_type: document.getElementById("uld").value,
+        weight_kg: parseFloat(document.getElementById("weight").value),
+        height_in: parseFloat(document.getElementById("height").value),
+        documents: document.getElementById("docs").value.split(",").map(x => x.trim()),
 
-function nextStep() {
-    if (step < steps.length - 2) {
-        step++;
-        update();
-    }
-}
-
-async function finalCheck() {
-
-    const data = {
-        awb: document.getElementById("awb").checked,
-        invoice: document.getElementById("invoice").checked,
-        packing_list: document.getElementById("packing").checked,
-        clean_order: document.getElementById("order").checked,
-        readable: document.getElementById("readable").checked,
-        no_damage: document.getElementById("clean").checked,
-        weight_match: document.getElementById("weight").checked,
-        pieces_match: document.getElementById("pieces").checked
+        dg: document.getElementById("dg").checked,
+        lithium_batteries: document.getElementById("lithium").checked,
+        perishable: document.getElementById("perishable").checked,
+        human_remains: document.getElementById("human").checked,
+        high_value: document.getElementById("value").checked
     };
 
-    const res = await fetch("/check", {
+    const res = await fetch("/analyze", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
     });
 
-    const json = await res.json();
-
-    steps.forEach(s => s.classList.remove("active"));
-    document.getElementById("resultBox").classList.add("active");
+    const data = await res.json();
 
     document.getElementById("result").innerText =
-        JSON.stringify(json, null, 2);
-
-    bar.style.width = "100%";
+        JSON.stringify(data, null, 2);
 }
-
-update();
 </script>
 
 </body>
