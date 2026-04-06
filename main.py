@@ -1,15 +1,16 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List
 import os
+import json
 
 app = FastAPI(title="AL CIELO - SmartCargo Advisory MIA")
 
 # =========================
-# CORS (OPEN FOR ALL)
+# CORS
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -19,7 +20,7 @@ app.add_middleware(
 )
 
 # =========================
-# STATIC FILES
+# PATHS
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -27,18 +28,30 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # =========================
-# ROOT (SERVE HTML)
+# LOAD RULES
+# =========================
+def load_rules():
+    with open(os.path.join(STATIC_DIR, "avianca_rules.json")) as f:
+        avianca = json.load(f)
+    with open(os.path.join(STATIC_DIR, "cargo_rules.json")) as f:
+        cargo = json.load(f)
+    return avianca, cargo
+
+AVI_RULES, CARGO_RULES = load_rules()
+
+# =========================
+# ROOT
 # =========================
 @app.get("/", response_class=HTMLResponse)
 async def serve_app():
-    try:
-        with open(os.path.join(STATIC_DIR, "app.html"), "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception:
-        return HTMLResponse("<h1>Error cargando la aplicación</h1>", status_code=500)
+    file_path = os.path.join(STATIC_DIR, "app.html")
+    if not os.path.exists(file_path):
+        return HTMLResponse("<h1>ERROR: app.html no encontrado</h1>", status_code=500)
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 # =========================
-# MODELOS
+# MODELS
 # =========================
 class Piece(BaseModel):
     l: float
@@ -47,7 +60,7 @@ class Piece(BaseModel):
     p: float
     qty: int
     packaging: str
-    unit: str  # IN o CM
+    unit: str
 
 class PreCheckRequest(BaseModel):
     user_role: str
@@ -57,134 +70,150 @@ class PreCheckRequest(BaseModel):
     destination: str
 
 # =========================
-# ENDPOINT PRINCIPAL
+# AI DETECTION
+# =========================
+def detect_cargo_type(text):
+    text = text.upper()
+
+    if "LITHIUM" in text:
+        return "BAT"
+    if any(x in text for x in ["UN", "DGR", "FLAMMABLE", "HAZ"]):
+        return "DGR"
+    if any(x in text for x in ["FOOD", "FLOWER", "FISH"]):
+        return "PER"
+    if any(x in text for x in ["PHARMA", "VACCINE"]):
+        return "PHR"
+    if "ANIMAL" in text:
+        return "AVI"
+
+    return "GENERAL"
+
+# =========================
+# DOCUMENTS
+# =========================
+def get_required_docs(cargo_type):
+    return CARGO_RULES.get(cargo_type, CARGO_RULES["GENERAL"])["documents"]
+
+# =========================
+# VALIDATION ENGINE
+# =========================
+def validate(data, text, cargo_type):
+    errors = []
+    warnings = []
+
+    text = text.upper()
+
+    # DG
+    if cargo_type == "DGR":
+        if "UN" not in text:
+            errors.append("❌ Falta UN Number")
+        if "MSDS" not in text:
+            errors.append("❌ Falta MSDS")
+        if "DECLARATION" not in text:
+            errors.append("❌ Falta Shipper Declaration")
+
+    # Lithium
+    if "LITHIUM" in text and "PI" not in text:
+        errors.append("❌ Falta Packing Instruction (PI)")
+
+    # Wood ISPM15
+    if any(p.packaging in ["PALLET_WD", "CRATE"] for p in data["pieces"]):
+        if AVI_RULES["usda_rules"]["wood_packaging_requires_ISPM15"]:
+            if "ISPM" not in text:
+                warnings.append("🟡 Madera sin sello ISPM15")
+
+    # Peso
+    max_weight = AVI_RULES["aircraft_limits"]["max_piece_weight_kg"]
+    for i, p in enumerate(data["pieces"]):
+        if p.p > max_weight:
+            errors.append(f"❌ Pieza {i+1} excede {max_weight}kg")
+
+    return errors, warnings
+
+# =========================
+# AUTO FIX
+# =========================
+def auto_fix(errors):
+    fixes = []
+
+    for e in errors:
+        if "UN" in e:
+            fixes.append("👉 Agregar UN Number + Clase + PG")
+        if "MSDS" in e:
+            fixes.append("👉 Adjuntar MSDS")
+        if "Declaration" in e:
+            fixes.append("👉 Completar Shipper Declaration firmada")
+        if "PI" in e:
+            fixes.append("👉 Agregar Packing Instruction correcta")
+
+    return fixes
+
+# =========================
+# FINAL STATUS
+# =========================
+def get_status(errors, warnings):
+    if errors:
+        return "REJECT"
+    if warnings:
+        return "RISK"
+    return "READY"
+
+# =========================
+# DRIVER MESSAGE
+# =========================
+def driver_msg(status):
+    if status == "READY":
+        return "🟢 Ve al counter sin problemas."
+    if status == "RISK":
+        return "🟡 Puede haber retrasos."
+    return "🔴 NO vayas al counter."
+
+# =========================
+# MAIN ENDPOINT
 # =========================
 @app.post("/precheck")
 async def precheck(data: PreCheckRequest):
     try:
-        instructions = []
-        reject = False
-        max_h_in = 0
-        total_actual_kg = 0
-        total_vol_kg = 0
-
-        # =========================
-        # GLOSARIO
-        # =========================
-        glossary = {
-            "IATA": "Asociación Internacional de Transporte Aéreo.",
-            "TSA": "Administración de Seguridad en el Transporte (USA).",
-            "CBP": "Aduanas y Protección Fronteriza.",
-            "ISPM15": "Norma internacional para embalaje de madera.",
-            "DGR": "Mercancías peligrosas.",
-            "AWB": "Guía aérea."
-        }
-
-        # =========================
-        # DOCUMENTOS
-        # =========================
-        doc_map = {
-            "GENERAL": ["AWB Original", "Commercial Invoice", "Packing List"],
-            "DGR": ["Shipper Declaration", "MSDS", "AWB DGR"],
-            "PER": ["Certificado Fitosanitario", "Factura"],
-            "PHR": ["Data Logger", "Control de temperatura"],
-            "HUMANS": ["Certificado Defunción", "Permiso funerario"],
-            "LIVE_ANIMALS": ["Certificado veterinario", "Checklist IATA"],
-            "DRY_ICE": ["Declaración UN1845", "Etiqueta Clase 9"]
-        }
-
-        required_docs = doc_map.get(data.cargo_type, ["AWB"])
-        required_docs.extend(["Carta TSA", "ID Driver"])
-
-        # =========================
-        # VALIDACIÓN PIEZAS
-        # =========================
-        for i, p in enumerate(data.pieces):
-            l_in = p.l if p.unit == "IN" else p.l / 2.54
-            w_in = p.w if p.unit == "IN" else p.w / 2.54
-            h_in = p.h if p.unit == "IN" else p.h / 2.54
-
-            max_h_in = max(max_h_in, h_in)
-
-            p_weight = p.p * p.qty
-            p_vol = (l_in * w_in * h_in * p.qty) / 166
-
-            total_actual_kg += p_weight
-            total_vol_kg += p_vol
-
-            # REGLAS
-            if p.packaging == "BOX" and p.p > 68:
-                instructions.append(
-                    f"❌ PIEZA {i+1}: Caja >68kg → Debe ir en pallet."
-                )
-                reject = True
-
-            if p.packaging == "DRUM" and data.cargo_type != "DGR":
-                instructions.append(
-                    f"⚠️ PIEZA {i+1}: Tambor → Verificar contenido permitido."
-                )
-
-        # =========================
-        # AURA SCAN
-        # =========================
         text = data.raw_text.upper()
 
-        if any(word in text for word in ["ROTO", "DAÑADO", "MOJADO", "WET"]):
-            instructions.append(
-                "❌ RECHAZO TSA: Carga dañada → Re-embalar."
-            )
-            reject = True
+        # AUTO DETECTION
+        cargo_type = detect_cargo_type(text)
 
-        if any(p.packaging in ["PALLET_WD", "CRATE"] for p in data.pieces):
-            if "ISPM" not in text:
-                instructions.append(
-                    "🛑 ALERTA: Madera sin sello ISPM15."
-                )
+        # DOCS
+        docs = get_required_docs(cargo_type)
 
-        # =========================
-        # AERONAVES
-        # =========================
-        fleet = [
-            {"model": "A330F", "deck": "Main", "max_h": 96},
-            {"model": "A330F", "deck": "High", "max_h": 118},
-            {"model": "A321", "deck": "Belly", "max_h": 63}
-        ]
+        # VALIDATION
+        errors, warnings = validate(data.dict(), text, cargo_type)
 
-        compatibility = []
+        # FIXES
+        fixes = auto_fix(errors)
 
-        for air in fleet:
-            status = "OK" if max_h_in <= air["max_h"] else "NO CABE"
-            compatibility.append({
-                "model": air["model"],
-                "deck": air["deck"],
-                "status": status,
-                "limit_h": air["max_h"],
-                "reason": "OK" if status == "OK" else f"Excede {round(max_h_in - air['max_h'],1)} in"
-            })
-
-        chargeable = max(total_actual_kg, total_vol_kg)
+        # STATUS
+        status = get_status(errors, warnings)
 
         return {
-            "status": "REJECT" if reject else "READY",
-            "instructions": instructions,
-            "required_docs": required_docs,
-            "chargeable_weight": round(chargeable, 2),
-            "aircraft_compatibility": compatibility,
-            "glossary": glossary
+            "status": status,
+            "cargo_type_detected": cargo_type,
+            "required_docs": docs,
+            "errors": errors,
+            "warnings": warnings,
+            "fixes": fixes,
+            "driver_message": driver_msg(status),
+            "raw_text": data.raw_text  # 🔥 necesario para comparación frontend
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # =========================
-# HEALTH CHECK (IMPORTANTE PARA DEPLOY)
+# HEALTH
 # =========================
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 # =========================
-# RUN LOCAL
+# RUN
 # =========================
 if __name__ == "__main__":
     import uvicorn
