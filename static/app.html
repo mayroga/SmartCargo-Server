@@ -1,237 +1,231 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL CIELO - SmartCargo Advisory MIA</title>
-    <style>
-        :root { 
-            --green: #22c55e; --red: #ef4444; --yellow: #facc15; --blue: #3b82f6;
-            --bg: #05070a; --card: #111827; --border: #374151; --text-muted: #9ca3af;
-        }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 0; }
-        header { background: #111827; padding: 20px; text-align: center; border-bottom: 4px solid var(--green); font-weight: 800; text-transform: uppercase; }
-        .container { padding: 15px; max-width: 950px; margin: auto; }
-        .card { background: var(--card); padding: 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid var(--border); }
-        h3 { color: var(--green); font-size: 14px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        
-        .role-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
-        .btn-role { background: #1f2937; color: var(--text-muted); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; font-size: 10px; font-weight: bold; transition: 0.3s; }
-        .btn-role.active { border-color: var(--yellow); color: var(--yellow); background: rgba(250, 204, 21, 0.1); }
-        
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
-        select, input, textarea { width: 100%; padding: 12px; background: #0b0f14; color: #fff; border: 1px solid #4b5563; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        
-        .piece-row { background: #1a2332; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--blue); }
-        .dims-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
-        
-        .btn-main { background: var(--green); color: #000; font-weight: 900; padding: 18px; width: 100%; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; text-transform: uppercase; }
-        .btn-clear { background: var(--red); color: #fff; padding: 10px; width: 100%; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-        .btn-add { background: transparent; border: 1px dashed var(--green); color: var(--green); padding: 10px; width: 100%; cursor: pointer; margin-bottom: 15px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AL CIELO - SmartCargo Advisory MIA</title>
 
-        .image-upload { background: #0b0f14; border: 1px dashed #4b5563; padding: 10px; text-align: center; border-radius: 6px; cursor: pointer; margin-bottom: 10px; font-size: 11px; color: var(--text-muted); }
-        
-        #result_area { display: none; margin-top: 20px; }
-        .status-box { padding: 20px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 900; margin-bottom: 15px; }
-        .instruction-item { padding: 12px; border-left: 4px solid var(--red); background: rgba(239, 68, 68, 0.1); margin-bottom: 8px; font-size: 13px; border-radius: 4px; }
-        .spec-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        .spec-table th, .spec-table td { border: 1px solid var(--border); padding: 10px; text-align: left; }
-        .spec-table th { background: #1f2937; color: var(--green); }
-        
-        .checklist-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
-        .checklist-item input { width: 18px; height: 18px; }
-    </style>
+<style>
+:root { 
+    --green:#22c55e; --red:#ef4444; --yellow:#facc15; --blue:#3b82f6;
+    --bg:#05070a; --card:#111827; --border:#374151; --text-muted:#9ca3af;
+}
+body {font-family:'Segoe UI';background:var(--bg);color:#fff;margin:0;}
+header {background:#111827;padding:20px;text-align:center;border-bottom:4px solid var(--green);font-weight:800;}
+.container {padding:15px;max-width:950px;margin:auto;}
+.card {background:var(--card);padding:20px;margin-bottom:20px;border-radius:12px;border:1px solid var(--border);}
+h3 {color:var(--green);font-size:14px;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:10px;}
+
+.role-grid {display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.btn-role {background:#1f2937;color:var(--text-muted);border:1px solid var(--border);padding:10px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:bold;}
+.btn-role.active {border-color:var(--yellow);color:var(--yellow);}
+
+.form-row {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:15px;}
+select,input,textarea {width:100%;padding:12px;background:#0b0f14;color:#fff;border:1px solid #4b5563;border-radius:6px;}
+
+.piece-row {background:#1a2332;padding:15px;border-radius:8px;margin-bottom:15px;border:1px solid var(--blue);}
+.dims-grid {display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;}
+
+.btn-main {background:var(--green);color:#000;font-weight:900;padding:18px;width:100%;border:none;border-radius:8px;cursor:pointer;}
+.btn-clear {background:var(--red);color:#fff;padding:10px;width:100%;border:none;border-radius:8px;margin-top:10px;}
+
+#result_area {display:none;}
+.status-box {padding:20px;border-radius:10px;text-align:center;font-size:20px;font-weight:900;margin-bottom:15px;}
+
+.item-error {border-left:4px solid var(--red);background:rgba(239,68,68,0.1);padding:10px;margin-bottom:5px;}
+.item-warning {border-left:4px solid var(--yellow);background:rgba(250,204,21,0.1);padding:10px;margin-bottom:5px;}
+.item-fix {border-left:4px solid var(--green);background:rgba(34,197,94,0.1);padding:10px;margin-bottom:5px;}
+
+.compare-ok {color:var(--green);}
+.compare-bad {color:var(--red);font-weight:bold;}
+
+.checklist-item {display:flex;gap:10px;padding:5px 0;}
+</style>
 </head>
+
 <body>
 
-<header>🚀 AL CIELO: SMARTCARGO ADVISORY MIA</header>
+<header>🚀 SMARTCARGO PRECHECK MORTAL</header>
 
 <div class="container">
-    <div class="card">
-        <h3>👤 IDENTIFICACIÓN DEL PROFESIONAL</h3>
-        <div class="role-grid">
-            <button class="btn-role" onclick="selectRole(this, 'SHIPPER')">SHIPPER</button>
-            <button class="btn-role" onclick="selectRole(this, 'FORWARDER')">FORWARDER</button>
-            <button class="btn-role active" onclick="selectRole(this, 'TRUCKER')">TRUCKER</button>
-            <button class="btn-role" onclick="selectRole(this, 'WAREHOUSE')">WAREHOUSE</button>
-        </div>
-        <input type="hidden" id="user_role" value="TRUCKER">
-    </div>
 
-    <div class="card">
-        <h3>📂 TIPO DE CARGA Y DESTINO</h3>
-        <div class="form-row">
-            <div>
-                <label>Categoría Especial (IATA)</label>
-                <select id="cargo_type">
-                    <option value="GENERAL">CARGA GENERAL</option>
-                    <option value="DGR">DANGEROUS GOODS (PELIGROSA)</option>
-                    <option value="PER">PERECEDEROS (COMIDA/FLORES)</option>
-                    <option value="PHR">PHARMA (MEDICINAS)</option>
-                    <option value="HUMANS">HUMAN REMAINS (FUNERARIO)</option>
-                    <option value="LIVE_ANIMALS">LIVE ANIMALS (MASCOTAS/OTROS)</option>
-                    <option value="DRY_ICE">DRY ICE (CO2 SÓLIDO)</option>
-                </select>
-            </div>
-            <div>
-                <label>Destino</label>
-                <select id="destination">
-                    <option value="COL">BOG/MDE - COLOMBIA</option>
-                    <option value="ECU">UIO - ECUADOR</option>
-                    <option value="BRA">VCP - BRASIL</option>
-                </select>
-            </div>
-        </div>
-    </div>
+<!-- ROLES -->
+<div class="card">
+<h3>👤 PROFESIONAL</h3>
+<div class="role-grid">
+<button class="btn-role active" onclick="selectRole(this,'TRUCKER')">TRUCKER</button>
+<button class="btn-role" onclick="selectRole(this,'SHIPPER')">SHIPPER</button>
+<button class="btn-role" onclick="selectRole(this,'FORWARDER')">FORWARDER</button>
+<button class="btn-role" onclick="selectRole(this,'WAREHOUSE')">WAREHOUSE</button>
+</div>
+<input type="hidden" id="user_role" value="TRUCKER">
+</div>
 
-    <div class="card">
-        <h3>📦 PIEZAS, EMBALAJE Y FOTOS</h3>
-        <div id="pieces_list"></div>
-        <button class="btn-add" onclick="addPieceRow()">+ AGREGAR PIEZA / PALLET</button>
-    </div>
+<!-- CARGO -->
+<div class="card">
+<h3>📂 DESTINO</h3>
+<select id="destination">
+<option value="COL">COLOMBIA</option>
+<option value="ECU">ECUADOR</option>
+<option value="BRA">BRASIL</option>
+</select>
+</div>
 
-    <div class="card">
-        <h3>🎤 AURA SCAN: ESTADO VISUAL</h3>
-        <textarea id="raw_text" rows="3" placeholder="Describa: flejes sueltos, cajas rotas, falta de sellos, etc."></textarea>
-    </div>
+<!-- PIECES -->
+<div class="card">
+<h3>📦 CARGA</h3>
+<div id="pieces_list"></div>
+<button onclick="addPieceRow()">+ AGREGAR PIEZA</button>
+</div>
 
-    <button class="btn-main" onclick="executeAdvisory()">EJECUTAR ASESORÍA TÉCNICA</button>
-    <button class="btn-clear" onclick="clearData()">BORRAR TODO Y REINICIAR</button>
+<!-- INPUT -->
+<div class="card">
+<h3>🎤 AURA SCAN</h3>
+<textarea id="raw_text" rows="3" placeholder="Pega AWB, Invoice, MSDS o describe la carga..."></textarea>
+</div>
 
-    <div id="result_area">
-        <div id="status_box" class="status-box"></div>
-        
-        <div class="card">
-            <h3>📝 CHECKLIST DE DOCUMENTACIÓN OBLIGATORIA</h3>
-            <div id="docs_container"></div>
-        </div>
+<button class="btn-main" onclick="executeAdvisory()">EJECUTAR PRECHECK</button>
+<button class="btn-clear" onclick="location.reload()">REINICIAR</button>
 
-        <div class="card" style="background: #000; border: 1px solid var(--green);">
-            <h3>📊 RESOLUCIÓN DE VUELO Y AERONAVE</h3>
-            <div id="instructions_container"></div>
-            <table class="spec-table">
-                <thead>
-                    <tr><th>AVIÓN</th><th>DECK</th><th>MAX H</th><th>ESTADO</th><th>EXPLICACIÓN</th></tr>
-                </thead>
-                <tbody id="aircraft_body"></tbody>
-            </table>
-            <div id="summary_data" style="margin-top:15px; color:var(--yellow); font-weight:bold;"></div>
-        </div>
+<!-- RESULT -->
+<div id="result_area">
 
-        <div class="card" id="glossary_area">
-            <h3>📖 GLOSARIO TÉCNICO LEGAL</h3>
-            <div id="glossary_content" style="font-size:11px; color:var(--text-muted);"></div>
-        </div>
+<div id="status_box" class="status-box"></div>
 
-        <button class="btn-main" style="background:var(--blue); color:#fff;" onclick="window.print()">GENERAR PDF PARA WHATSAPP</button>
-    </div>
+<!-- DRIVER -->
+<div class="card">
+<h3>🧠 MENSAJE AL CHOFER</h3>
+<div id="driver_msg"></div>
+</div>
+
+<!-- DOCS -->
+<div class="card">
+<h3>📄 DOCUMENTOS REQUERIDOS</h3>
+<div id="docs_container"></div>
+</div>
+
+<!-- COMPARACION -->
+<div class="card">
+<h3>⚖️ COMPARACIÓN PAPEL vs CARGA</h3>
+<div id="comparison"></div>
+</div>
+
+<!-- ERRORES -->
+<div class="card">
+<h3>❌ ERRORES</h3>
+<div id="errors"></div>
+</div>
+
+<!-- WARNINGS -->
+<div class="card">
+<h3>⚠️ RIESGOS</h3>
+<div id="warnings"></div>
+</div>
+
+<!-- FIXES -->
+<div class="card">
+<h3>🔧 SOLUCIONES</h3>
+<div id="fixes"></div>
+</div>
+
+</div>
+
 </div>
 
 <script>
-    function selectRole(btn, role) {
-        document.querySelectorAll('.btn-role').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('user_role').value = role;
-    }
 
-    function addPieceRow() {
-        const div = document.createElement("div");
-        div.className = "piece-row";
-        div.innerHTML = `
-            <div class="image-upload" onclick="alert('Seleccione foto de la carga...')">📸 CLICK PARA ADJUNTAR FOTO DE ESTA CARGA</div>
-            <div class="form-row">
-                <select class="p-type">
-                    <option value="PALLET_WD">Pallet Madera (Fumigado)</option>
-                    <option value="PALLET_PL">Pallet Plástico</option>
-                    <option value="BOX">Cajas Sueltas</option>
-                    <option value="CRATE">Huacal / Crate</option>
-                    <option value="DRUM">Tambor (Drum)</option>
-                    <option value="SKID">Skid Metálico</option>
-                </select>
-                <input type="number" class="p-qty" placeholder="Cant." value="1">
-                <select class="p-unit"><option value="IN">Pulgadas (IN)</option><option value="CM">Centímetros (CM)</option></select>
-            </div>
-            <div class="dims-grid">
-                <input type="number" placeholder="L" class="p-l">
-                <input type="number" placeholder="W" class="p-w">
-                <input type="number" placeholder="H" class="p-h">
-                <input type="number" placeholder="Kg" class="p-p">
-            </div>
-        `;
-        document.getElementById("pieces_list").appendChild(div);
-    }
+function selectRole(btn, role){
+document.querySelectorAll('.btn-role').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+document.getElementById('user_role').value=role;
+}
 
-    async function executeAdvisory() {
-        const pieces = [];
-        document.querySelectorAll(".piece-row").forEach(row => {
-            pieces.push({
-                l: parseFloat(row.querySelector(".p-l").value) || 0,
-                w: parseFloat(row.querySelector(".p-w").value) || 0,
-                h: parseFloat(row.querySelector(".p-h").value) || 0,
-                p: parseFloat(row.querySelector(".p-p").value) || 0,
-                qty: parseInt(row.querySelector(".p-qty").value) || 1,
-                packaging: row.querySelector(".p-type").value,
-                unit: row.querySelector(".p-unit").value
-            });
-        });
+function addPieceRow(){
+const div=document.createElement("div");
+div.className="piece-row";
+div.innerHTML=`
+<input placeholder="L" class="p-l">
+<input placeholder="W" class="p-w">
+<input placeholder="H" class="p-h">
+<input placeholder="Kg" class="p-p">
+`;
+document.getElementById("pieces_list").appendChild(div);
+}
 
-        const payload = {
-            user_role: document.getElementById("user_role").value,
-            cargo_type: document.getElementById("cargo_type").value,
-            pieces: pieces,
-            raw_text: document.getElementById("raw_text").value,
-            destination: document.getElementById("destination").value
-        };
+async function executeAdvisory(){
 
-        const res = await fetch("/precheck", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        renderResults(data);
-    }
+const pieces=[];
+document.querySelectorAll(".piece-row").forEach(r=>{
+pieces.push({
+l:parseFloat(r.querySelector(".p-l").value)||0,
+w:parseFloat(r.querySelector(".p-w").value)||0,
+h:parseFloat(r.querySelector(".p-h").value)||0,
+p:parseFloat(r.querySelector(".p-p").value)||0,
+qty:1,
+packaging:"BOX",
+unit:"IN"
+});
+});
 
-    function renderResults(data) {
-        const resArea = document.getElementById("result_area");
-        resArea.style.display = "block";
-        
-        const st = document.getElementById("status_box");
-        st.innerText = data.status === "READY" ? "ACEPTADO PARA VUELO" : "RECHAZADO / CORRECCIÓN URGENTE";
-        st.style.background = data.status === "READY" ? "var(--green)" : "var(--red)";
+const payload={
+user_role:document.getElementById("user_role").value,
+cargo_type:"AUTO",
+pieces:pieces,
+raw_text:document.getElementById("raw_text").value,
+destination:document.getElementById("destination").value
+};
 
-        document.getElementById("docs_container").innerHTML = data.required_docs.map(d => `
-            <div class="checklist-item"><input type="checkbox"> <span>${d}</span></div>
-        `).join("");
+const res=await fetch("/precheck",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+const data=await res.json();
 
-        document.getElementById("instructions_container").innerHTML = data.instructions.map(i => `
-            <div class="instruction-item">${i}</div>
-        `).join("");
+render(data);
+}
 
-        document.getElementById("aircraft_body").innerHTML = data.aircraft_compatibility.map(a => `
-            <tr>
-                <td>${a.model}</td><td>${a.deck}</td><td>${a.limit_h}"</td>
-                <td style="color:${a.status=='OK'?'var(--green)':'var(--red)'}">${a.status}</td>
-                <td>${a.reason}</td>
-            </tr>
-        `).join("");
+function render(data){
 
-        document.getElementById("glossary_content").innerHTML = Object.entries(data.glossary).map(([k, v]) => `
-            <b>${k}:</b> ${v}<br>
-        `).join("");
+document.getElementById("result_area").style.display="block";
 
-        document.getElementById("summary_data").innerHTML = `PESO COBRABLE: ${data.chargeable_weight} KG`;
-        window.scrollTo(0, resArea.offsetTop);
-    }
+const st=document.getElementById("status_box");
+st.innerText=data.status;
+st.style.background=data.status==="READY"?"var(--green)":data.status==="RISK"?"var(--yellow)":"var(--red)";
 
-    function clearData() {
-        if(confirm("¿Seguro que desea borrar todos los datos?")) {
-            location.reload();
-        }
-    }
+document.getElementById("driver_msg").innerText=data.driver_message;
 
-    addPieceRow();
+document.getElementById("docs_container").innerHTML=data.required_docs.map(d=>`
+<div class="checklist-item">✔ ${d}</div>
+`).join("");
+
+/* COMPARACION */
+let comp="";
+data.required_docs.forEach(d=>{
+if(data.raw_text && data.raw_text.toUpperCase().includes(d.toUpperCase())){
+comp+=`<div class="compare-ok">✔ ${d} detectado</div>`;
+}else{
+comp+=`<div class="compare-bad">✖ ${d} NO detectado</div>`;
+}
+});
+document.getElementById("comparison").innerHTML=comp;
+
+/* ERRORES */
+document.getElementById("errors").innerHTML=data.errors.map(e=>`
+<div class="item-error">${e}</div>
+`).join("");
+
+/* WARNINGS */
+document.getElementById("warnings").innerHTML=data.warnings.map(w=>`
+<div class="item-warning">${w}</div>
+`).join("");
+
+/* FIXES */
+document.getElementById("fixes").innerHTML=data.fixes.map(f=>`
+<div class="item-fix">${f}</div>
+`).join("");
+
+window.scrollTo(0,document.body.scrollHeight);
+}
+
+addPieceRow();
+
 </script>
 </body>
 </html>
