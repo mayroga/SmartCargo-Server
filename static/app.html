@@ -1,231 +1,228 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>SMARTCARGO SIMULATION ENGINE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AL CIELO - SmartCargo Advisory MIA</title>
 
 <style>
-:root { 
-    --green:#22c55e; --red:#ef4444; --yellow:#facc15; --blue:#3b82f6;
-    --bg:#05070a; --card:#111827; --border:#374151; --text-muted:#9ca3af;
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0a0f1f;
+    color: white;
 }
-body {font-family:'Segoe UI';background:var(--bg);color:#fff;margin:0;}
-header {background:#111827;padding:20px;text-align:center;border-bottom:4px solid var(--green);font-weight:800;}
-.container {padding:15px;max-width:950px;margin:auto;}
-.card {background:var(--card);padding:20px;margin-bottom:20px;border-radius:12px;border:1px solid var(--border);}
-h3 {color:var(--green);font-size:14px;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:10px;}
 
-.role-grid {display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.btn-role {background:#1f2937;color:var(--text-muted);border:1px solid var(--border);padding:10px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:bold;}
-.btn-role.active {border-color:var(--yellow);color:var(--yellow);}
+.header {
+    padding: 20px;
+    text-align: center;
+    background: #111a33;
+    font-size: 22px;
+    font-weight: bold;
+    color: #00ffd5;
+}
 
-.form-row {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:15px;}
-select,input,textarea {width:100%;padding:12px;background:#0b0f14;color:#fff;border:1px solid #4b5563;border-radius:6px;}
+.container {
+    padding: 20px;
+}
 
-.piece-row {background:#1a2332;padding:15px;border-radius:8px;margin-bottom:15px;border:1px solid var(--blue);}
-.dims-grid {display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
 
-.btn-main {background:var(--green);color:#000;font-weight:900;padding:18px;width:100%;border:none;border-radius:8px;cursor:pointer;}
-.btn-clear {background:var(--red);color:#fff;padding:10px;width:100%;border:none;border-radius:8px;margin-top:10px;}
+.card {
+    background: #141c2f;
+    padding: 15px;
+    border-radius: 12px;
+}
 
-#result_area {display:none;}
-.status-box {padding:20px;border-radius:10px;text-align:center;font-size:20px;font-weight:900;margin-bottom:15px;}
+label {
+    font-size: 12px;
+    color: #aaa;
+}
 
-.item-error {border-left:4px solid var(--red);background:rgba(239,68,68,0.1);padding:10px;margin-bottom:5px;}
-.item-warning {border-left:4px solid var(--yellow);background:rgba(250,204,21,0.1);padding:10px;margin-bottom:5px;}
-.item-fix {border-left:4px solid var(--green);background:rgba(34,197,94,0.1);padding:10px;margin-bottom:5px;}
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    background: #0b1020;
+    border: 1px solid #333;
+    color: white;
+}
 
-.compare-ok {color:var(--green);}
-.compare-bad {color:var(--red);font-weight:bold;}
+button {
+    width: 100%;
+    padding: 15px;
+    background: #00ffd5;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-.checklist-item {display:flex;gap:10px;padding:5px 0;}
+.result {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.green { background: #00c853; }
+.yellow { background: #ffeb3b; color: black; }
+.orange { background: #ff9800; }
+.red { background: #f44336; }
+
+pre {
+    white-space: pre-wrap;
+}
+
+.panel {
+    margin-top: 20px;
+    background: #111a33;
+    padding: 15px;
+    border-radius: 10px;
+}
 </style>
+
 </head>
 
 <body>
 
-<header>🚀 SMARTCARGO PRECHECK MORTAL</header>
+<div class="header">
+SMARTCARGO SIMULATION ENGINE v2 - PRE COUNTER DECISION SYSTEM
+</div>
 
 <div class="container">
 
-<!-- ROLES -->
-<div class="card">
-<h3>👤 PROFESIONAL</h3>
-<div class="role-grid">
-<button class="btn-role active" onclick="selectRole(this,'TRUCKER')">TRUCKER</button>
-<button class="btn-role" onclick="selectRole(this,'SHIPPER')">SHIPPER</button>
-<button class="btn-role" onclick="selectRole(this,'FORWARDER')">FORWARDER</button>
-<button class="btn-role" onclick="selectRole(this,'WAREHOUSE')">WAREHOUSE</button>
+<div class="grid">
+
+    <div class="card">
+        <h3>DG SIMULATION</h3>
+        <select id="dg">
+            <option value="no">NO</option>
+            <option value="yes">YES</option>
+        </select>
+
+        <label>UN Number</label>
+        <input id="un_number">
+
+        <label>MSDS</label>
+        <select id="msds">
+            <option value="true">YES</option>
+            <option value="">NO</option>
+        </select>
+
+        <label>Shipper Declaration</label>
+        <select id="shippers_declaration">
+            <option value="true">YES</option>
+            <option value="">NO</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h3>CARGO FLOW</h3>
+
+        <label>Consolidated</label>
+        <select id="consolidated">
+            <option value="no">NO</option>
+            <option value="yes">YES</option>
+        </select>
+
+        <label>Unitary</label>
+        <select id="unitary">
+            <option value="no">NO</option>
+            <option value="yes">YES</option>
+        </select>
+
+        <label>Special</label>
+        <select id="special">
+            <option value="no">NO</option>
+            <option value="yes">YES</option>
+        </select>
+
+        <label>General</label>
+        <select id="general">
+            <option value="yes">YES</option>
+            <option value="no">NO</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h3>OPS SIMULATION</h3>
+
+        <label>Aircraft</label>
+        <select id="aircraft">
+            <option value="cargo">CARGO</option>
+            <option value="passenger">PASSENGER</option>
+        </select>
+
+        <label>Movement</label>
+        <select id="movement">
+            <option value="local">LOCAL</option>
+            <option value="transfer">TRANSFER</option>
+            <option value="comat">COMAT</option>
+        </select>
+
+        <label>Packaging</label>
+        <select id="packaging">
+            <option value="type_a">TYPE A</option>
+            <option value="type_b">TYPE B</option>
+        </select>
+    </div>
+
 </div>
-<input type="hidden" id="user_role" value="TRUCKER">
-</div>
 
-<!-- CARGO -->
-<div class="card">
-<h3>📂 DESTINO</h3>
-<select id="destination">
-<option value="COL">COLOMBIA</option>
-<option value="ECU">ECUADOR</option>
-<option value="BRA">BRASIL</option>
-</select>
-</div>
+<button onclick="runSimulation()">RUN SIMULATION ENGINE</button>
 
-<!-- PIECES -->
-<div class="card">
-<h3>📦 CARGA</h3>
-<div id="pieces_list"></div>
-<button onclick="addPieceRow()">+ AGREGAR PIEZA</button>
-</div>
+<div id="result" class="result"></div>
 
-<!-- INPUT -->
-<div class="card">
-<h3>🎤 AURA SCAN</h3>
-<textarea id="raw_text" rows="3" placeholder="Pega AWB, Invoice, MSDS o describe la carga..."></textarea>
-</div>
-
-<button class="btn-main" onclick="executeAdvisory()">EJECUTAR PRECHECK</button>
-<button class="btn-clear" onclick="location.reload()">REINICIAR</button>
-
-<!-- RESULT -->
-<div id="result_area">
-
-<div id="status_box" class="status-box"></div>
-
-<!-- DRIVER -->
-<div class="card">
-<h3>🧠 MENSAJE AL CHOFER</h3>
-<div id="driver_msg"></div>
-</div>
-
-<!-- DOCS -->
-<div class="card">
-<h3>📄 DOCUMENTOS REQUERIDOS</h3>
-<div id="docs_container"></div>
-</div>
-
-<!-- COMPARACION -->
-<div class="card">
-<h3>⚖️ COMPARACIÓN PAPEL vs CARGA</h3>
-<div id="comparison"></div>
-</div>
-
-<!-- ERRORES -->
-<div class="card">
-<h3>❌ ERRORES</h3>
-<div id="errors"></div>
-</div>
-
-<!-- WARNINGS -->
-<div class="card">
-<h3>⚠️ RIESGOS</h3>
-<div id="warnings"></div>
-</div>
-
-<!-- FIXES -->
-<div class="card">
-<h3>🔧 SOLUCIONES</h3>
-<div id="fixes"></div>
-</div>
-
+<div class="panel">
+    <h3>SIMULATION LOG OUTPUT</h3>
+    <pre id="log"></pre>
 </div>
 
 </div>
 
 <script>
+async function runSimulation() {
 
-function selectRole(btn, role){
-document.querySelectorAll('.btn-role').forEach(b=>b.classList.remove('active'));
-btn.classList.add('active');
-document.getElementById('user_role').value=role;
+    const data = {
+        dg: document.getElementById("dg").value,
+        un_number: document.getElementById("un_number").value,
+        msds: document.getElementById("msds").value,
+        shippers_declaration: document.getElementById("shippers_declaration").value,
+        consolidated: document.getElementById("consolidated").value,
+        unitary: document.getElementById("unitary").value,
+        special: document.getElementById("special").value,
+        general: document.getElementById("general").value,
+        aircraft: document.getElementById("aircraft").value,
+        movement: document.getElementById("movement").value,
+        packaging: document.getElementById("packaging").value
+    };
+
+    const res = await fetch("/api/simulate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    const box = document.getElementById("result");
+    box.className = "result " + result.level;
+
+    box.innerHTML = `
+        <h2>STATUS: ${result.status}</h2>
+        <h3>SCORE: ${result.score}</h3>
+        <h3>RULES TRIGGERED:</h3>
+        <pre>${JSON.stringify(result.triggered_rules, null, 2)}</pre>
+    `;
+
+    document.getElementById("log").innerText =
+        JSON.stringify(result, null, 2);
 }
-
-function addPieceRow(){
-const div=document.createElement("div");
-div.className="piece-row";
-div.innerHTML=`
-<input placeholder="L" class="p-l">
-<input placeholder="W" class="p-w">
-<input placeholder="H" class="p-h">
-<input placeholder="Kg" class="p-p">
-`;
-document.getElementById("pieces_list").appendChild(div);
-}
-
-async function executeAdvisory(){
-
-const pieces=[];
-document.querySelectorAll(".piece-row").forEach(r=>{
-pieces.push({
-l:parseFloat(r.querySelector(".p-l").value)||0,
-w:parseFloat(r.querySelector(".p-w").value)||0,
-h:parseFloat(r.querySelector(".p-h").value)||0,
-p:parseFloat(r.querySelector(".p-p").value)||0,
-qty:1,
-packaging:"BOX",
-unit:"IN"
-});
-});
-
-const payload={
-user_role:document.getElementById("user_role").value,
-cargo_type:"AUTO",
-pieces:pieces,
-raw_text:document.getElementById("raw_text").value,
-destination:document.getElementById("destination").value
-};
-
-const res=await fetch("/precheck",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-const data=await res.json();
-
-render(data);
-}
-
-function render(data){
-
-document.getElementById("result_area").style.display="block";
-
-const st=document.getElementById("status_box");
-st.innerText=data.status;
-st.style.background=data.status==="READY"?"var(--green)":data.status==="RISK"?"var(--yellow)":"var(--red)";
-
-document.getElementById("driver_msg").innerText=data.driver_message;
-
-document.getElementById("docs_container").innerHTML=data.required_docs.map(d=>`
-<div class="checklist-item">✔ ${d}</div>
-`).join("");
-
-/* COMPARACION */
-let comp="";
-data.required_docs.forEach(d=>{
-if(data.raw_text && data.raw_text.toUpperCase().includes(d.toUpperCase())){
-comp+=`<div class="compare-ok">✔ ${d} detectado</div>`;
-}else{
-comp+=`<div class="compare-bad">✖ ${d} NO detectado</div>`;
-}
-});
-document.getElementById("comparison").innerHTML=comp;
-
-/* ERRORES */
-document.getElementById("errors").innerHTML=data.errors.map(e=>`
-<div class="item-error">${e}</div>
-`).join("");
-
-/* WARNINGS */
-document.getElementById("warnings").innerHTML=data.warnings.map(w=>`
-<div class="item-warning">${w}</div>
-`).join("");
-
-/* FIXES */
-document.getElementById("fixes").innerHTML=data.fixes.map(f=>`
-<div class="item-fix">${f}</div>
-`).join("");
-
-window.scrollTo(0,document.body.scrollHeight);
-}
-
-addPieceRow();
-
 </script>
+
 </body>
 </html>
