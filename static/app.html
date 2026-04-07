@@ -1,226 +1,146 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>SMARTCARGO SIMULATION ENGINE</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRE COUNTER CARGO CHECK</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #0a0f1f;
-    color: white;
-}
-
-.header {
-    padding: 20px;
-    text-align: center;
-    background: #111a33;
-    font-size: 22px;
-    font-weight: bold;
-    color: #00ffd5;
-}
-
-.container {
-    padding: 20px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-}
-
-.card {
-    background: #141c2f;
-    padding: 15px;
-    border-radius: 12px;
-}
-
-label {
-    font-size: 12px;
-    color: #aaa;
-}
-
-input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    background: #0b1020;
-    border: 1px solid #333;
-    color: white;
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    background: #00ffd5;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.result {
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 10px;
-}
-
-.green { background: #00c853; }
-.yellow { background: #ffeb3b; color: black; }
-.orange { background: #ff9800; }
-.red { background: #f44336; }
-
-pre {
-    white-space: pre-wrap;
-}
-
-.panel {
-    margin-top: 20px;
-    background: #111a33;
-    padding: 15px;
-    border-radius: 10px;
-}
+body {font-family:Arial;background:#0b0f1a;color:white;margin:0;}
+.header {padding:15px;background:#111a2b;text-align:center;font-weight:bold;}
+.box {background:#1a2235;padding:10px;margin:10px;border-radius:10px;}
+input,select,textarea {width:100%;padding:10px;margin-top:5px;}
+button {width:100%;padding:15px;background:#00ffd5;font-weight:bold;}
+.green{background:#00c853;padding:10px;}
+.yellow{background:#ffeb3b;color:black;padding:10px;}
+.red{background:#f44336;padding:10px;}
 </style>
-
 </head>
 
 <body>
 
 <div class="header">
-SMARTCARGO SIMULATION ENGINE v2 - PRE COUNTER DECISION SYSTEM
+PRE COUNTER CARGO CHECK (SHIPPER / DRIVER / FORWARDER)
 </div>
 
-<div class="container">
+<div class="box">
 
-<div class="grid">
+<h3>DATOS GENERALES</h3>
 
-    <div class="card">
-        <h3>DG SIMULATION</h3>
-        <select id="dg">
-            <option value="no">NO</option>
-            <option value="yes">YES</option>
-        </select>
+<select id="dg">
+<option value="no">NO DG</option>
+<option value="yes">DG</option>
+</select>
 
-        <label>UN Number</label>
-        <input id="un_number">
+<select id="msds">
+<option value="yes">MSDS SI</option>
+<option value="no">MSDS NO</option>
+</select>
 
-        <label>MSDS</label>
-        <select id="msds">
-            <option value="true">YES</option>
-            <option value="">NO</option>
-        </select>
+<select id="shippers_declaration">
+<option value="yes">DECLARACION SI</option>
+<option value="no">NO</option>
+</select>
 
-        <label>Shipper Declaration</label>
-        <select id="shippers_declaration">
-            <option value="true">YES</option>
-            <option value="">NO</option>
-        </select>
-    </div>
+<select id="aircraft">
+<option value="cargo">CARGO</option>
+<option value="passenger">PASAJEROS</option>
+</select>
 
-    <div class="card">
-        <h3>CARGO FLOW</h3>
+<select id="movement">
+<option value="local">LOCAL</option>
+<option value="transfer">TRANSFER</option>
+<option value="comat">COMAT</option>
+</select>
 
-        <label>Consolidated</label>
-        <select id="consolidated">
-            <option value="no">NO</option>
-            <option value="yes">YES</option>
-        </select>
-
-        <label>Unitary</label>
-        <select id="unitary">
-            <option value="no">NO</option>
-            <option value="yes">YES</option>
-        </select>
-
-        <label>Special</label>
-        <select id="special">
-            <option value="no">NO</option>
-            <option value="yes">YES</option>
-        </select>
-
-        <label>General</label>
-        <select id="general">
-            <option value="yes">YES</option>
-            <option value="no">NO</option>
-        </select>
-    </div>
-
-    <div class="card">
-        <h3>OPS SIMULATION</h3>
-
-        <label>Aircraft</label>
-        <select id="aircraft">
-            <option value="cargo">CARGO</option>
-            <option value="passenger">PASSENGER</option>
-        </select>
-
-        <label>Movement</label>
-        <select id="movement">
-            <option value="local">LOCAL</option>
-            <option value="transfer">TRANSFER</option>
-            <option value="comat">COMAT</option>
-        </select>
-
-        <label>Packaging</label>
-        <select id="packaging">
-            <option value="type_a">TYPE A</option>
-            <option value="type_b">TYPE B</option>
-        </select>
-    </div>
+<select id="special">
+<option value="no">NORMAL</option>
+<option value="yes">ESPECIAL</option>
+</select>
 
 </div>
 
-<button onclick="runSimulation()">RUN SIMULATION ENGINE</button>
+<div class="box">
+<h3>PIEZA (UNA POR UNA)</h3>
 
-<div id="result" class="result"></div>
+<input id="length" placeholder="Largo cm">
+<input id="width" placeholder="Ancho cm">
+<input id="height" placeholder="Alto cm">
+<input id="weight" placeholder="Peso kg">
 
-<div class="panel">
-    <h3>SIMULATION LOG OUTPUT</h3>
-    <pre id="log"></pre>
+<button onclick="addPiece()">AGREGAR PIEZA</button>
+
+<div id="pieces"></div>
 </div>
 
+<div class="box">
+<h3>VOZ A TEXTO</h3>
+<button onclick="startVoice()">🎤 HABLAR</button>
+<textarea id="voiceText"></textarea>
 </div>
+
+<button onclick="send()">VERIFICAR TODO</button>
+
+<div id="result"></div>
 
 <script>
-async function runSimulation() {
 
-    const data = {
-        dg: document.getElementById("dg").value,
-        un_number: document.getElementById("un_number").value,
-        msds: document.getElementById("msds").value,
-        shippers_declaration: document.getElementById("shippers_declaration").value,
-        consolidated: document.getElementById("consolidated").value,
-        unitary: document.getElementById("unitary").value,
-        special: document.getElementById("special").value,
-        general: document.getElementById("general").value,
-        aircraft: document.getElementById("aircraft").value,
-        movement: document.getElementById("movement").value,
-        packaging: document.getElementById("packaging").value
-    };
+let pieces = [];
 
-    const res = await fetch("/api/simulate", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    });
+function addPiece(){
+pieces.push({
+length:length.value,
+width:width.value,
+height:height.value,
+weight:weight.value
+});
 
-    const result = await res.json();
+document.getElementById("pieces").innerHTML =
+JSON.stringify(pieces,null,2);
+}
 
-    const box = document.getElementById("result");
-    box.className = "result " + result.level;
+function startVoice(){
+let r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+r.lang = "es-ES";
+r.onresult = e => voiceText.value = e.results[0][0].transcript;
+r.start();
+}
 
-    box.innerHTML = `
-        <h2>STATUS: ${result.status}</h2>
-        <h3>SCORE: ${result.score}</h3>
-        <h3>RULES TRIGGERED:</h3>
-        <pre>${JSON.stringify(result.triggered_rules, null, 2)}</pre>
-    `;
+async function send(){
 
-    document.getElementById("log").innerText =
-        JSON.stringify(result, null, 2);
+const data = {
+dg: dg.value,
+msds: msds.value,
+shippers_declaration: shippers_declaration.value,
+aircraft: aircraft.value,
+movement: movement.value,
+special: special.value,
+pieces: pieces
+};
+
+const res = await fetch("/api/check",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+});
+
+const r = await res.json();
+
+document.getElementById("result").innerHTML = `
+<h2>${r.status}</h2>
+<div class="${r.level}">SCORE: ${r.score}</div>
+
+<h3>ERRORS</h3>
+<pre>${JSON.stringify(r.errors,null,2)}</pre>
+
+<h3>WARNINGS</h3>
+<pre>${JSON.stringify(r.warnings,null,2)}</pre>
+
+<h3>TOTAL WEIGHT</h3>
+${r.total_weight}
+
+<h3>TOTAL VOLUME</h3>
+${r.total_volume}
+`;
 }
 </script>
 
