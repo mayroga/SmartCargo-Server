@@ -1,87 +1,102 @@
-from flask import Flask, request, jsonify, send_from_directory
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+from typing import List, Optional
 import os
 
-app = Flask(__name__, static_folder="static")
+app = FastAPI()
+
+# Modelo de datos para validación automática
+class Piece(BaseModel):
+    l: float
+    w: float
+    h: float
+    kg: float
+
+class CargoData(BaseModel):
+    actor: str
+    movement: str
+    cargo_type: str
+    aircraft: str
+    consol: str
+    packaging: str
+    pieces: List[Piece]
+    notes: Optional[str] = None
 
 # =========================================================
-# 🧠 LÓGICA DE ASESORÍA (CBP, TSA, IATA)
+# 🧠 ASESORÍA LOGÍSTICA (Lógica de Negocio)
 # =========================================================
 
-def validate_cargo(data):
+def process_cargo(data: CargoData):
     errors = []
     warnings = []
     score = 100
     
-    # Extracción de datos
-    actor = data.get("actor")
-    cargo_type = data.get("cargo_type")
-    aircraft = data.get("aircraft")
-    packaging = data.get("packaging")
-    pieces = data.get("pieces", [])
+    # 1. Validación por Actor y Documentación
+    if data.actor == "driver":
+        warnings.append("CONDUCTOR: Presentar ID y Dock Token en counter.")
     
-    # Reglas de Negocio Específicas
-    if not pieces:
-        errors.append("No hay piezas registradas para verificar.")
-        score = 0
-    
-    if cargo_type == "dg":
-        if aircraft == "pax":
-            errors.append("PROHIBIDO: DG no vuela en avión de pasajeros (PAX).")
+    if data.cargo_type == "dg":
+        if data.aircraft == "pax":
+            errors.append("RECHAZO: Mercancía Peligrosa prohibida en aviones de pasajeros.")
             score -= 60
         warnings.append("DG: Requiere Shipper's Declaration y MSDS original.")
 
-    if packaging == "pallet_wd":
-        warnings.append("MADERA: Verificar sello ISPM15 para evitar rechazo en counter.")
+    # 2. Embalaje y Estiba
+    if data.packaging == "pallet_wd":
+        warnings.append("MADERA: Verificar sello NIMF-15 (ISPM15).")
+    elif data.packaging == "uld":
+        warnings.append("ULD: Revisar base y paneles antes de aceptación.")
 
+    # 3. Dimensiones por Aeronave
     total_weight = 0
     total_vol = 0
-    max_h = 160 if aircraft == "pax" else 244
+    # A330 PAX h=160cm | B767F h=244cm
+    max_h = 160 if data.aircraft == "pax" else 244
 
-    for p in pieces:
-        try:
-            l, w, h, kg = float(p['l']), float(p['w']), float(p['h']), float(p['kg'])
-            total_weight += kg
-            total_vol += (l * w * h) / 1000000
-            if h > max_h:
-                errors.append(f"RECHAZO: Altura {h}cm excede límite de {max_h}cm.")
-                score -= 40
-        except (ValueError, KeyError):
-            errors.append("Datos de pieza incompletos o inválidos.")
+    for p in data.pieces:
+        total_weight += p.kg
+        vol = (p.l * p.w * p.h) / 1000000
+        total_vol += vol
+        
+        if p.h > max_h:
+            errors.append(f"RECHAZO: Altura {p.h}cm excede el límite de {max_h}cm.")
+            score -= 40
+        if p.l > 317 or p.w > 244:
+            errors.append("DIMENSIÓN: Excede base de pallet estándar (PMC).")
+            score -= 30
 
-    # Estado Final
+    # Determinar Status
     if score >= 90 and not errors:
         status, level = "LISTO PARA COUNTER", "green"
     elif score >= 60:
-        status, level = "REVISAR ACCIONES", "yellow"
+        status, level = "REVISAR ANTES DE IR", "yellow"
     else:
         status, level = "NO APTO / RECHAZO", "red"
 
     return {
-        "status": status, "level": level, "score": max(0, score),
-        "errors": errors, "warnings": warnings,
-        "total_weight": total_weight, "total_vol": total_vol
+        "status": status,
+        "level": level,
+        "score": max(0, score),
+        "errors": errors,
+        "warnings": warnings,
+        "total_weight": total_weight,
+        "total_vol": round(total_vol, 3)
     }
 
 # =========================================================
-# 🌐 RUTAS DE CONEXIÓN
+# 🌐 ENDPOINTS (Conexión Directa)
 # =========================================================
 
-@app.route("/")
-def index():
-    # Sirve el archivo app.html desde la carpeta static
-    return send_from_directory(app.static_folder, "app.html")
+@app.post("/api/check")
+async def check_cargo(data: CargoData):
+    return process_cargo(data)
 
-@app.route("/api/check", methods=["POST"])
-def check():
-    # Recibe el JSON del frontend
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-    
-    # Procesa y retorna respuesta
-    result = validate_cargo(data)
-    return jsonify(result)
+# Montar carpeta static para servir el HTML y recursos
+if os.path.exists("static"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
-    # Puerto 5000 por defecto
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
