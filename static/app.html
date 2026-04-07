@@ -2,308 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AL CIELO - SMART CARGO ADVISORY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL CIELO - ASESORÍA VIRTUAL</title>
     <style>
-        :root {
-            --primary: #00ffd5;
-            --bg-dark: #0b0f1a;
-            --bg-card: #1a2235;
-            --text: #e0e0e0;
-            --danger: #f44336;
-            --warning: #ffeb3b;
-            --success: #00c853;
-        }
-
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg-dark); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        .header { 
-            padding: 20px; 
-            background: #111a2b; 
-            text-align: center; 
-            border-bottom: 2px solid var(--primary);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .header h1 { margin: 0; font-size: 1.5em; letter-spacing: 2px; color: var(--primary); }
-        .header p { margin: 5px 0 0; font-size: 0.8em; opacity: 0.7; }
-
-        .container { max-width: 600px; margin: auto; padding: 10px; }
-
-        .box { 
-            background: var(--bg-card); 
-            padding: 15px; 
-            margin-bottom: 15px; 
-            border-radius: 12px; 
-            border: 1px solid #2d3748; 
-        }
-
-        h3 { 
-            font-size: 0.9em; 
-            text-transform: uppercase; 
-            color: var(--primary); 
-            margin-top: 0; 
-            margin-bottom: 15px;
-            border-left: 3px solid var(--primary);
-            padding-left: 10px;
-        }
-
-        label { display: block; font-size: 0.75em; color: #a0aec0; margin-bottom: 5px; }
-
-        select, input, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 12px; 
-            background: #0b0f1a; 
-            color: white; 
-            border: 1px solid #3e4b5b; 
-            border-radius: 6px; 
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-
+        :root { --primary: #00ffd5; --bg: #0b0f1a; --card: #1a2235; --text: #e0e0e0; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .header { padding: 20px; background: #111a2b; text-align: center; border-bottom: 2px solid var(--primary); }
+        .box { background: var(--card); padding: 15px; margin: 10px; border-radius: 10px; border: 1px solid #2d3748; }
+        h3 { color: var(--primary); font-size: 0.9em; text-transform: uppercase; margin-top: 0; }
+        select, input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; background: #0b0f1a; color: white; border: 1px solid #3e4b5b; border-radius: 5px; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            text-transform: uppercase;
-            transition: all 0.2s;
-        }
-
-        .btn-add { background: #4a5568; color: white; margin-top: 5px; }
-        .btn-main { background: var(--primary); color: #0b0f1a; font-size: 1.1em; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,255,213,0.3); }
-        .btn-voice { background: #2d3748; color: white; margin-bottom: 10px; }
-        .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 5px; font-size: 0.7em; width: auto; margin-top: 10px; }
-
-        #pieces_list { 
-            margin-top: 10px; 
-            padding: 10px; 
-            background: rgba(0,0,0,0.2); 
-            border-radius: 6px; 
-            font-family: monospace; 
-            font-size: 0.85em; 
-        }
-
-        .status-card { 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-top: 20px; 
-            text-align: center; 
-        }
-
-        .green { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
-        .yellow { background: #451a03; color: #fcd34d; border: 1px solid #d97706; }
-        .red { background: #450a0a; color: #fca5a5; border: 1px solid #dc2626; }
-
-        .report-section { text-align: left; margin-top: 15px; font-size: 0.9em; }
-        .report-section ul { padding-left: 20px; }
-        
-        @media print {
-            .btn-main, .btn-add, .btn-voice, .btn-clear, .header p, h3, .grid, select, input { display: none; }
-            .status-card, .box { border: 1px solid #000; color: #000; background: #fff; }
-        }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-main { background: var(--primary); color: #0b0f1a; margin-top: 10px; }
+        .btn-add { background: #4a5568; color: white; }
+        .status-card { padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; font-weight: bold; }
+        .green { background: #064e3b; color: #6ee7b7; }
+        .yellow { background: #451a03; color: #fcd34d; }
+        .red { background: #450a0a; color: #fca5a5; }
+        ul { text-align: left; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>AL CIELO</h1>
-    <p>AURA BY MAY ROGA LLC | SMART CARGO ADVISORY</p>
+    <h1 style="margin:0; font-size:1.4em;">AL CIELO</h1>
+    <small>SMART CARGO ADVISORY BY MAY ROGA</small>
 </div>
 
-<div class="container">
-    
-    <div class="box">
-        <h3>1. PERFIL OPERATIVO</h3>
-        <label>¿QUIÉN ENTREGA O GESTIONA?</label>
-        <select id="actor">
-            <option value="driver">CAMIONERO (GROUND TRANSPORT)</option>
-            <option value="forwarder">FORWARDER (AGENTE DE CARGA)</option>
-            <option value="owner">DUEÑO DE CARGA / SHIPPER</option>
+<div class="box">
+    <h3>1. PERFIL Y RUTA</h3>
+    <label style="font-size:0.8em; color:#a0aec0;">ACTOR RESPONSABLE</label>
+    <select id="actor">
+        <option value="driver">CAMIONERO</option>
+        <option value="forwarder">FORWARDER</option>
+        <option value="owner">DUEÑO / SHIPPER</option>
+    </select>
+    <div class="grid">
+        <select id="movement">
+            <option value="local">LOCAL (MIA)</option>
+            <option value="transfer">TRANSFER</option>
+            <option value="comat">COMAT</option>
         </select>
-
-        <div class="grid">
-            <div>
-                <label>TIPO DE FLUJO</label>
-                <select id="movement">
-                    <option value="local">LOCAL (MIA)</option>
-                    <option value="transfer">TRANSFER / TRANSBORDO</option>
-                    <option value="comat">COMAT (COMPANY MATERIAL)</option>
-                </select>
-            </div>
-            <div>
-                <label>AERONAVE DESTINO</label>
-                <select id="aircraft">
-                    <option value="pax">PAX (A330/A321)</option>
-                    <option value="cao">CARGO ONLY (767F/A330F)</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div class="box">
-        <h3>2. NATURALEZA DE LA CARGA</h3>
-        <label>CLASIFICACIÓN IATA</label>
-        <select id="cargo_type">
-            <option value="gen">CARGA GENERAL (GEN)</option>
-            <option value="dg">MERCANCÍA PELIGROSA (DG)</option>
-            <option value="per">PERECEDEROS (PER)</option>
-            <option value="avi">ANIMAL VIVO (AVI)</option>
-            <option value="hum">RESTOS HUMANOS (HUM)</option>
-            <option value="pharma">PRODUCTOS FARMACÉUTICOS</option>
-            <option value="ice">DRY ICE (HIELO SECO)</option>
-        </select>
-
-        <label>TIPO DE EMBALAJE</label>
-        <select id="packaging">
-            <option value="pallet_wd">PALLET MADERA (ISPM15)</option>
-            <option value="pallet_pl">PALLET PLÁSTICO / METAL</option>
-            <option value="drum">DRUMS / TAMBORES</option>
-            <option value="crate">CRATE / HUACAL</option>
-            <option value="box">LOOSE BOXES / CAJAS</option>
-            <option value="uld">ULD (CONTENEDOR AÉREO)</option>
+        <select id="aircraft">
+            <option value="pax">PASSENGER (PAX)</option>
+            <option value="cao">CARGO ONLY (CAO)</option>
         </select>
     </div>
+</div>
 
-    <div class="box">
-        <h3>3. DIMENSIONES Y PESO</h3>
-        <div class="grid">
-            <input type="number" id="L" placeholder="Largo (cm)">
-            <input type="number" id="W" placeholder="Ancho (cm)">
-            <input type="number" id="H" placeholder="Alto (cm)">
-            <input type="number" id="Kg" placeholder="Peso (Kg)">
-        </div>
-        <button class="btn-add" onclick="addPiece()">+ AGREGAR PIEZA AL MANIFIESTO</button>
-        
-        <div id="pieces_list">No hay piezas agregadas.</div>
-        <button class="btn-clear" onclick="clearPieces()">BORRAR LISTA</button>
+<div class="box">
+    <h3>2. SEGMENTACIÓN DE CARGA</h3>
+    <select id="cargo_type">
+        <option value="gen">GENERAL CARGO</option>
+        <option value="dg">DANGEROUS GOODS (DG)</option>
+        <option value="per">PERISHABLES (PER)</option>
+        <option value="avi">ANIMAL VIVO (AVI)</option>
+        <option value="hum">HUMAN REMAINS (HUM)</option>
+        <option value="pharma">PHARMA / MEDICAMENTOS</option>
+        <option value="ice">DRY ICE ONLY</option>
+    </select>
+    <select id="packaging">
+        <option value="pallet_wd">PALLET MADERA</option>
+        <option value="metal">EMBALAJE METAL</option>
+        <option value="drum">DRUMS / TAMBORES</option>
+        <option value="crate">CRATE / HUACAL</option>
+        <option value="box">CAJAS SUELTAS</option>
+        <option value="uld">ULD / CONTENEDOR</option>
+    </select>
+</div>
+
+<div class="box">
+    <h3>3. MEDIDAS Y PESO</h3>
+    <div class="grid">
+        <input type="number" id="L" placeholder="L (cm)">
+        <input type="number" id="W" placeholder="W (cm)">
+        <input type="number" id="H" placeholder="H (cm)">
+        <input type="number" id="Kg" placeholder="Kg">
     </div>
+    <button class="btn-add" onclick="addPiece()">+ AGREGAR PIEZA</button>
+    <div id="list" style="margin-top:10px; font-size:0.8em;"></div>
+</div>
 
-    <div class="box">
-        <h3>4. OBSERVACIONES Y VOZ</h3>
-        <button class="btn-voice" onclick="startVoice()">🎤 DESCRIBIR CONDICIÓN DE CARGA</button>
-        <textarea id="voiceText" rows="2" placeholder="Ej: Pallet con esquineras de metal, carga consolidada..."></textarea>
-    </div>
-
-    <button class="btn-main" onclick="sendData()">VERIFICAR PARA AVIANCA CARGO</button>
-
+<div class="box">
+    <button class="btn-main" onclick="send()">VERIFICAR CARGA</button>
     <div id="result"></div>
-
 </div>
 
 <script>
     let pieces = [];
-
     function addPiece() {
-        const l = parseFloat(document.getElementById('L').value);
-        const w = parseFloat(document.getElementById('W').value);
-        const h = parseFloat(document.getElementById('H').value);
-        const kg = parseFloat(document.getElementById('Kg').value);
-
-        if(l > 0 && w > 0 && h > 0 && kg > 0) {
-            pieces.push({l, w, h, kg});
-            renderPieces();
-            document.getElementById('L').value=''; document.getElementById('W').value='';
-            document.getElementById('H').value=''; document.getElementById('Kg').value='';
-        } else {
-            alert("Por favor, ingrese medidas válidas.");
+        const l=document.getElementById('L').value, w=document.getElementById('W').value, 
+              h=document.getElementById('H').value, kg=document.getElementById('Kg').value;
+        if(l && w && h && kg) {
+            pieces.push({l:parseFloat(l), w:parseFloat(w), h:parseFloat(h), kg:parseFloat(kg)});
+            document.getElementById('list').innerHTML = pieces.map((p,i)=>`Pz ${i+1}: ${p.l}x${p.w}x${p.h}cm - ${p.kg}kg`).join('<br>');
         }
     }
 
-    function renderPieces() {
-        const list = document.getElementById('pieces_list');
-        if(pieces.length === 0) {
-            list.innerHTML = "No hay piezas agregadas.";
-            return;
-        }
-        list.innerHTML = pieces.map((p, i) => 
-            `<div>[${i+1}] ${p.l}x${p.w}x${p.h} cm | ${p.kg} Kg</div>`
-        ).join('');
-    }
-
-    function clearPieces() {
-        pieces = [];
-        renderPieces();
-        document.getElementById('result').innerHTML = '';
-    }
-
-    function startVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "es-US";
-        recognition.onresult = (event) => {
-            document.getElementById('voiceText').value = event.results[0][0].transcript;
-        };
-        recognition.start();
-    }
-
-    async function sendData() {
-        if(pieces.length === 0) {
-            alert("Debe agregar al menos una pieza para realizar la asesoría.");
-            return;
-        }
-
+    async function send() {
+        if(!pieces.length) return alert("Agregue piezas.");
         const payload = {
             actor: document.getElementById('actor').value,
             movement: document.getElementById('movement').value,
             cargo_type: document.getElementById('cargo_type').value,
             aircraft: document.getElementById('aircraft').value,
-            consol: "single", // Simplificado para este flujo
             packaging: document.getElementById('packaging').value,
             pieces: pieces,
-            notes: document.getElementById('voiceText').value
+            consol: "single"
         };
-
-        try {
-            const response = await fetch("/api/check", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error("Error en la comunicación con el servidor.");
-
-            const r = await response.json();
-
-            let resultHtml = `
-                <div class="status-card ${r.level}">
-                    <h2 style="margin:0;">${r.status}</h2>
-                    <div style="font-size:1.2em; font-weight:bold;">SCORE: ${r.score}%</div>
-                </div>
-                <div class="box" style="margin-top:15px;">
-                    <div class="report-section">
-                        <strong style="color:var(--danger);">ERRORES / RECHAZOS:</strong>
-                        <ul>${r.errors.length > 0 ? r.errors.map(e => `<li>${e}</li>`).join('') : '<li>Ninguno</li>'}</ul>
-                    </div>
-                    <div class="report-section">
-                        <strong style="color:var(--warning);">ACCIONES RECOMENDADAS:</strong>
-                        <ul>${r.warnings.length > 0 ? r.warnings.map(w => `<li>${w}</li>`).join('') : '<li>Ninguna</li>'}</ul>
-                    </div>
-                    <hr border="0" style="border-top:1px solid #3e4b5b; margin:15px 0;">
-                    <p style="text-align:center; margin:0; font-size:0.9em;">
-                        <strong>PESO TOTAL:</strong> ${r.total_weight} Kg | 
-                        <strong>VOLUMEN:</strong> ${r.total_vol.toFixed(3)} m³
-                    </p>
-                    <button onclick="window.print()" style="background:#4a5568; color:white; margin-top:15px; padding:10px;">GENERAR PDF / IMPRIMIR</button>
-                </div>
-            `;
-            document.getElementById('result').innerHTML = resultHtml;
-        } catch (error) {
-            document.getElementById('result').innerHTML = `<div class="status-card red">ERROR: ${error.message}</div>`;
-        }
+        const res = await fetch("/api/check", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        });
+        const r = await res.json();
+        document.getElementById('result').innerHTML = `
+            <div class="status-card ${r.level}">${r.status} (${r.score}%)</div>
+            <p><strong>ERRORES:</strong></p><ul>${r.errors.map(e=>`<li>${e}</li>`).join('')}</ul>
+            <p><strong>ASESORÍA:</strong></p><ul>${r.warnings.map(w=>`<li>${w}</li>`).join('')}</ul>
+            <button onclick="window.print()" style="margin-top:10px; background:#4a5568; color:white;">PDF / IMPRIMIR</button>
+        `;
     }
 </script>
-
 </body>
 </html>
