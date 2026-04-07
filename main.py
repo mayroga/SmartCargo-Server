@@ -7,7 +7,6 @@ import os
 
 app = FastAPI()
 
-# Modelo de datos para validación automática
 class Piece(BaseModel):
     l: float
     w: float
@@ -19,13 +18,12 @@ class CargoData(BaseModel):
     movement: str
     cargo_type: str
     aircraft: str
-    consol: str
     packaging: str
     pieces: List[Piece]
     notes: Optional[str] = None
 
 # =========================================================
-# 🧠 ASESORÍA LOGÍSTICA (Lógica de Negocio)
+# 🧠 ASESORÍA LOGÍSTICA SEGMENTADA (IATA / TSA / AVIANCA)
 # =========================================================
 
 def process_cargo(data: CargoData):
@@ -33,26 +31,39 @@ def process_cargo(data: CargoData):
     warnings = []
     score = 100
     
-    # 1. Validación por Actor y Documentación
+    # 1. SEGMENTACIÓN POR ACTOR (Responsabilidad Legal)
     if data.actor == "driver":
-        warnings.append("CONDUCTOR: Presentar ID y Dock Token en counter.")
-    
+        warnings.append("CONDUCTOR: Presentar ID físico, Dock Token y asegurar que el vehículo cumple con sellos TSA.")
+    elif data.actor == "forwarder":
+        warnings.append("FORWARDER: Validar coincidencia de MAWB/HAWB y estatus de Known Shipper.")
+
+    # 2. SEGMENTACIÓN POR TIPO DE CARGA (Flujos Específicos)
     if data.cargo_type == "dg":
+        score -= 50
+        errors.append("DG: Requiere Shipper's Declaration original (3 copias) y MSDS.")
         if data.aircraft == "pax":
-            errors.append("RECHAZO: Mercancía Peligrosa prohibida en aviones de pasajeros.")
-            score -= 60
-        warnings.append("DG: Requiere Shipper's Declaration y MSDS original.")
+            errors.append("RECHAZO CRÍTICO: Mercancía Peligrosa prohibida en aviones de pasajeros.")
+            score = 0
+    
+    elif data.cargo_type == "per":
+        warnings.append("PERISHABLE: Prioridad en cadena de frío. Verifique tiempo de conexión en MIA.")
+    
+    elif data.cargo_type == "avi":
+        errors.append("ANIMAL VIVO: Requiere LAR (IATA) y validación de kennel/contenedor.")
+        score -= 20
 
-    # 2. Embalaje y Estiba
+    # 3. SEGMENTACIÓN POR EMBALAJE (Seguridad y Estiba)
     if data.packaging == "pallet_wd":
-        warnings.append("MADERA: Verificar sello NIMF-15 (ISPM15).")
+        warnings.append("MADERA: Sello ISPM15/NIMF15 obligatorio. Si hay daño estructural, habrá rechazo.")
+    elif data.packaging == "metal":
+        warnings.append("METAL: Verifique puntos de amarre y protección para no dañar el ULD/Piso del avión.")
     elif data.packaging == "uld":
-        warnings.append("ULD: Revisar base y paneles antes de aceptación.")
+        warnings.append("ULD: Comprobar red (Net) y base. No se acepta si tiene abolladuras en la base.")
 
-    # 3. Dimensiones por Aeronave
+    # 4. SEGMENTACIÓN POR AERONAVE (Medidas y Capacidades)
     total_weight = 0
     total_vol = 0
-    # A330 PAX h=160cm | B767F h=244cm
+    # Límites de altura: PAX (A330/321) = 160cm | CARGO (767F) = 244cm
     max_h = 160 if data.aircraft == "pax" else 244
 
     for p in data.pieces:
@@ -61,17 +72,23 @@ def process_cargo(data: CargoData):
         total_vol += vol
         
         if p.h > max_h:
-            errors.append(f"RECHAZO: Altura {p.h}cm excede el límite de {max_h}cm.")
+            errors.append(f"RECHAZO MEDIDA: Altura {p.h}cm excede el límite de {max_h}cm para avión {data.aircraft.upper()}.")
             score -= 40
         if p.l > 317 or p.w > 244:
-            errors.append("DIMENSIÓN: Excede base de pallet estándar (PMC).")
+            errors.append("RECHAZO DIMENSIÓN: Supera la base del pallet estándar PMC.")
             score -= 30
 
-    # Determinar Status
+    # 5. SEGMENTACIÓN POR FLUJO (Local vs Transfer vs COMAT)
+    if data.movement == "transfer":
+        warnings.append("TRANSFER: El manifiesto de transferencia debe estar sellado por Aduana/CBP.")
+    elif data.movement == "comat":
+        warnings.append("COMAT: Material de compañía requiere guía interna autorizada.")
+
+    # DETERMINACIÓN DE ESTATUS FINAL
     if score >= 90 and not errors:
         status, level = "LISTO PARA COUNTER", "green"
-    elif score >= 60:
-        status, level = "REVISAR ANTES DE IR", "yellow"
+    elif score >= 50:
+        status, level = "REVISAR ACCIONES", "yellow"
     else:
         status, level = "NO APTO / RECHAZO", "red"
 
@@ -86,14 +103,13 @@ def process_cargo(data: CargoData):
     }
 
 # =========================================================
-# 🌐 ENDPOINTS (Conexión Directa)
+# 🌐 CONEXIÓN Y SERVIDORES
 # =========================================================
 
 @app.post("/api/check")
 async def check_cargo(data: CargoData):
     return process_cargo(data)
 
-# Montar carpeta static para servir el HTML y recursos
 if os.path.exists("static"):
     app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
