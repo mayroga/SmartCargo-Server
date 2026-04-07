@@ -1,15 +1,8 @@
-from flask import Flask, request, jsonify, send_from_directory
-from datetime import datetime
-
-app = Flask(__name__, static_folder="static")
-
 # =========================================================
-# 🧠 SAFE VALIDATION ENGINE (NO CRASH VERSION)
+# 🧠 PRE COUNTER CARGO ENGINE (NO FLASK VERSION)
 # =========================================================
 
-def validate(data):
-
-    data = data or {}
+def check_cargo(data):
 
     errors = []
     warnings = []
@@ -17,23 +10,22 @@ def validate(data):
 
     dg = data.get("dg", "no")
     msds = data.get("msds", "no")
-    shipper = data.get("shippers_declaration", "no")
+    shipper = data.get("shipper", "no")
     aircraft = data.get("aircraft", "cargo")
     movement = data.get("movement", "local")
     special = data.get("special", "no")
-
-    pieces = data.get("pieces") or []
+    pieces = data.get("pieces", [])
 
     # =========================
-    # DG LOGIC
+    # DG RULES
     # =========================
     if dg == "yes":
 
-        if msds != "yes":
+        if msds == "no":
             errors.append("Falta MSDS")
             score -= 30
 
-        if shipper != "yes":
+        if shipper == "no":
             errors.append("Falta declaración del shipper")
             score -= 40
 
@@ -42,31 +34,31 @@ def validate(data):
             score -= 50
 
     # =========================
-    # MOVEMENT
+    # MOVIMIENTO
     # =========================
     if movement not in ["local", "transfer", "comat"]:
         errors.append("Movimiento inválido")
         score -= 40
 
     # =========================
-    # SPECIAL CARGO
+    # ESPECIAL
     # =========================
     if special == "yes":
         warnings.append("Carga especial requiere revisión")
         score -= 10
 
     # =========================
-    # PIECES SAFE LOOP
+    # PIEZAS
     # =========================
     total_weight = 0
     total_volume = 0
 
     for p in pieces:
         try:
-            l = float(p.get("length", 0) or 0)
-            w = float(p.get("width", 0) or 0)
-            h = float(p.get("height", 0) or 0)
-            kg = float(p.get("weight", 0) or 0)
+            l = float(p.get("length", 0))
+            w = float(p.get("width", 0))
+            h = float(p.get("height", 0))
+            kg = float(p.get("weight", 0))
 
             volume = (l * w * h) / 6000
 
@@ -74,18 +66,21 @@ def validate(data):
             total_volume += volume
 
         except:
-            errors.append("Error en pieza")
+            errors.append("Error en medidas de pieza")
 
+    # =========================
+    # SCORE FINAL
+    # =========================
     score = max(0, min(score, 100))
 
     if len(errors) == 0 and score >= 80:
-        status = "OK PARA COUNTER"
+        status = "LISTO PARA COUNTER"
         level = "green"
     elif score >= 50:
-        status = "REVISAR"
+        status = "REVISAR ANTES DEL COUNTER"
         level = "yellow"
     else:
-        status = "NO LISTO"
+        status = "NO LISTO PARA ENVIO"
         level = "red"
 
     return {
@@ -95,31 +90,28 @@ def validate(data):
         "errors": errors,
         "warnings": warnings,
         "total_weight": total_weight,
-        "total_volume": total_volume,
-        "timestamp": datetime.utcnow().isoformat()
+        "total_volume": total_volume
     }
 
+
 # =========================================================
-# ROUTES SAFE
+# 🧪 TEST LOCAL (OPCIONAL)
 # =========================================================
-
-@app.route("/")
-def home():
-    return send_from_directory("static", "app.html")
-
-
-@app.route("/api/check", methods=["POST"])
-def check():
-    try:
-        data = request.get_json(force=True)
-        return jsonify(validate(data))
-    except Exception as e:
-        return jsonify({
-            "status": "SERVER ERROR",
-            "error": str(e),
-            "level": "red"
-        }), 500
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    sample = {
+        "dg": "yes",
+        "msds": "no",
+        "shipper": "no",
+        "aircraft": "passenger",
+        "movement": "local",
+        "special": "no",
+        "pieces": [
+            {"length": 100, "width": 50, "height": 40, "weight": 20}
+        ]
+    }
+
+    result = check_cargo(sample)
+
+    print("RESULTADO PRE COUNTER")
+    print(result)
