@@ -1,141 +1,110 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 # =========================================================
-# 🧠 SIMULATION KNOWLEDGE BASE (RULE ENGINE)
+# 🧠 VALIDACIÓN OPERATIVA REAL
 # =========================================================
 
-RULES = [
-    {
-        "id": "DG_PASSENGER_AIRCRAFT",
-        "layer": "IATA_SIM",
-        "severity": "HIGH",
-        "condition": lambda d: d.get("dg") == "yes" and d.get("aircraft") == "passenger",
-        "message": "DG detected on PASSENGER aircraft requires enhanced screening simulation"
-    },
-    {
-        "id": "MISSING_MSDS_DG",
-        "layer": "IATA_SIM",
-        "severity": "HIGH",
-        "condition": lambda d: d.get("dg") == "yes" and not d.get("msds"),
-        "message": "MSDS missing for DG shipment simulation"
-    },
-    {
-        "id": "DG_WITHOUT_DECLARATION",
-        "layer": "IATA_SIM",
-        "severity": "HIGH",
-        "condition": lambda d: d.get("dg") == "yes" and not d.get("shippers_declaration"),
-        "message": "Shipper Declaration missing for DG shipment"
-    },
-    {
-        "id": "CONSOLIDATED_UNITARY_CONFLICT",
-        "layer": "OPS_SIM",
-        "severity": "MEDIUM",
-        "condition": lambda d: d.get("consolidated") == "yes" and d.get("unitary") == "yes",
-        "message": "Conflict: Consolidated and Unitary declared simultaneously"
-    },
-    {
-        "id": "SPECIAL_CARGO_FLAG",
-        "layer": "AIRLINE_SIM",
-        "severity": "MEDIUM",
-        "condition": lambda d: d.get("special") == "yes",
-        "message": "Special cargo requires airline approval simulation layer"
-    },
-    {
-        "id": "INVALID_MOVEMENT",
-        "layer": "OPS_SIM",
-        "severity": "HIGH",
-        "condition": lambda d: d.get("movement") not in ["local", "transfer", "comat"],
-        "message": "Invalid movement type detected"
-    },
-    {
-        "id": "PACKAGING_TYPE_A_NON_DG",
-        "layer": "PACKAGING_SIM",
-        "severity": "LOW",
-        "condition": lambda d: d.get("packaging") == "type_a" and d.get("dg") == "no",
-        "message": "Type A packaging used for NON-DG shipment"
-    },
-    {
-        "id": "PACKAGING_TYPE_B_DG",
-        "layer": "PACKAGING_SIM",
-        "severity": "INFO",
-        "condition": lambda d: d.get("packaging") == "type_b" and d.get("dg") == "yes",
-        "message": "Type B packaging compatible with DG simulation rules"
-    }
-]
+def validate(data):
 
-# =========================================================
-# 🧠 DECISION ENGINE (SIMULATION CORE)
-# =========================================================
-
-def simulate_decision(data):
-    triggered_rules = []
+    errors = []
+    warnings = []
     score = 100
 
-    for rule in RULES:
+    # =========================
+    # DG CHECK
+    # =========================
+    if data.get("dg") == "yes":
+
+        if not data.get("msds"):
+            errors.append("Falta MSDS (obligatorio para DG)")
+            score -= 30
+
+        if not data.get("shippers_declaration"):
+            errors.append("Falta declaración del shipper")
+            score -= 40
+
+        if data.get("aircraft") == "passenger":
+            errors.append("DG no permitido en avión de pasajeros sin aprobación")
+            score -= 50
+
+    # =========================
+    # CARGA
+    # =========================
+    if data.get("special") == "yes":
+        warnings.append("Carga especial: requiere revisión de aerolínea")
+        score -= 10
+
+    # =========================
+    # MOVIMIENTO
+    # =========================
+    if data.get("movement") not in ["local", "transfer", "comat"]:
+        errors.append("Movimiento inválido")
+        score -= 40
+
+    # =========================
+    # PIEZAS
+    # =========================
+    pieces = data.get("pieces", [])
+
+    total_weight = 0
+    total_volume = 0
+
+    for p in pieces:
         try:
-            if rule["condition"](data):
-                triggered_rules.append(rule)
+            l = float(p.get("length", 0))
+            w = float(p.get("width", 0))
+            h = float(p.get("height", 0))
+            kg = float(p.get("weight", 0))
 
-                # SCORE SYSTEM
-                if rule["severity"] == "HIGH":
-                    score -= 35
-                elif rule["severity"] == "MEDIUM":
-                    score -= 20
-                elif rule["severity"] == "LOW":
-                    score -= 5
-                else:
-                    score -= 1
+            volume = (l * w * h) / 6000  # estándar cargo air
+            total_weight += kg
+            total_volume += volume
 
-        except Exception:
-            continue
+        except:
+            errors.append("Error en medidas de pieza")
 
-    # LIMIT SCORE RANGE
-    score = max(0, min(score, 100))
-
-    # STATE MACHINE (SIMULATED AIRPORT DECISION)
-    if score >= 85:
-        status = "RELEASE"
+    # =========================
+    # RESULTADO FINAL
+    # =========================
+    if len(errors) == 0 and score >= 80:
+        status = "LISTO PARA COUNTER"
         level = "green"
-    elif score >= 60:
-        status = "CONDITIONAL RELEASE"
+    elif score >= 50:
+        status = "REVISAR ANTES DE IR"
         level = "yellow"
-    elif score >= 30:
-        status = "HOLD FOR REVIEW"
-        level = "orange"
     else:
-        status = "SIMULATION REJECT"
+        status = "NO LISTO PARA ENVÍO"
         level = "red"
 
     return {
         "status": status,
         "level": level,
-        "score": score,
-        "triggered_rules": triggered_rules,
-        "total_rules_triggered": len(triggered_rules),
+        "score": max(0, score),
+        "errors": errors,
+        "warnings": warnings,
+        "total_weight": total_weight,
+        "total_volume": total_volume,
         "timestamp": datetime.utcnow().isoformat()
     }
 
+
 # =========================================================
-# 🌐 ROUTES
+# 🌐 FRONT
 # =========================================================
 
 @app.route("/")
 def home():
-    return render_template("app.html")
+    return send_from_directory("static", "app.html")
 
 
-@app.route("/api/simulate", methods=["POST"])
-def simulate():
-    data = request.get_json(force=True)
-    result = simulate_decision(data)
-    return jsonify(result)
+@app.route("/api/check", methods=["POST"])
+def check():
+    data = request.get_json()
+    return jsonify(validate(data))
 
-# =========================================================
-# 🚀 RUN (LOCAL ONLY)
-# =========================================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
