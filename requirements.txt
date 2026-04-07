@@ -10,4 +10,4 @@ json5
 google-generativeai
 openai
 Pillow
-flask
+
