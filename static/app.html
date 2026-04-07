@@ -1,238 +1,115 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Smart Cargo - PreCheck System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>SMART CARGO AI - PRECHECK SYSTEM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b0f1a;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: #111a2e;
-      padding: 15px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .container {
-      padding: 15px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    textarea, input, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 14px;
-    }
-
-    button {
-      background: #1f6feb;
-      color: white;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      width: 100%;
-      font-size: 16px;
-      margin-top: 10px;
-      cursor: pointer;
-    }
-
-    .block {
-      background: #111a2e;
-      padding: 15px;
-      margin-top: 15px;
-      border-radius: 10px;
-    }
-
-    .status-green { color: #00ff88; font-weight: bold; }
-    .status-yellow { color: #ffcc00; font-weight: bold; }
-    .status-red { color: #ff3b3b; font-weight: bold; }
-
-    .doc {
-      padding: 8px;
-      border-left: 3px solid #1f6feb;
-      margin: 5px 0;
-      background: #0f1626;
-    }
-
-    .error { color: #ff3b3b; }
-    .warn { color: #ffcc00; }
-    .fix { color: #00ff88; }
-
-    h3 {
-      margin-top: 0;
-    }
-  </style>
+<style>
+body { font-family: Arial; background:#0b0f1a; color:#fff; margin:0; }
+header { background:#111a2e; padding:15px; text-align:center; font-weight:bold; }
+.container { padding:15px; max-width:1000px; margin:auto; }
+.block { background:#111a2e; padding:15px; margin-top:15px; border-radius:10px; }
+input, textarea { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:none; }
+button { width:100%; padding:12px; margin-top:10px; border:none; border-radius:10px; background:#1f6feb; color:#fff; font-size:16px; }
+.status-green{color:#00ff88;} .status-yellow{color:#ffcc00;} .status-red{color:#ff3b3b;}
+.error{color:#ff3b3b;} .warn{color:#ffcc00;} .fix{color:#00ff88;}
+.doc{background:#0f1626;padding:8px;margin:5px 0;border-left:3px solid #1f6feb;}
+</style>
 </head>
 
 <body>
 
-<header>🚀 SMART CARGO - PRECHECK SYSTEM</header>
+<header>🚀 SMART CARGO AI - SISTEMA DE PRECHEQUEO TOTAL</header>
 
 <div class="container">
 
-  <!-- DATOS CLIENTE -->
-  <div class="block">
-    <h3>📦 Datos del Cliente / Operación</h3>
+<div class="block">
+<h3>📦 Cliente / Operación</h3>
+<input id="shipper" placeholder="Shipper">
+<input id="consignee" placeholder="Consignee">
+<input id="awb" placeholder="AWB">
+<input id="airline" placeholder="Aerolínea">
+<input id="origin" placeholder="Origen">
+<input id="destination" placeholder="Destino">
+<input id="service" placeholder="Servicio (PAX/CARGO)">
+<input id="date" type="date">
+</div>
 
-    <input id="shipper" placeholder="Shipper / Exportador">
-    <input id="consignee" placeholder="Consignatario / Importador">
-    <input id="awb" placeholder="Número AWB">
-    <input id="airline" placeholder="Aerolínea">
-    <input id="origin" placeholder="Origen">
-    <input id="destination" placeholder="Destino">
-    <input id="service" placeholder="Servicio (PAX / CARGO / PRIORITY)">
-    <input id="date" type="date">
-  </div>
+<div class="block">
+<h3>📦 Mercancía</h3>
+<textarea id="raw_text" placeholder="Describe TODO: DG, pharma, animales, etc"></textarea>
+<input id="pieces" placeholder='[{"kg":100,"h":120},{"kg":200,"h":180}]'>
+</div>
 
-  <!-- DATOS MERCANCÍA -->
-  <div class="block">
-    <h3>📦 Datos de la Mercancía</h3>
+<div class="block">
+<button onclick="submitData()">🚀 EJECUTAR PRECHECK TOTAL</button>
+</div>
 
-    <textarea id="raw_text" placeholder="Describe la carga completa: tipo, contenido, si es DG, perecedero, pharma, dry ice, animales, etc."></textarea>
-
-    <input id="pieces" placeholder='Piezas JSON [{"kg":100,"h":120},{"kg":200,"h":170}]'>
-  </div>
-
-  <!-- CAPTURA -->
-  <div class="block">
-    <h3>🎤 Captura Inteligente</h3>
-
-    <button onclick="startMic()">🎤 Activar Micrófono</button>
-    <button onclick="submitData()">🚀 Ejecutar PreCheck</button>
-  </div>
-
-  <!-- RESULTADOS -->
-  <div id="result" class="block"></div>
+<div id="result" class="block"></div>
 
 </div>
 
 <script>
-async function submitData() {
+async function submitData(){
 
-  let pieces = [];
+let pieces=[];
+try{ pieces=JSON.parse(document.getElementById("pieces").value||"[]"); }
+catch(e){ alert("JSON inválido"); return;}
 
-  try {
-    pieces = JSON.parse(document.getElementById("pieces").value || "[]");
-  } catch (e) {
-    alert("Formato de piezas inválido. Usa JSON correcto.");
-    return;
-  }
+const payload={
+shipper:shipper.value,
+consignee:consignee.value,
+awb:awb.value,
+airline:airline.value,
+origin:origin.value,
+destination:destination.value,
+service:service.value,
+date:date.value,
+raw_text:raw_text.value,
+pieces:pieces
+};
 
-  const payload = {
-    user_role: "driver",
-    cargo_type: "AUTO",
-    raw_text: document.getElementById("raw_text").value,
-    destination: document.getElementById("destination").value,
-    pieces: pieces
-  };
-
-  const res = await fetch("/precheck", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-
-  renderResult(data);
+const res=await fetch("/precheck",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+const data=await res.json();
+render(data);
 }
 
-function renderResult(data) {
+function render(d){
 
-  let html = "";
+let s="status-green";
+if(d.status==="RISK")s="status-yellow";
+if(d.status==="REJECT")s="status-red";
 
-  let statusClass = "status-green";
-  if (data.status === "RISK") statusClass = "status-yellow";
-  if (data.status === "REJECT") statusClass = "status-red";
+let h="";
 
-  // RESULTADO FINAL
-  html += `<h2>📊 Resultado de Vuelo</h2>`;
-  html += `<p class="${statusClass}">${data.status}</p>`;
-  html += `<p>${data.driver_message || ""}</p>`;
+h+=`<h2>📊 RESULTADO FINAL</h2><p class="${s}">${d.status}</p><p>${d.driver_message}</p>`;
 
-  // CLASIFICACIÓN
-  html += `<div class="block">
-    <h3>🧠 Clasificación de Carga</h3>
-    <p>${data.cargo_type_detected}</p>
-  </div>`;
+h+=`<div class="block"><h3>📦 RESUMEN</h3>
+<p>AWB: ${d.summary.awb}</p>
+<p>Ruta: ${d.summary.route}</p>
+<p>Peso: ${d.summary.weight} kg</p>
+</div>`;
 
-  // ERRORES
-  html += `<div class="block">
-    <h3>❌ Errores Críticos</h3>`;
+h+=`<div class="block"><h3>🧠 CARGA</h3><p>${d.cargo_type_detected}</p></div>`;
 
-  if ((data.errors || []).length === 0) {
-    html += `<p class="fix">Sin errores críticos</p>`;
-  } else {
-    (data.errors || []).forEach(e => {
-      html += `<p class="error">${e}</p>`;
-    });
-  }
+h+=`<div class="block"><h3>❌ ERRORES</h3>`;
+(d.errors||[]).forEach(e=>h+=`<p class="error">${e}</p>`); if(!d.errors.length)h+=`<p class="fix">Sin errores</p>`;
+h+=`</div>`;
 
-  html += `</div>`;
+h+=`<div class="block"><h3>⚠️ RIESGOS</h3>`;
+(d.warnings||[]).forEach(w=>h+=`<p class="warn">${w}</p>`); if(!d.warnings.length)h+=`<p class="fix">Sin riesgos</p>`;
+h+=`</div>`;
 
-  // ADVERTENCIAS
-  html += `<div class="block">
-    <h3>⚠️ Riesgos Operativos</h3>`;
+h+=`<div class="block"><h3>🔧 SOLUCIONES</h3>`;
+(d.fixes||[]).forEach(f=>h+=`<p class="fix">${f}</p>`);
+h+=`</div>`;
 
-  if ((data.warnings || []).length === 0) {
-    html += `<p class="fix">Sin riesgos detectados</p>`;
-  } else {
-    (data.warnings || []).forEach(w => {
-      html += `<p class="warn">${w}</p>`;
-    });
-  }
+h+=`<div class="block"><h3>📑 DOCUMENTOS</h3>`;
+(d.required_docs||[]).forEach(x=>h+=`<div class="doc">${x}</div>`);
+h+=`</div>`;
 
-  html += `</div>`;
-
-  // SOLUCIONES
-  html += `<div class="block">
-    <h3>🔧 Soluciones Directas</h3>`;
-
-  (data.fixes || []).forEach(f => {
-    html += `<p class="fix">${f}</p>`;
-  });
-
-  html += `</div>`;
-
-  // DOCUMENTOS
-  html += `<div class="block">
-    <h3>📑 Documentos Requeridos</h3>`;
-
-  (data.required_docs || []).forEach(d => {
-    html += `<div class="doc">${d}</div>`;
-  });
-
-  html += `</div>`;
-
-  // CHECKLIST FINAL
-  html += `<div class="block">
-    <h3>🧾 Checklist para Counter</h3>
-    <p>1. Presentar AWB</p>
-    <p>2. Entregar documentos requeridos en orden</p>
-    <p>3. Confirmar peso y piezas</p>
-    <p>4. Responder preguntas del agente según tipo de carga</p>
-  </div>`;
-
-  document.getElementById("result").innerHTML = html;
-}
-
-// MIC (BASE SIMPLE)
-function startMic() {
-  alert("Micrófono en desarrollo: integrar Web Speech API para captura continua sin cortes.");
+document.getElementById("result").innerHTML=h;
 }
 </script>
 
