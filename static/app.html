@@ -5,56 +5,112 @@
 <title>PRE COUNTER CARGO CHECK</title>
 
 <style>
-body {font-family:Arial;background:#0b0f1a;color:white;margin:0;}
-.header {padding:15px;background:#111a2b;text-align:center;font-weight:bold;}
-.box {background:#1a2235;padding:10px;margin:10px;border-radius:10px;}
-input,select,textarea {width:100%;padding:10px;margin-top:5px;}
-button {width:100%;padding:15px;background:#00ffd5;font-weight:bold;}
-.green{background:#00c853;padding:10px;}
-.yellow{background:#ffeb3b;color:black;padding:10px;}
-.red{background:#f44336;padding:10px;}
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #0b0f1a;
+    color: white;
+}
+
+.header {
+    padding: 15px;
+    text-align: center;
+    background: #111a2b;
+    font-weight: bold;
+}
+
+.container {
+    padding: 15px;
+}
+
+.box {
+    background: #1a2235;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    background: #0b1020;
+    color: white;
+    border: 1px solid #333;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    background: #00ffd5;
+    border: none;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.result {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.green { background: #00c853; }
+.yellow { background: #ffeb3b; color: black; }
+.red { background: #f44336; }
+
+pre {
+    white-space: pre-wrap;
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-PRE COUNTER CARGO CHECK (SHIPPER / DRIVER / FORWARDER)
+PRE COUNTER CARGO CHECK (NO SERVER VERSION)
 </div>
 
+<div class="container">
+
 <div class="box">
+<h3>DATOS CARGA</h3>
 
-<h3>DATOS GENERALES</h3>
-
+<label>DG</label>
 <select id="dg">
-<option value="no">NO DG</option>
-<option value="yes">DG</option>
+<option value="no">NO</option>
+<option value="yes">SI</option>
 </select>
 
+<label>MSDS</label>
 <select id="msds">
-<option value="yes">MSDS SI</option>
-<option value="no">MSDS NO</option>
-</select>
-
-<select id="shippers_declaration">
-<option value="yes">DECLARACION SI</option>
+<option value="yes">SI</option>
 <option value="no">NO</option>
 </select>
 
+<label>DECLARACION SHIPPER</label>
+<select id="shipper">
+<option value="yes">SI</option>
+<option value="no">NO</option>
+</select>
+
+<label>TIPO AVION</label>
 <select id="aircraft">
 <option value="cargo">CARGO</option>
 <option value="passenger">PASAJEROS</option>
 </select>
 
+<label>MOVIMIENTO</label>
 <select id="movement">
 <option value="local">LOCAL</option>
 <option value="transfer">TRANSFER</option>
 <option value="comat">COMAT</option>
 </select>
 
+<label>ESPECIAL</label>
 <select id="special">
-<option value="no">NORMAL</option>
-<option value="yes">ESPECIAL</option>
+<option value="no">NO</option>
+<option value="yes">SI</option>
 </select>
 
 </div>
@@ -62,86 +118,157 @@ PRE COUNTER CARGO CHECK (SHIPPER / DRIVER / FORWARDER)
 <div class="box">
 <h3>PIEZA (UNA POR UNA)</h3>
 
-<input id="length" placeholder="Largo cm">
-<input id="width" placeholder="Ancho cm">
-<input id="height" placeholder="Alto cm">
-<input id="weight" placeholder="Peso kg">
+<input id="l" placeholder="Largo cm">
+<input id="w" placeholder="Ancho cm">
+<input id="h" placeholder="Alto cm">
+<input id="kg" placeholder="Peso kg">
 
 <button onclick="addPiece()">AGREGAR PIEZA</button>
 
-<div id="pieces"></div>
+<pre id="list"></pre>
 </div>
 
-<div class="box">
-<h3>VOZ A TEXTO</h3>
-<button onclick="startVoice()">🎤 HABLAR</button>
-<textarea id="voiceText"></textarea>
-</div>
-
-<button onclick="send()">VERIFICAR TODO</button>
+<button onclick="run()">VERIFICAR ANTES DEL COUNTER</button>
 
 <div id="result"></div>
+
+</div>
 
 <script>
 
 let pieces = [];
 
+// =========================
+// AGREGAR PIEZA
+// =========================
 function addPiece(){
 pieces.push({
-length:length.value,
-width:width.value,
-height:height.value,
-weight:weight.value
+length: l.value,
+width: w.value,
+height: h.value,
+weight: kg.value
 });
 
-document.getElementById("pieces").innerHTML =
-JSON.stringify(pieces,null,2);
+list.innerText = JSON.stringify(pieces, null, 2);
 }
 
-function startVoice(){
-let r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-r.lang = "es-ES";
-r.onresult = e => voiceText.value = e.results[0][0].transcript;
-r.start();
+// =========================
+// MOTOR DE REGLAS
+// =========================
+function run(){
+
+let errors = [];
+let warnings = [];
+let score = 100;
+
+// INPUTS
+let dg = document.getElementById("dg").value;
+let msds = document.getElementById("msds").value;
+let shipper = document.getElementById("shipper").value;
+let aircraft = document.getElementById("aircraft").value;
+let movement = document.getElementById("movement").value;
+let special = document.getElementById("special").value;
+
+// =========================
+// DG RULES
+// =========================
+if(dg === "yes"){
+
+if(msds === "no"){
+errors.push("Falta MSDS");
+score -= 30;
 }
 
-async function send(){
+if(shipper === "no"){
+errors.push("Falta declaración del shipper");
+score -= 40;
+}
 
-const data = {
-dg: dg.value,
-msds: msds.value,
-shippers_declaration: shippers_declaration.value,
-aircraft: aircraft.value,
-movement: movement.value,
-special: special.value,
-pieces: pieces
-};
+if(aircraft === "passenger"){
+errors.push("DG no permitido en pasajeros");
+score -= 50;
+}
 
-const res = await fetch("/api/check",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(data)
-});
+}
 
-const r = await res.json();
+// =========================
+// MOVIMIENTO
+// =========================
+if(!["local","transfer","comat"].includes(movement)){
+errors.push("Movimiento inválido");
+score -= 40;
+}
 
+// =========================
+// ESPECIAL
+// =========================
+if(special === "yes"){
+warnings.push("Carga especial requiere revisión");
+score -= 10;
+}
+
+// =========================
+// PIEZAS
+// =========================
+let totalWeight = 0;
+let totalVolume = 0;
+
+for(let p of pieces){
+
+let L = parseFloat(p.length || 0);
+let W = parseFloat(p.width || 0);
+let H = parseFloat(p.height || 0);
+let KG = parseFloat(p.weight || 0);
+
+let volume = (L * W * H) / 6000;
+
+totalWeight += KG;
+totalVolume += volume;
+}
+
+// =========================
+// RESULTADO FINAL
+// =========================
+let status = "";
+let color = "";
+
+if(errors.length === 0 && score >= 80){
+status = "LISTO PARA COUNTER";
+color = "green";
+}
+else if(score >= 50){
+status = "REVISAR ANTES DEL COUNTER";
+color = "yellow";
+}
+else{
+status = "NO LISTO PARA ENVIO";
+color = "red";
+}
+
+// =========================
+// OUTPUT
+// =========================
 document.getElementById("result").innerHTML = `
-<h2>${r.status}</h2>
-<div class="${r.level}">SCORE: ${r.score}</div>
+<div class="${color}">
+<h2>${status}</h2>
+<h3>SCORE: ${score}</h3>
 
-<h3>ERRORS</h3>
-<pre>${JSON.stringify(r.errors,null,2)}</pre>
+<h3>ERRORES</h3>
+<pre>${JSON.stringify(errors,null,2)}</pre>
 
 <h3>WARNINGS</h3>
-<pre>${JSON.stringify(r.warnings,null,2)}</pre>
+<pre>${JSON.stringify(warnings,null,2)}</pre>
 
-<h3>TOTAL WEIGHT</h3>
-${r.total_weight}
+<h3>TOTAL PESO</h3>
+${totalWeight}
 
-<h3>TOTAL VOLUME</h3>
-${r.total_volume}
+<h3>TOTAL VOLUMEN</h3>
+${totalVolume}
+</div>
 `;
+
 }
+
 </script>
 
 </body>
