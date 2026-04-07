@@ -4,7 +4,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # =========================================================
-# 🧠 SIMULATION KNOWLEDGE BASE (NO PERSISTENCIA OPERATIVA)
+# 🧠 SIMULATION KNOWLEDGE BASE (RULE ENGINE)
 # =========================================================
 
 RULES = [
@@ -21,6 +21,13 @@ RULES = [
         "severity": "HIGH",
         "condition": lambda d: d.get("dg") == "yes" and not d.get("msds"),
         "message": "MSDS missing for DG shipment simulation"
+    },
+    {
+        "id": "DG_WITHOUT_DECLARATION",
+        "layer": "IATA_SIM",
+        "severity": "HIGH",
+        "condition": lambda d: d.get("dg") == "yes" and not d.get("shippers_declaration"),
+        "message": "Shipper Declaration missing for DG shipment"
     },
     {
         "id": "CONSOLIDATED_UNITARY_CONFLICT",
@@ -44,57 +51,51 @@ RULES = [
         "message": "Invalid movement type detected"
     },
     {
-        "id": "DG_WITHOUT_DECLARATION",
-        "layer": "IATA_SIM",
-        "severity": "HIGH",
-        "condition": lambda d: d.get("dg") == "yes" and not d.get("shippers_declaration"),
-        "message": "Shipper Declaration missing for DG shipment"
-    },
-    {
-        "id": "TYPE_A_DG_COMPATIBILITY",
+        "id": "PACKAGING_TYPE_A_NON_DG",
         "layer": "PACKAGING_SIM",
         "severity": "LOW",
         "condition": lambda d: d.get("packaging") == "type_a" and d.get("dg") == "no",
-        "message": "Packaging Type A used for NON-DG (check efficiency simulation)"
+        "message": "Type A packaging used for NON-DG shipment"
     },
     {
-        "id": "TYPE_B_DG_OK",
+        "id": "PACKAGING_TYPE_B_DG",
         "layer": "PACKAGING_SIM",
         "severity": "INFO",
         "condition": lambda d: d.get("packaging") == "type_b" and d.get("dg") == "yes",
-        "message": "Packaging Type B compatible with DG simulation rules"
+        "message": "Type B packaging compatible with DG simulation rules"
     }
 ]
 
-
 # =========================================================
-# 🧠 DECISION ENGINE
+# 🧠 DECISION ENGINE (SIMULATION CORE)
 # =========================================================
 
 def simulate_decision(data):
     triggered_rules = []
+    score = 100
 
     for rule in RULES:
         try:
             if rule["condition"](data):
                 triggered_rules.append(rule)
-        except:
+
+                # SCORE SYSTEM
+                if rule["severity"] == "HIGH":
+                    score -= 35
+                elif rule["severity"] == "MEDIUM":
+                    score -= 20
+                elif rule["severity"] == "LOW":
+                    score -= 5
+                else:
+                    score -= 1
+
+        except Exception:
             continue
 
-    # SCORE SYSTEM (SIMULATED OPERATIONS)
-    score = 100
+    # LIMIT SCORE RANGE
+    score = max(0, min(score, 100))
 
-    for r in triggered_rules:
-        if r["severity"] == "HIGH":
-            score -= 35
-        elif r["severity"] == "MEDIUM":
-            score -= 20
-        elif r["severity"] == "LOW":
-            score -= 5
-        else:
-            score -= 1
-
-    # FINAL STATE MACHINE
+    # STATE MACHINE (SIMULATED AIRPORT DECISION)
     if score >= 85:
         status = "RELEASE"
         level = "green"
@@ -113,9 +114,9 @@ def simulate_decision(data):
         "level": level,
         "score": score,
         "triggered_rules": triggered_rules,
+        "total_rules_triggered": len(triggered_rules),
         "timestamp": datetime.utcnow().isoformat()
     }
-
 
 # =========================================================
 # 🌐 ROUTES
@@ -128,13 +129,12 @@ def home():
 
 @app.route("/api/simulate", methods=["POST"])
 def simulate():
-    data = request.json
+    data = request.get_json(force=True)
     result = simulate_decision(data)
     return jsonify(result)
 
-
 # =========================================================
-# 🚀 RUN
+# 🚀 RUN (LOCAL ONLY)
 # =========================================================
 
 if __name__ == "__main__":
