@@ -24,6 +24,8 @@
 
     .container {
       padding: 15px;
+      max-width: 900px;
+      margin: auto;
     }
 
     textarea, input, select {
@@ -33,6 +35,7 @@
       margin-bottom: 10px;
       border-radius: 8px;
       border: none;
+      font-size: 14px;
     }
 
     button {
@@ -44,6 +47,7 @@
       width: 100%;
       font-size: 16px;
       margin-top: 10px;
+      cursor: pointer;
     }
 
     .block {
@@ -58,62 +62,60 @@
     .status-red { color: #ff3b3b; font-weight: bold; }
 
     .doc {
-      padding: 5px;
+      padding: 8px;
       border-left: 3px solid #1f6feb;
       margin: 5px 0;
+      background: #0f1626;
     }
 
     .error { color: #ff3b3b; }
     .warn { color: #ffcc00; }
+    .fix { color: #00ff88; }
+
+    h3 {
+      margin-top: 0;
+    }
   </style>
 </head>
 
 <body>
 
-<header>🚀 SMART CARGO - PRE CHECK AVIATION SYSTEM</header>
+<header>🚀 SMART CARGO - PRECHECK SYSTEM</header>
 
 <div class="container">
 
-  <!-- =========================
-  DATOS CLIENTE / OPERACIÓN
-  ========================== -->
+  <!-- DATOS CLIENTE -->
   <div class="block">
-    <h3>📦 Datos del Cliente y Operación</h3>
+    <h3>📦 Datos del Cliente / Operación</h3>
 
-    <input id="shipper" placeholder="Shipper">
-    <input id="consignee" placeholder="Consignatario">
+    <input id="shipper" placeholder="Shipper / Exportador">
+    <input id="consignee" placeholder="Consignatario / Importador">
     <input id="awb" placeholder="Número AWB">
     <input id="airline" placeholder="Aerolínea">
     <input id="origin" placeholder="Origen">
     <input id="destination" placeholder="Destino">
-    <input id="service" placeholder="Tipo de servicio">
+    <input id="service" placeholder="Servicio (PAX / CARGO / PRIORITY)">
     <input id="date" type="date">
   </div>
 
-  <!-- =========================
-  MERCANCÍA
-  ========================== -->
+  <!-- DATOS MERCANCÍA -->
   <div class="block">
     <h3>📦 Datos de la Mercancía</h3>
 
-    <textarea id="raw_text" placeholder="Describe la carga (voz, texto, copia, pega...)"></textarea>
+    <textarea id="raw_text" placeholder="Describe la carga completa: tipo, contenido, si es DG, perecedero, pharma, dry ice, animales, etc."></textarea>
 
-    <input id="pieces" placeholder="Piezas (JSON simple)">
+    <input id="pieces" placeholder='Piezas JSON [{"kg":100,"h":120},{"kg":200,"h":170}]'>
   </div>
 
-  <!-- =========================
-  BOTONES INPUT
-  ========================== -->
+  <!-- CAPTURA -->
   <div class="block">
     <h3>🎤 Captura Inteligente</h3>
 
-    <button onclick="startMic()">🎤 Micrófono</button>
+    <button onclick="startMic()">🎤 Activar Micrófono</button>
     <button onclick="submitData()">🚀 Ejecutar PreCheck</button>
   </div>
 
-  <!-- =========================
-  RESULTADO FINAL
-  ========================== -->
+  <!-- RESULTADOS -->
   <div id="result" class="block"></div>
 
 </div>
@@ -126,7 +128,7 @@ async function submitData() {
   try {
     pieces = JSON.parse(document.getElementById("pieces").value || "[]");
   } catch (e) {
-    alert("Error en piezas JSON");
+    alert("Formato de piezas inválido. Usa JSON correcto.");
     return;
   }
 
@@ -153,66 +155,62 @@ function renderResult(data) {
 
   let html = "";
 
-  // =========================
-  // STATUS FINAL
-  // =========================
   let statusClass = "status-green";
   if (data.status === "RISK") statusClass = "status-yellow";
   if (data.status === "REJECT") statusClass = "status-red";
 
-  html += `<h2>📊 Resultado Final</h2>`;
+  // RESULTADO FINAL
+  html += `<h2>📊 Resultado de Vuelo</h2>`;
   html += `<p class="${statusClass}">${data.status}</p>`;
   html += `<p>${data.driver_message || ""}</p>`;
 
-  // =========================
-  // TIPO CARGA
-  // =========================
+  // CLASIFICACIÓN
   html += `<div class="block">
-    <h3>🧠 Clasificación Automática</h3>
+    <h3>🧠 Clasificación de Carga</h3>
     <p>${data.cargo_type_detected}</p>
   </div>`;
 
-  // =========================
   // ERRORES
-  // =========================
   html += `<div class="block">
-    <h3>❌ Errores Detectados</h3>`;
+    <h3>❌ Errores Críticos</h3>`;
 
-  (data.errors || []).forEach(e => {
-    html += `<p class="error">${e}</p>`;
-  });
+  if ((data.errors || []).length === 0) {
+    html += `<p class="fix">Sin errores críticos</p>`;
+  } else {
+    (data.errors || []).forEach(e => {
+      html += `<p class="error">${e}</p>`;
+    });
+  }
 
   html += `</div>`;
 
-  // =========================
-  // WARNINGS
-  // =========================
+  // ADVERTENCIAS
   html += `<div class="block">
-    <h3>⚠️ Advertencias</h3>`;
+    <h3>⚠️ Riesgos Operativos</h3>`;
 
-  (data.warnings || []).forEach(w => {
-    html += `<p class="warn">${w}</p>`;
-  });
+  if ((data.warnings || []).length === 0) {
+    html += `<p class="fix">Sin riesgos detectados</p>`;
+  } else {
+    (data.warnings || []).forEach(w => {
+      html += `<p class="warn">${w}</p>`;
+    });
+  }
 
   html += `</div>`;
 
-  // =========================
-  // CORRECCIONES
-  // =========================
+  // SOLUCIONES
   html += `<div class="block">
-    <h3>🔧 Corrección Automática</h3>`;
+    <h3>🔧 Soluciones Directas</h3>`;
 
   (data.fixes || []).forEach(f => {
-    html += `<p>${f}</p>`;
+    html += `<p class="fix">${f}</p>`;
   });
 
   html += `</div>`;
 
-  // =========================
   // DOCUMENTOS
-  // =========================
   html += `<div class="block">
-    <h3>📑 Checklist Documental</h3>`;
+    <h3>📑 Documentos Requeridos</h3>`;
 
   (data.required_docs || []).forEach(d => {
     html += `<div class="doc">${d}</div>`;
@@ -220,14 +218,21 @@ function renderResult(data) {
 
   html += `</div>`;
 
+  // CHECKLIST FINAL
+  html += `<div class="block">
+    <h3>🧾 Checklist para Counter</h3>
+    <p>1. Presentar AWB</p>
+    <p>2. Entregar documentos requeridos en orden</p>
+    <p>3. Confirmar peso y piezas</p>
+    <p>4. Responder preguntas del agente según tipo de carga</p>
+  </div>`;
+
   document.getElementById("result").innerHTML = html;
 }
 
-// =========================
-// MIC FUNCTION (PLACEHOLDER)
-// =========================
+// MIC (BASE SIMPLE)
 function startMic() {
-  alert("Micrófono activado (integración futura WebSpeech API)");
+  alert("Micrófono en desarrollo: integrar Web Speech API para captura continua sin cortes.");
 }
 </script>
 
