@@ -1,96 +1,114 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from flask import Flask, request, jsonify, send_from_directory
+from datetime import datetime
 
-app = FastAPI()
+app = Flask(__name__, static_folder="static")
 
-# =========================
-# DATA MODEL
-# =========================
-class CargoRequest(BaseModel):
-    dg: str = "no"
-    msds: str = "no"
-    shipper: str = "no"
-    aircraft: str = "cargo"
-    movement: str = "local"
-    special: str = "no"
-    pieces: list = []
-
-
-# =========================
-# ENGINE LOGIC
-# =========================
-def check_cargo(data):
-
+def validate_cargo(data):
     errors = []
     warnings = []
     score = 100
+    
+    actor = data.get("actor")
+    cargo_type = data.get("cargo_type")
+    aircraft = data.get("aircraft")
+    packaging = data.get("packaging")
+    pieces = data.get("pieces", [])
+    
+    # 1. SEGMENTACIÓN POR ACTOR (Documentación)
+    if actor == "driver":
+        warnings.append("Camionero: Asegúrese de tener el ID vigente y el número de cita (Dock Token) para Avianca MIA.")
+        if not pieces:
+            errors.append("No se puede verificar carga sin dimensiones físicas.")
+            score -= 20
 
-    if data.dg == "yes":
+    if actor == "forwarder" and data.get("consol") == "consol":
+        warnings.append("Consolidado: Requiere Master AWB y House AWBs vinculados correctamente.")
 
-        if data.msds == "no":
-            errors.append("Falta MSDS")
-            score -= 30
+    # 2. SEGMENTACIÓN POR TIPO DE CARGA (IATA / TSA)
+    if cargo_type == "dg":
+        errors.append("DG: Requiere Shipper's Declaration firmada y MSDS visible.")
+        if aircraft == "pax":
+            errors.append("RECHAZO: Mercancía Peligrosa prohibida o altamente restringida en vuelos PAX.")
+            score -= 60
+        warnings.append("Asesoría: Verifique etiquetas Clase 9 / ELI-ELM si contiene Litio.")
 
-        if data.shipper == "no":
-            errors.append("Falta declaración shipper")
-            score -= 40
-
-        if data.aircraft == "passenger":
-            errors.append("DG no permitido en pasajeros")
-            score -= 50
-
-    if data.movement not in ["local", "transfer", "comat"]:
-        errors.append("Movimiento inválido")
-        score -= 40
-
-    if data.special == "yes":
-        warnings.append("Carga especial requiere revisión")
+    if cargo_type == "per":
+        warnings.append("PER: Prioridad de cadena de frío. Verifique tiempo de exposición en rampa MIA.")
+    
+    if cargo_type == "avi":
+        errors.append("AVI: Requiere LAR (Live Animals Regulations) y certificado de salud.")
         score -= 10
 
+    # 3. TRATAMIENTO DE EMBALAJE (Fumigación / Seguridad)
+    if packaging == "pallet_wd":
+        warnings.append("MADERA: Debe mostrar sello ISPM15 visible. Si está dañado, cambiar por pallet plástico.")
+    
+    if packaging == "uld":
+        warnings.append("ULD: Verifique integridad estructural. Cualquier golpe en la base es motivo de rechazo por seguridad de vuelo.")
+
+    # 4. DIMENSIONES Y POSICIÓN (Lógica de Aeronave Avianca)
     total_weight = 0
-    total_volume = 0
-
-    for p in data.pieces:
+    total_vol = 0
+    
+    # Límites aproximados por posición (A330 PAX vs 767F)
+    max_h = 160 if aircraft == "pax" else 240
+    
+    for p in pieces:
         try:
-            l = float(p.get("length", 0))
-            w = float(p.get("width", 0))
-            h = float(p.get("height", 0))
-            kg = float(p.get("weight", 0))
-
-            volume = (l * w * h) / 6000
-
+            l = float(p.get("l", 0))
+            w = float(p.get("w", 0))
+            h = float(p.get("h", 0))
+            kg = float(p.get("kg", 0))
+            
             total_weight += kg
-            total_volume += volume
+            total_vol += (l * w * h) / 1000000 # m3
+            
+            if h > max_h:
+                errors.append(f"RECHAZO: Altura {h}cm excede el límite de {max_h}cm para avión {aircraft.upper()}.")
+                score -= 40
+                
+            # Regla de contorneo (Overhang)
+            if l > 317 or w > 244:
+                errors.append(f"RECHAZO: Dimensiones exceden base de pallet estándar (PMC/P6P).")
+                score -= 30
+        except ValueError:
+            errors.append("Error en formato de medidas.")
 
-        except:
-            errors.append("Error en piezas")
+    # 5. SEGMENTACIÓN DE RIESGO TSA
+    if data.get("movement") == "transfer":
+        warnings.append("TRANSFER: Verifique que el sello de seguridad (Seal) coincida con el manifiesto de origen.")
 
-    score = max(0, min(score, 100))
-
-    if len(errors) == 0 and score >= 80:
-        status = "LISTO"
+    # RESULTADO FINAL
+    if score >= 90 and not errors:
+        status = "LISTO PARA COUNTER"
         level = "green"
-    elif score >= 50:
-        status = "REVISAR"
+    elif score >= 60:
+        status = "REVISAR Y CORREGIR"
         level = "yellow"
     else:
-        status = "NO LISTO"
+        status = "NO APTO / RECHAZO"
         level = "red"
 
     return {
         "status": status,
         "level": level,
-        "score": score,
+        "score": max(0, score),
         "errors": errors,
         "warnings": warnings,
         "total_weight": total_weight,
-        "total_volume": total_volume
+        "total_vol": total_vol,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
+@app.route("/")
+def home():
+    return send_from_directory("static", "app.html")
 
-# =========================
-# API ENDPOINT
-# =========================
-@app.post("/check")
-def check(request: CargoRequest):
-    return check_cargo(request)
+@app.route("/api/check", methods=["POST"])
+def check():
+    data = request.get_json()
+    result = validate_cargo(data)
+    return jsonify(result)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
